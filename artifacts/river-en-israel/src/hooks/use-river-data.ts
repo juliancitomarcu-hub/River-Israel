@@ -1,4 +1,4 @@
-// Mock data hooks to simulate a real API integration for the fan site
+// נתוני Mock לאתר האוהדים
 import { useQuery, useMutation } from "@tanstack/react-query";
 
 export interface NewsItem {
@@ -28,48 +28,48 @@ export interface TimelineEvent {
   description: string;
 }
 
-// --- Mock Data ---
+// --- נתוני Mock ---
 
 const MOCK_NEWS: NewsItem[] = [
   {
     id: "1",
-    title: "¡Banda Monumental! River aplasta a su rival en el cierre del torneo",
-    excerpt: "Con una actuación estelar de Miguel Borja, el Millonario demostró por qué es el más grande de Argentina.",
-    date: "12 Oct 2024",
+    title: "ריבר מנצחת בגדול! הבנדה המונומנטאלית מדהימה שוב",
+    excerpt: "עם הופעה מבריקה של מיגל בורחה, המיליונרים הוכיחו שוב מדוע הם הקלוב הגדול ביותר בארגנטינה.",
+    date: "12 אוק 2024",
     imageUrl: "https://images.unsplash.com/photo-1518605368461-1e122c4cdce0?q=80&w=2070&auto=format&fit=crop",
-    category: "Primer Equipo"
+    category: "הקבוצה הראשונה"
   },
   {
     id: "2",
-    title: "Nueva reunión de la Filial Ramat Gan programada para el Superclásico",
-    excerpt: "Nos juntamos este domingo en el bar de siempre para vivir el partido más importante del año. ¡No faltes!",
-    date: "10 Oct 2024",
+    title: "מפגש הסניף ברמת גן - הסופרקלאסיקו מגיע!",
+    excerpt: "נתאסף ביום ראשון בבר הרגיל לצפות במשחק החשוב ביותר של השנה. אל תפספסו!",
+    date: "10 אוק 2024",
     imageUrl: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=2069&auto=format&fit=crop",
-    category: "Filial Israel"
+    category: "סניף ישראל"
   },
   {
     id: "3",
-    title: "El Monumental sigue batiendo récords de asistencia",
-    excerpt: "Más de 85,000 almas tiñeron de rojo y blanco las tribunas en otra noche mágica de Copa Libertadores.",
-    date: "05 Oct 2024",
+    title: "המונומנטאל שובר שיאי נוכחות שוב ושוב",
+    excerpt: "יותר מ-85,000 אוהדים צבעו את הטריבונות באדום ולבן בלילה קסום נוסף של קופה ליברטדורס.",
+    date: "05 אוק 2024",
     imageUrl: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?q=80&w=2076&auto=format&fit=crop",
-    category: "Institucional"
+    category: "מוסדי"
   }
 ];
 
 const MOCK_MATCHES: MatchResult[] = [
-  { id: "m1", competition: "Liga Profesional", date: "2024-10-10", homeTeam: "River Plate", awayTeam: "Independiente", homeScore: 3, awayScore: 0, status: "FINISHED", isRiverHome: true },
-  { id: "m2", competition: "Copa Libertadores", date: "2024-10-03", homeTeam: "Nacional (URU)", awayTeam: "River Plate", homeScore: 1, awayScore: 2, status: "FINISHED", isRiverHome: false },
-  { id: "m3", competition: "Liga Profesional", date: "2024-10-15", homeTeam: "Boca Juniors", awayTeam: "River Plate", homeScore: null, awayScore: null, status: "UPCOMING", isRiverHome: false },
+  { id: "m1", competition: "ליגה פרופסיונל", date: "10/10/2024", homeTeam: "ריבר פלייט", awayTeam: "אינדפנדיינטה", homeScore: 3, awayScore: 0, status: "FINISHED", isRiverHome: true },
+  { id: "m2", competition: "קופה ליברטדורס", date: "03/10/2024", homeTeam: "נסיונל (אורו)", awayTeam: "ריבר פלייט", homeScore: 1, awayScore: 2, status: "FINISHED", isRiverHome: false },
+  { id: "m3", competition: "ליגה פרופסיונל", date: "15/10/2024", homeTeam: "בוקה ג'וניורס", awayTeam: "ריבר פלייט", homeScore: null, awayScore: null, status: "UPCOMING", isRiverHome: false },
 ];
 
 const MOCK_TIMELINE: TimelineEvent[] = [
-  { year: "1901", title: "Fundación", description: "El 25 de mayo de 1901 nace el Club Atlético River Plate en el barrio de La Boca, tras la fusión de los clubes Santa Rosa y La Rosales." },
-  { year: "1938", title: "Nace El Monumental", description: "Inauguración del Estadio Antonio Vespucio Liberti, hoy conocido como el Más Monumental, la casa eterna del Millonario." },
-  { year: "1986", title: "Primera Copa Libertadores", description: "Con el glorioso equipo del 'Bambino' Veira, River conquista América y luego el mundo al vencer al Steaua Bucarest en Tokio." },
-  { year: "1996", title: "La Segunda con Ramón", description: "Un equipo plagado de estrellas liderado por Enzo Francescoli levanta la segunda Libertadores en un Monumental repleto." },
-  { year: "2015", title: "La Tercera con el Muñeco", description: "Bajo la lluvia, River golea a Tigres y Marcelo Gallardo comienza a forjar su leyenda dorada como DT." },
-  { year: "2018", title: "La Gloria Eterna en Madrid", description: "El 9 de diciembre de 2018, River Plate vence a su eterno rival 3-1 en el Santiago Bernabéu, conquistando la Libertadores más importante de la historia." },
+  { year: "1901", title: "הקמת הקלוב", description: "ב-25 במאי 1901 נוסד קלוב אטלטיקו ריבר פלייט בשכונת לה בוקה, לאחר מיזוג קלובי סנטה רוסה ולה רוסאלס." },
+  { year: "1938", title: "נולד המונומנטאל", description: "חנוכת אצטדיון אנטוניו ווספוצ'י ליברטי, הידוע כיום כ'הכי מונומנטאלי', בית הנצח של המיליונרים." },
+  { year: "1986", title: "קופה ליברטדורס הראשונה", description: "עם הקבוצה המפוארת של 'במבינו' וויירה, ריבר כובשת את אמריקה ואת העולם לאחר ניצחון על סטאואה בוקרשט בטוקיו." },
+  { year: "1996", title: "הליברטדורס השנייה עם ראמון", description: "קבוצה עמוסה בכוכבים בהובלת אנצו פרנסקולי מרימה את הליברטדורס השנייה במונומנטאל מלא עד אפס מקום." },
+  { year: "2015", title: "השלישית עם מוניקו", description: "תחת הגשם, ריבר מנצחת את טיגרס ומרסלו גאיארדו מתחיל לבנות את אגדתו הזהובה כמאמן." },
+  { year: "2018", title: "התהילה הנצחית במדריד", description: "ב-9 בדצמבר 2018, ריבר פלייט מנצחת את יריבה הנצחי 3-1 בסנטיאגו ברנבאו, וזוכה בליברטדורס החשובה ביותר בהיסטוריה." },
 ];
 
 // --- Hooks ---
@@ -78,7 +78,6 @@ export function useNews() {
   return useQuery({
     queryKey: ['news'],
     queryFn: async () => {
-      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
       return MOCK_NEWS;
     }
@@ -109,8 +108,8 @@ export function useSubmitContact() {
   return useMutation({
     mutationFn: async (data: { name: string; email: string; phone: string; message: string }) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log("Formulario de filial enviado:", data);
-      return { success: true, message: "¡Mensaje enviado con éxito! Nos pondremos en contacto pronto." };
+      console.log("טופס הסניף נשלח:", data);
+      return { success: true, message: "!ההודעה נשלחה בהצלחה! ניצור קשר בקרוב" };
     }
   });
 }

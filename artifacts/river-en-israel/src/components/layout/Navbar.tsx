@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NAV_LINKS = [
-  { name: "Inicio", href: "/" },
-  { name: "Actualidad", href: "#actualidad" },
-  { name: "Historia", href: "#historia" },
-  { name: "Videos", href: "#videos" },
-  { name: "Filial Ramat Gan", href: "#filial" },
-  { name: "Galería", href: "#galeria" },
+  { name: "בית", href: "/" },
+  { name: "חדשות", href: "#actualidad" },
+  { name: "היסטוריה", href: "#historia" },
+  { name: "סרטונים", href: "#videos" },
+  { name: "סניף רמת גן", href: "#filial" },
+  { name: "גלריה", href: "#galeria" },
 ];
 
 export function Navbar() {
@@ -34,7 +34,6 @@ export function Navbar() {
         element.scrollIntoView({ behavior: 'smooth' });
       }
     } else if (href.startsWith('#')) {
-      // If we are on another page and clicking a hash link, go to home first
       window.location.href = '/' + href;
     }
   };
@@ -47,26 +46,27 @@ export function Navbar() {
           ? "bg-river-black/95 backdrop-blur-md py-3 shadow-lg border-white/10"
           : "bg-gradient-to-b from-black/80 to-transparent py-5"
       )}
+      dir="rtl"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          {/* Logo */}
+          {/* לוגו */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative w-10 h-10 overflow-hidden rounded-full border-2 border-white shadow-[0_0_10px_rgba(204,0,0,0.5)] group-hover:scale-105 transition-transform">
               <div className="absolute inset-0 bg-diagonal-red"></div>
             </div>
             <div className="flex flex-col">
               <span className="font-display font-bold text-2xl text-white leading-none tracking-wide text-shadow-md">
-                RIVER EN ISRAEL
+                ריבר בישראל
               </span>
               <span className="text-[0.65rem] text-gray-300 font-semibold uppercase tracking-widest flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-river-red" /> Ramat Gan 🇮🇱
+                <MapPin className="w-3 h-3 text-river-red" /> רמת גן 🇮🇱
               </span>
             </div>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-8">
+          {/* ניווט דסקטופ */}
+          <div className="hidden md:flex items-center space-x-8 space-x-reverse">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.name}
@@ -77,22 +77,22 @@ export function Navbar() {
                     handleNavClick(link.href);
                   }
                 }}
-                className="text-white/90 hover:text-white font-medium text-sm uppercase tracking-wider relative group py-2"
+                className="text-white/90 hover:text-white font-medium text-sm tracking-wider relative group py-2"
               >
                 {link.name}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 right-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
               </a>
             ))}
-            <a 
+            <a
               href="#filial"
               onClick={(e) => { e.preventDefault(); handleNavClick('#filial'); }}
-              className="bg-river-red hover:bg-river-red-hover text-white px-5 py-2 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)] hover:-translate-y-0.5"
+              className="bg-river-red hover:bg-river-red-hover text-white px-5 py-2 rounded-full font-bold tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)] hover:-translate-y-0.5"
             >
-              Unite a la Filial
+              הצטרף לסניף
             </a>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* כפתור תפריט מובייל */}
           <button
             className="md:hidden text-white p-2"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -102,7 +102,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Nav */}
+      {/* תפריט מובייל */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -122,17 +122,17 @@ export function Navbar() {
                       handleNavClick(link.href);
                     }
                   }}
-                  className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg uppercase tracking-wider transition-colors"
+                  className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg tracking-wider transition-colors text-right"
                 >
                   {link.name}
                 </a>
               ))}
-              <a 
+              <a
                 href="#filial"
                 onClick={(e) => { e.preventDefault(); handleNavClick('#filial'); }}
-                className="bg-river-red text-white px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center mt-4"
+                className="bg-river-red text-white px-4 py-3 rounded-lg font-bold tracking-wider text-center mt-4"
               >
-                Unite a la Filial
+                הצטרף לסניף
               </a>
             </div>
           </motion.div>
