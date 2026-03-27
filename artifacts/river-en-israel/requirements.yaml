@@ -1,0 +1,23 @@
+packages:
+  "framer-motion": "For page transitions, scroll reveals, and smooth interactive animations"
+  "react-hook-form": "For robust contact form state management in the Filial section"
+  "@hookform/resolvers": "For Zod validation integration with the contact form"
+  "zod": "For defining contact form schemas"
+  "clsx": "For conditional class name joining"
+  "tailwind-merge": "For merging tailwind classes without conflicts"
+
+images:
+  - path: "artifacts/river-en-israel/public/images/hero-monumental.png"
+    description: "Epic cinematic view of a massive football stadium at night from the pitch level, filled with passionate fans, dramatic red and white smoke flares illuminating the stands, high contrast, hyperrealistic"
+    aspect_ratio: "16:9"
+  - path: "artifacts/river-en-israel/public/images/filial-logo.png"
+    description: "Modern minimalist sports club crest or shield. Features a prominent red diagonal sash across a white background. Subtly incorporates a sleek Star of David in the top corner. Professional football badge design, vector style, flat colors, white background."
+    aspect_ratio: "1:1"
+  - path: "artifacts/river-en-israel/public/images/ramat-gan-bg.png"
+    description: "Abstract architectural background blending modern Israeli cityscape with subtle red and white geometric light streaks, dark moody atmosphere, double exposure style, cinematic lighting"
+    aspect_ratio: "21:9"
+
+notes:
+  - The application uses mocked data hooks since there is no provided API for news or matches.
+  - The contact form is fully wired on the frontend but only logs to console upon submission.
+  - YouTube embeds use standard iframes with the requested placeholder IDs and search query links.
