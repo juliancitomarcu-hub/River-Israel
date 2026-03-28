@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 const contactSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
@@ -132,33 +133,37 @@ export default function Home() {
                   whileInView="show"
                   viewport={{ once: true, margin: "-100px" }}
                   variants={fadeIn}
-                  className={cn(
-                    "group bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300",
-                    i === 0 ? "md:col-span-2" : ""
-                  )}
+                  className={cn(i === 0 ? "md:col-span-2" : "")}
                 >
-                  <div className={cn("relative overflow-hidden", i === 0 ? "h-64 md:h-80" : "h-48")}>
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10"></div>
-                    <img
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-4 left-4 z-20">
-                      <span className="bg-river-red text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
-                        {item.category}
-                      </span>
+                  <Link href={`/noticia/${item.id}`}>
+                    <div className="group bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 cursor-pointer h-full">
+                      <div className={cn("relative overflow-hidden", i === 0 ? "h-64 md:h-80" : "h-48")}>
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10"></div>
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-4 left-4 z-20">
+                          <span className="bg-river-red text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+                            {item.category}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <span className="text-sm text-gray-500 flex items-center gap-2 mb-2">
+                          <Calendar className="w-4 h-4" /> {item.date}
+                        </span>
+                        <h3 className={cn("font-display font-bold text-river-black group-hover:text-river-red transition-colors mb-3", i === 0 ? "text-2xl" : "text-xl")}>
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-600 line-clamp-2">{item.excerpt}</p>
+                        <span className="inline-flex items-center gap-1 mt-4 text-river-red text-sm font-bold group-hover:gap-2 transition-all">
+                          Leer nota completa <ChevronRight className="w-4 h-4" />
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-6">
-                    <span className="text-sm text-gray-500 flex items-center gap-2 mb-2">
-                      <Calendar className="w-4 h-4" /> {item.date}
-                    </span>
-                    <h3 className={cn("font-display font-bold text-river-black group-hover:text-river-red transition-colors mb-3", i === 0 ? "text-2xl" : "text-xl")}>
-                      {item.title}
-                    </h3>
-                    <p className="text-gray-600 line-clamp-2">{item.excerpt}</p>
-                  </div>
+                  </Link>
                 </motion.div>
               ))}
             </div>

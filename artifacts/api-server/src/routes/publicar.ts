@@ -55,6 +55,30 @@ router.post("/publicar-noticia", async (req, res) => {
   }
 });
 
+router.get("/noticias-publicadas/:id", async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
+  try {
+    const [noticia] = await db
+      .select()
+      .from(noticiasTable)
+      .where(eq(noticiasTable.id, id))
+      .limit(1);
+
+    if (!noticia || !noticia.publicada) {
+      res.status(404).json({ error: "Noticia no encontrada" });
+      return;
+    }
+    res.json({ noticia });
+  } catch (err) {
+    req.log.error({ err }, "Error obteniendo noticia");
+    res.status(500).json({ error: "Error al cargar la noticia" });
+  }
+});
+
 router.get("/noticias-publicadas", async (req, res) => {
   try {
     const noticias = await db
