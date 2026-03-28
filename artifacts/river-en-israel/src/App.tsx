@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import Home from "@/pages/Home";
 import Redactor from "@/pages/Redactor";
 import Noticia from "@/pages/Noticia";
+import Fixture from "@/pages/Fixture";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -27,6 +28,7 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/redactor" component={Redactor} />
           <Route path="/noticia/:id" component={Noticia} />
+          <Route path="/fixture" component={Fixture} />
           <Route component={NotFound} />
         </Switch>
       </main>
