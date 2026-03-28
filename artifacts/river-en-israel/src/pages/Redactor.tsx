@@ -53,6 +53,7 @@ export default function Redactor() {
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [errorImagen, setErrorImagen] = useState("");
   const [ajustandoImagen, setAjustandoImagen] = useState(false);
+  const [imagenAjustada, setImagenAjustada] = useState(false);
 
   // Mis publicaciones
   const [misPublicaciones, setMisPublicaciones] = useState<NoticiaPublicada[]>([]);
@@ -155,19 +156,25 @@ export default function Redactor() {
   const ajustarImagenConIA = async () => {
     if (!imagenPortada && !imagenPreview) return;
     setAjustandoImagen(true);
+    setImagenAjustada(false);
     setErrorImagen("");
     try {
       let blob: Blob;
       if (imagenPortada) {
         const res = await fetch(`/api/storage${imagenPortada}`);
-        if (!res.ok) throw new Error("No se pudo cargar la imagen");
+        if (!res.ok) throw new Error("No se pudo cargar la imagen desde el servidor");
         blob = await res.blob();
       } else {
         const res = await fetch(imagenPreview);
+        if (!res.ok) throw new Error("No se pudo cargar la imagen");
         blob = await res.blob();
       }
-      const file = new File([blob], "portada.jpg", { type: blob.type || "image/jpeg" });
+      const mimeType = blob.type.startsWith("image/") ? blob.type : "image/jpeg";
+      const file = new File([blob], "portada.jpg", { type: mimeType });
       await subirImagen(file);
+      setImagenAjustada(true);
+      // Limpiar el mensaje de éxito después de 4 segundos
+      setTimeout(() => setImagenAjustada(false), 4000);
     } catch (err) {
       setErrorImagen(err instanceof Error ? err.message : "Error al ajustar la imagen");
     } finally {
@@ -909,18 +916,29 @@ export default function Redactor() {
 
                 {/* Ajustar imagen — solo si hay imagen cargada en modo edición */}
                 {(imagenPortada || imagenPreview) && (
-                  <Button
-                    variant="outline"
-                    onClick={ajustarImagenConIA}
-                    disabled={ajustandoImagen || subiendoImagen}
-                    className="w-full gap-2 h-10 text-sm border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
-                  >
-                    {ajustandoImagen ? (
-                      <><span className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full inline-block" /> Ajustando imagen...</>
-                    ) : (
-                      <><Wand2 className="w-3.5 h-3.5" /> Ajustar imagen con IA</>
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={ajustarImagenConIA}
+                      disabled={ajustandoImagen || subiendoImagen}
+                      className={`w-full gap-2 h-10 text-sm transition-colors ${
+                        imagenAjustada
+                          ? "border-green-400 text-green-600 bg-green-50"
+                          : "border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
+                      }`}
+                    >
+                      {ajustandoImagen ? (
+                        <><span className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full inline-block" /> Recortando a 1280×720...</>
+                      ) : imagenAjustada ? (
+                        <><Check className="w-3.5 h-3.5" /> ¡Imagen ajustada a 1280×720!</>
+                      ) : (
+                        <><Wand2 className="w-3.5 h-3.5" /> Ajustar imagen con IA</>
+                      )}
+                    </Button>
+                    {errorImagen && (
+                      <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-1.5 text-center">{errorImagen}</p>
                     )}
-                  </Button>
+                  </>
                 )}
               </motion.div>
             ) : (
@@ -1050,21 +1068,29 @@ export default function Redactor() {
 
                 {/* Ajustar imagen — solo si hay imagen cargada */}
                 {(imagenPortada || imagenPreview) && (
-                  <Button
-                    variant="outline"
-                    onClick={ajustarImagenConIA}
-                    disabled={ajustandoImagen || subiendoImagen}
-                    className="w-full gap-2 h-10 text-sm border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
-                  >
-                    {ajustandoImagen ? (
-                      <><span className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full inline-block" /> Ajustando imagen...</>
-                    ) : (
-                      <><Wand2 className="w-3.5 h-3.5" /> Ajustar imagen con IA</>
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={ajustarImagenConIA}
+                      disabled={ajustandoImagen || subiendoImagen}
+                      className={`w-full gap-2 h-10 text-sm transition-colors ${
+                        imagenAjustada
+                          ? "border-green-400 text-green-600 bg-green-50"
+                          : "border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
+                      }`}
+                    >
+                      {ajustandoImagen ? (
+                        <><span className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full inline-block" /> Recortando a 1280×720...</>
+                      ) : imagenAjustada ? (
+                        <><Check className="w-3.5 h-3.5" /> ¡Imagen ajustada a 1280×720!</>
+                      ) : (
+                        <><Wand2 className="w-3.5 h-3.5" /> Ajustar imagen con IA</>
+                      )}
+                    </Button>
+                    {errorImagen && (
+                      <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-1.5 text-center">{errorImagen}</p>
                     )}
-                  </Button>
-                )}
-                {errorImagen && (
-                  <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-1.5 text-center">{errorImagen}</p>
+                  </>
                 )}
               </motion.div>
             )}
