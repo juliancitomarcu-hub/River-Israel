@@ -198,8 +198,8 @@ router.get("/partidos-river", async (req, res) => {
     const proximos = (games.next?.rows ?? []).map((r) => mapearPartido(r, "proximo"));
     const resultados = (games.last?.rows ?? []).map((r) => mapearPartido(r, "resultado"));
 
-    // Último partido jugado primero (más reciente arriba), luego próximos de soonest a furthest
-    const partidos = [...resultados.slice().reverse(), ...proximos];
+    // Próximos primero (más cercano arriba), luego últimos resultados (más reciente primero)
+    const partidos = [...proximos, ...resultados.slice().reverse()];
 
     cache = { data: partidos, at: ahora };
     res.json({ partidos });
