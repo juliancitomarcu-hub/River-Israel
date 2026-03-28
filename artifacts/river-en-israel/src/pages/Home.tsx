@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline, useSubmitContact } from "@/hooks/use-river-data";
+import escudoRiverIsrael from "@assets/image_1774735359118.png";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -55,16 +56,17 @@ export default function Home() {
 
         <div className="relative z-20 text-center px-4 max-w-5xl mx-auto flex flex-col items-center">
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.75, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
             className="mb-6 relative"
           >
-            <div className="absolute -inset-8 bg-river-red/20 blur-3xl rounded-full"></div>
+            <div className="absolute -inset-12 bg-river-red/20 blur-[60px] rounded-full" />
+            <div className="absolute -inset-6 bg-white/5 blur-2xl rounded-full" />
             <img
-              src={`${import.meta.env.BASE_URL}images/filial-logo.png`}
-              alt="Logo Filial Ramat Gan"
-              className="w-32 h-32 md:w-48 md:h-48 object-contain drop-shadow-[0_0_20px_rgba(204,0,0,0.8)] relative z-10"
+              src={escudoRiverIsrael}
+              alt="Escudo River en Israel — El Monumental"
+              className="w-48 h-48 md:w-72 md:h-72 lg:w-80 lg:h-80 object-contain drop-shadow-[0_4px_32px_rgba(204,0,0,0.7)] relative z-10"
             />
           </motion.div>
 
