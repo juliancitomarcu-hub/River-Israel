@@ -91,7 +91,7 @@ export default function Home() {
           >
             <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
             <img
-              src={`${import.meta.env.BASE_URL}images/escudo-carp.png?v=3`}
+              src={`${import.meta.env.BASE_URL}images/escudo-carp.png?v=4`}
               alt="Escudo Club Atlético River Plate"
               className="relative z-10 w-28 h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 object-contain"
               style={{ filter: "drop-shadow(0 4px 28px rgba(204,0,0,0.9))" }}
