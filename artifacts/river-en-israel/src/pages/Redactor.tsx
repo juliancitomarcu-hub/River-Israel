@@ -154,7 +154,7 @@ export default function Redactor() {
   const cargarParaEditar = async (id: number) => {
     try {
       const res = await fetch(`/api/noticia-pendiente/${id}`);
-      const data = await res.json() as { noticia?: { id: number; titulo: string; contenido: string; tags: string } };
+      const data = await res.json() as { noticia?: { id: number; titulo: string; contenido: string; tags: string; imagenPortada?: string } };
       if (data.noticia) {
         const n = data.noticia;
         const texto = `**Título:** ${n.titulo}\n\n**Contenido:**\n${n.contenido}\n\n**Tags:** ${n.tags}`;
@@ -163,6 +163,11 @@ export default function Redactor() {
         setModoEdicionId(n.id);
         setEditando(true);
         setResultadoEditado(texto);
+        // Cargar imagen existente si la hay
+        if (n.imagenPortada) {
+          setImagenPortada(n.imagenPortada);
+          setImagenPreview(`/api/storage${n.imagenPortada}`);
+        }
       }
     } catch { /* silencioso */ }
   };
@@ -174,7 +179,10 @@ export default function Redactor() {
       const res = await fetch(`/api/noticia-pendiente/${modoEdicionId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ textoResultado: resultadoEditado }),
+        body: JSON.stringify({
+          textoResultado: resultadoEditado,
+          ...(imagenPortada ? { imagenPortada } : {}),
+        }),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) throw new Error(data.error ?? "Error al guardar");
@@ -785,6 +793,58 @@ export default function Redactor() {
                 <p className="text-xs text-gray-400">
                   Formato: <code className="bg-gray-100 px-1 rounded">**Título:**</code>, <code className="bg-gray-100 px-1 rounded">**Contenido:**</code>, <code className="bg-gray-100 px-1 rounded">**Tags:**</code>
                 </p>
+
+                {/* Foto de portada en modo edición */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" /> Foto de portada <span className="font-normal text-gray-400">(podés cambiarla antes de publicar)</span>
+                  </p>
+                  {imagenPreview ? (
+                    <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                      <img src={imagenPreview} alt="Portada" className="w-full h-32 object-cover" />
+                      {subiendoImagen && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <span className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full inline-block" />
+                        </div>
+                      )}
+                      {!subiendoImagen && imagenPortada && (
+                        <div className="absolute top-2 right-2">
+                          <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Check className="w-3 h-3" /> OK
+                          </span>
+                        </div>
+                      )}
+                      <label className="absolute bottom-2 left-2 cursor-pointer">
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirImagen(f); }} />
+                        <span className="bg-white/90 hover:bg-white text-gray-700 text-xs font-semibold px-2 py-1 rounded-lg flex items-center gap-1 transition-colors">
+                          <Upload className="w-3 h-3" /> Cambiar foto
+                        </span>
+                      </label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setImagenPortada(""); setImagenPreview(""); setErrorImagen(""); }}
+                        className="absolute bottom-2 right-2 bg-white/90 hover:bg-white text-gray-700 h-7 gap-1 text-xs"
+                      >
+                        <Trash2 className="w-3 h-3" /> Quitar
+                      </Button>
+                    </div>
+                  ) : (
+                    <label
+                      className="flex flex-col items-center justify-center gap-2 w-full h-20 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-river-red hover:bg-red-50/30 transition-colors group"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) subirImagen(f); }}
+                    >
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirImagen(f); }} />
+                      <Upload className="w-5 h-5 text-gray-300 group-hover:text-river-red transition-colors" />
+                      <span className="text-xs text-gray-400 group-hover:text-gray-600">Subir foto de portada (1280×720, recorte auto)</span>
+                    </label>
+                  )}
+                  {errorImagen && (
+                    <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-1.5">{errorImagen}</p>
+                  )}
+                </div>
+
                 <div className="flex gap-2">
                   {modoEdicionId ? (
                     <Button

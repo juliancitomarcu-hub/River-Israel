@@ -72,15 +72,19 @@ router.get("/noticia-pendiente/:id", async (req, res) => {
 
 router.put("/noticia-pendiente/:id", async (req, res) => {
   const id = parseInt(req.params.id);
-  const { textoResultado } = req.body as { textoResultado?: string };
+  const { textoResultado, imagenPortada } = req.body as { textoResultado?: string; imagenPortada?: string };
   if (isNaN(id) || !textoResultado || textoResultado.trim().length < 10) {
     res.status(400).json({ error: "Faltan datos" }); return;
   }
   try {
     const { titulo, contenido, tags } = parsearResultado(textoResultado);
+    const updateData: Record<string, unknown> = { titulo, contenido, tags, publicada: true, pendiente: false };
+    if (imagenPortada && imagenPortada.startsWith("/objects/")) {
+      updateData.imagenPortada = imagenPortada;
+    }
     const [updated] = await db
       .update(noticiasTable)
-      .set({ titulo, contenido, tags, publicada: true, pendiente: false })
+      .set(updateData)
       .where(eq(noticiasTable.id, id))
       .returning();
     res.json({ ok: true, noticia: updated });
