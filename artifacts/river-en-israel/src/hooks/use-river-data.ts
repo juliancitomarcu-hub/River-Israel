@@ -136,7 +136,7 @@ interface PartidoAPI {
 
 export function useMatches() {
   return useQuery({
-    queryKey: ["partidos-river"],
+    queryKey: ["partidos-river-v2"],
     queryFn: async (): Promise<MatchResult[]> => {
       const res = await fetch("/api/partidos-river");
       if (!res.ok) return MOCK_MATCHES;
@@ -157,7 +157,8 @@ export function useMatches() {
         resultado: p.resultado,
       }));
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60_000,
+    refetchOnMount: true,
   });
 }
 
