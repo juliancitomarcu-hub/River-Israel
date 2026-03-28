@@ -189,7 +189,7 @@ export default function Home() {
                 {matches && (() => {
                   const proximos = matches.filter(m => m.status === 'UPCOMING').slice(0, 2);
                   const jugados = matches.filter(m => m.status === 'FINISHED' || m.status === 'LIVE').slice(0, 2);
-                  return [...proximos, ...jugados];
+                  return [...jugados, ...proximos];
                 })().map((match) => {
                   const [golesRiver, golesRival] = match.isRiverHome
                     ? [match.homeScore, match.awayScore]
