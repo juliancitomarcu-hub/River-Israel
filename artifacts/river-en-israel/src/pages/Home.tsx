@@ -186,7 +186,11 @@ export default function Home() {
                     <div className="w-8 h-8 border-2 border-river-red border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
-                {matches?.map((match) => {
+                {matches && (() => {
+                  const proximos = matches.filter(m => m.status === 'UPCOMING').slice(0, 5);
+                  const jugados = matches.filter(m => m.status === 'FINISHED' || m.status === 'LIVE').slice(0, 5);
+                  return [...proximos, ...jugados];
+                })().map((match) => {
                   const [golesRiver, golesRival] = match.isRiverHome
                     ? [match.homeScore, match.awayScore]
                     : [match.awayScore, match.homeScore];
