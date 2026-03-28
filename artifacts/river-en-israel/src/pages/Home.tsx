@@ -116,7 +116,7 @@ export default function Home() {
             className="absolute inset-0 w-full h-full object-cover object-center"
             draggable={false}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-[#111]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-[#111]" />
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
             <div className="flex flex-col md:flex-row justify-between items-start gap-6">
               <div>
