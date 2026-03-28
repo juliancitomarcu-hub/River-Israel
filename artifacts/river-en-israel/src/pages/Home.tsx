@@ -62,7 +62,7 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex flex-col max-w-[58%]"
           >
-            <p className="text-base sm:text-xl md:text-2xl text-gray-100 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] font-medium leading-snug">
+            <p className="text-sm sm:text-base md:text-lg text-gray-100 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] font-medium leading-snug">
               La Banda del Millonario latiendo fuerte desde Tierra Santa.<br />
               La misma pasión a miles de kilómetros.
             </p>
