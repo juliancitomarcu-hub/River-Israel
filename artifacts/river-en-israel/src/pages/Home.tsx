@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
+import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
 
 const contactSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
@@ -107,14 +108,17 @@ export default function Home() {
       <section id="actualidad" className="py-24 bg-gray-50 relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-river-red to-transparent"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-6">
             <div>
               <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black">Actualidad <span className="text-river-red">Millonaria</span></h2>
               <p className="text-muted-foreground mt-2 text-lg">Lo último del mundo River y nuestra filial.</p>
+              <Button variant="outline" className="rounded-full border-river-red text-river-red hover:bg-river-red hover:text-white mt-4">
+                Ver todas las noticias
+              </Button>
             </div>
-            <Button variant="outline" className="rounded-full border-river-red text-river-red hover:bg-river-red hover:text-white">
-              Ver todas las noticias
-            </Button>
+            <div className="flex-shrink-0">
+              <ProximoPartidoWidget />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

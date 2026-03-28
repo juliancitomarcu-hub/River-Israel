@@ -129,8 +129,41 @@ function mapearPartido(row: PromediosRow, tipo: "proximo" | "resultado"): Partid
   };
 }
 
+export interface Gol {
+  minuto: number | string;
+  jugador: string;
+  esRiver: boolean;
+}
+
+export interface Formacion {
+  nombre: string;
+  numero?: number;
+  posicion?: string;
+  titular: boolean;
+}
+
+export interface PartidoDetallado {
+  id: string;
+  competicion: string;
+  fecha: string;
+  horaIsrael: string;
+  equipoLocal: string;
+  equipoVisitante: string;
+  golesLocal: number | null;
+  golesVisitante: number | null;
+  estado: "PROXIMO" | "EN_CURSO" | "FINALIZADO";
+  esLocalRiver: boolean;
+  minuto?: string;
+  goles: Gol[];
+  alineacionLocal: Formacion[] | null;
+  alineacionVisitante: Formacion[] | null;
+}
+
 let cache: { data: Partido[]; at: number } | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+let liveCache: { data: PartidoDetallado; at: number } | null = null;
+const LIVE_CACHE_TTL = 30 * 1000; // 30 segundos
 
 router.get("/partidos-river", async (req, res) => {
   try {
@@ -176,6 +209,123 @@ router.get("/partidos-river", async (req, res) => {
       return;
     }
     res.status(500).json({ error: `No se pudo obtener los partidos: ${msg}` });
+  }
+});
+
+router.get("/partido-proximo", async (req, res) => {
+  try {
+    const ahora = Date.now();
+    if (liveCache && ahora - liveCache.at < LIVE_CACHE_TTL) {
+      res.json(liveCache.data);
+      return;
+    }
+
+    const buildId = await obtenerBuildId();
+    const url = `https://www.promiedos.com.ar/_next/data/${buildId}/team/${RIVER_URL_NAME}/${RIVER_TEAM_ID}.json?teamSlug=${RIVER_URL_NAME}&teamId=${RIVER_TEAM_ID}`;
+    const response = await fetch(url, { headers: HEADERS });
+    if (!response.ok) throw new Error(`Promiedos respondió ${response.status}`);
+    const json = await response.json() as any;
+
+    const games = json.pageProps?.data?.games;
+    const nextRows: PromediosRow[] = games?.next?.rows ?? [];
+    const lastRows: PromediosRow[] = games?.last?.rows ?? [];
+    const allRows = [...nextRows, ...lastRows];
+
+    const liveRow = allRows.find((r) => r.game?.status?.enum === 2);
+    const nextRow = nextRows[0];
+    const baseRow = liveRow ?? nextRow;
+
+    if (!baseRow) {
+      res.status(404).json({ error: "No hay partidos próximos" });
+      return;
+    }
+
+    const game = baseRow.game;
+    const teams = game.teams ?? [];
+    const esLocalRiver = teams[0]?.id === RIVER_TEAM_ID;
+    const { fecha, horaArgentina } = parsearFechaHora(game.start_time);
+    const horaIsrael = horaArgentina ? horaArgentinaAIsrael(horaArgentina) : "";
+    const scores = game.scores ?? [];
+    const statusEnum = game.status?.enum ?? -1;
+    let estado: PartidoDetallado["estado"] = "PROXIMO";
+    if (statusEnum === 3) estado = "FINALIZADO";
+    else if (statusEnum === 2) estado = "EN_CURSO";
+
+    let goles: Gol[] = [];
+    let alineacionLocal: Formacion[] | null = null;
+    let alineacionVisitante: Formacion[] | null = null;
+    let minuto: string | undefined;
+
+    if (estado === "EN_CURSO" || estado === "FINALIZADO") {
+      try {
+        const detailUrl = `https://www.promiedos.com.ar/_next/data/${buildId}/game/${game.id}.json`;
+        const detailRes = await fetch(detailUrl, { headers: HEADERS });
+        if (detailRes.ok) {
+          const detail = await detailRes.json() as any;
+          const gd = detail.pageProps?.data?.game ?? detail.pageProps?.data ?? {};
+
+          const matchTime = gd.match_time ?? gd.game?.match_time ?? gd.current_time;
+          if (matchTime != null) minuto = `${matchTime}'`;
+
+          const events: any[] = gd.events ?? gd.game_events ?? gd.game?.events ?? [];
+          goles = events
+            .filter((e: any) => {
+              const tid = e.type?.id ?? e.type_id ?? e.type;
+              return tid === 1 || tid === 2 || tid === "goal" || e.type?.name?.toLowerCase().includes("gol");
+            })
+            .map((e: any) => ({
+              minuto: e.minute ?? e.min ?? e.time ?? "?",
+              jugador: e.player?.last_name ?? e.player?.name ?? e.player_name ?? "Gol",
+              esRiver: e.team?.id === RIVER_TEAM_ID || e.team_id === RIVER_TEAM_ID,
+            }));
+
+          const squads: any[] = gd.squads ?? gd.lineups ?? gd.game?.squads ?? [];
+          const parseSquad = (sq: any): Formacion[] =>
+            (sq?.players ?? sq ?? []).map((p: any) => ({
+              nombre: p.last_name ?? p.name ?? "Jugador",
+              numero: p.number ?? p.shirt_number,
+              posicion: p.position ?? p.pos,
+              titular: p.starting ?? p.is_starting ?? false,
+            }));
+
+          if (squads.length >= 2) {
+            alineacionLocal = parseSquad(squads[0]);
+            alineacionVisitante = parseSquad(squads[1]);
+          } else if (squads.home) {
+            alineacionLocal = parseSquad(squads.home);
+            alineacionVisitante = parseSquad(squads.away);
+          }
+        }
+      } catch (_) {
+        // Continuar sin detalle, devolvemos datos básicos
+      }
+    }
+
+    const resultado: PartidoDetallado = {
+      id: game.id,
+      competicion: game.stage_round_name ?? "Partido",
+      fecha,
+      horaIsrael,
+      equipoLocal: teams[0]?.name ?? "",
+      equipoVisitante: teams[1]?.name ?? "",
+      golesLocal: estado !== "PROXIMO" ? (scores[0] ?? 0) : null,
+      golesVisitante: estado !== "PROXIMO" ? (scores[1] ?? 0) : null,
+      estado,
+      esLocalRiver,
+      minuto,
+      goles,
+      alineacionLocal,
+      alineacionVisitante,
+    };
+
+    if (estado === "EN_CURSO") {
+      liveCache = { data: resultado, at: ahora };
+    }
+
+    res.json(resultado);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error";
+    res.status(500).json({ error: msg });
   }
 });
 
