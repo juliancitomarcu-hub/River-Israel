@@ -155,10 +155,15 @@ export default function Redactor() {
     setTelegramEstado("enviando");
     setTelegramError("");
     try {
+      const noticiaSeleccionada = noticias.find((n) => n.titulo === textoOriginal);
       const res = await fetch("/api/enviar-telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto: resultado }),
+        body: JSON.stringify({
+          texto: resultado,
+          textoOriginal,
+          fuente: noticiaSeleccionada?.fuente ?? fuente,
+        }),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
@@ -216,7 +221,7 @@ export default function Redactor() {
           </h1>
           <p className="text-gray-500 max-w-xl mx-auto">
             Buscá la última noticia de TyC o Olé, la IA la transforma al estilo israelí,
-            y te la manda directo a tu Telegram privado.
+            y aprobás o rechazás la publicación desde tu Telegram.
           </p>
         </div>
 
@@ -226,7 +231,7 @@ export default function Redactor() {
           <span className="text-gray-200">──────</span>
           <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs">2</span> Transformar con IA</span>
           <span className="text-gray-200">──────</span>
-          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs">3</span> Enviar a Telegram</span>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-6 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs">3</span> Aprobar / Publicar</span>
         </div>
 
         {/* PASO 1: Buscador de noticias */}
@@ -363,7 +368,7 @@ export default function Redactor() {
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-bold text-river-black flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-river-red" />
-                Paso 3 — Nota lista y Telegram
+                Paso 3 — Aprobar y publicar
               </h2>
               {resultado && (
                 <Button variant="outline" size="sm" onClick={copiar} className="gap-1 border-river-red text-river-red hover:bg-river-red hover:text-white h-8">
@@ -425,13 +430,18 @@ export default function Redactor() {
                       Enviando a Telegram...
                     </>
                   ) : telegramEstado === "enviado" ? (
-                    <><Check className="w-4 h-4" /> ¡Llegó a tu Telegram!</>
+                    <><Check className="w-4 h-4" /> ¡Revisá tu Telegram para aprobar!</>
                   ) : (
-                    <><Send className="w-4 h-4" /> Previsualizar en Telegram</>
+                    <><Send className="w-4 h-4" /> Enviar a Telegram para aprobar</>
                   )}
                 </Button>
                 {telegramEstado === "error" && (
                   <p className="text-xs text-red-500 text-center bg-red-50 rounded-lg px-3 py-2">{telegramError}</p>
+                )}
+                {telegramEstado === "enviado" && (
+                  <p className="text-xs text-green-600 text-center">
+                    📱 La nota llegó a tu Telegram con botones ✅ <strong>Publicar</strong> / ❌ <strong>Rechazar</strong>. ¡Aprobá desde el celular!
+                  </p>
                 )}
 
                 {/* Publicar en el sitio */}

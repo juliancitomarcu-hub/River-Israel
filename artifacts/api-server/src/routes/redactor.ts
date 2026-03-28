@@ -1,5 +1,8 @@
 import { Router, type IRouter } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { db } from "@workspace/db";
+import { noticiasTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -28,6 +31,22 @@ Instrucciones de Redacción:
 [Llamado a la acción]
 
 **Tags:** #RiverPlate #RiverIsrael #RamatGan #ElMásGrande`;
+
+function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
+  const tituloMatch = texto.match(/\*\*Título:\*\*\s*(.+)/);
+  const tagsMatch = texto.match(/\*\*Tags:\*\*\s*(.+)/);
+
+  const titulo = tituloMatch?.[1]?.trim() ?? "Sin título";
+  const tags = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan";
+
+  const contenido = texto
+    .replace(/\*\*Título:\*\*\s*.+\n?/, "")
+    .replace(/\*\*Contenido:\*\*\s*\n?/, "")
+    .replace(/\*\*Tags:\*\*\s*.+\n?/, "")
+    .trim();
+
+  return { titulo, contenido, tags };
+}
 
 router.post("/procesar-noticia", async (req, res) => {
   const { texto } = req.body as { texto?: string };
@@ -69,13 +88,17 @@ router.post("/procesar-noticia", async (req, res) => {
 });
 
 router.post("/enviar-telegram", async (req, res) => {
-  const { texto } = req.body as { texto?: string };
+  const { texto, textoOriginal, fuente } = req.body as {
+    texto?: string;
+    textoOriginal?: string;
+    fuente?: string;
+  };
 
   const token = process.env.TELEGRAM_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) {
-    res.status(503).json({ error: "Telegram no está configurado. Agregá TELEGRAM_TOKEN y TELEGRAM_CHAT_ID en los secrets." });
+    res.status(503).json({ error: "Telegram no está configurado." });
     return;
   }
 
@@ -85,27 +108,65 @@ router.post("/enviar-telegram", async (req, res) => {
   }
 
   try {
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    const response = await fetch(url, {
+    const { titulo, contenido, tags } = parsearResultado(texto);
+
+    const [noticia] = await db
+      .insert(noticiasTable)
+      .values({
+        titulo,
+        contenido,
+        tags,
+        textoOriginal: textoOriginal ?? "",
+        fuente: fuente ?? "",
+        publicada: false,
+        pendiente: true,
+      })
+      .returning();
+
+    const mensajeTexto =
+      `📰 *NUEVA NOTA — River en Israel*\n\n` +
+      `*${titulo}*\n\n` +
+      `${contenido.slice(0, 700)}${contenido.length > 700 ? "..." : ""}\n\n` +
+      `${tags}\n\n` +
+      `_¿Publicamos esta nota en el sitio?_`;
+
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `📢 *Propuesta para River en Israel:*\n\n${texto}`,
+        text: mensajeTexto,
         parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "✅ Publicar", callback_data: `publicar_${noticia.id}` },
+              { text: "❌ Rechazar", callback_data: `rechazar_${noticia.id}` },
+            ],
+          ],
+        },
       }),
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      req.log.error({ err }, "Error enviando a Telegram");
+    const tgData = await tgRes.json() as { ok: boolean; result?: { message_id: number } };
+
+    if (!tgRes.ok || !tgData.ok) {
+      req.log.error({ tgData }, "Error enviando a Telegram");
       res.status(500).json({ error: "Error al enviar a Telegram" });
       return;
     }
 
-    res.json({ ok: true });
+    const messageId = String(tgData.result?.message_id ?? "");
+    if (messageId) {
+      await db
+        .update(noticiasTable)
+        .set({ telegramMessageId: messageId })
+        .where(eq(noticiasTable.id, noticia.id));
+    }
+
+    res.json({ ok: true, noticiaId: noticia.id });
   } catch (err) {
-    req.log.error({ err }, "Error conectando a Telegram");
+    req.log.error({ err }, "Error en enviar-telegram");
     res.status(500).json({ error: "Error de conexión con Telegram" });
   }
 });

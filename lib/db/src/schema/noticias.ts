@@ -9,7 +9,9 @@ export const noticiasTable = pgTable("noticias", {
   tags: text("tags").notNull().default(""),
   textoOriginal: text("texto_original").notNull().default(""),
   fuente: text("fuente").notNull().default(""),
-  publicada: boolean("publicada").notNull().default(true),
+  publicada: boolean("publicada").notNull().default(false),
+  pendiente: boolean("pendiente").notNull().default(false),
+  telegramMessageId: text("telegram_message_id").default(""),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
