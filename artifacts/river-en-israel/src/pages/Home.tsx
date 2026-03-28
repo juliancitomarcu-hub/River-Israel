@@ -187,8 +187,8 @@ export default function Home() {
                   </div>
                 )}
                 {matches && (() => {
-                  const proximos = matches.filter(m => m.status === 'UPCOMING').slice(0, 3);
-                  const jugados = matches.filter(m => m.status === 'FINISHED' || m.status === 'LIVE').slice(0, 3);
+                  const proximos = matches.filter(m => m.status === 'UPCOMING').slice(0, 2);
+                  const jugados = matches.filter(m => m.status === 'FINISHED' || m.status === 'LIVE').slice(0, 2);
                   return [...proximos, ...jugados];
                 })().map((match) => {
                   const [golesRiver, golesRival] = match.isRiverHome
