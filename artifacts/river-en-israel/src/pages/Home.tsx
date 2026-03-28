@@ -90,13 +90,29 @@ export default function Home() {
             className="relative flex-shrink-0 self-center"
           >
             <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
-            <img
-              src={`${import.meta.env.BASE_URL}escudo-filial.png`}
-              alt="Escudo Filial River en Israel"
-              className="relative z-10 w-36 h-36 sm:w-52 sm:h-52 md:w-64 md:h-64 object-contain"
-              style={{ filter: "drop-shadow(0 4px 28px rgba(204,0,0,0.9))" }}
-              draggable={false}
-            />
+            <svg
+              viewBox="0 0 100 118"
+              xmlns="http://www.w3.org/2000/svg"
+              className="relative z-10 w-28 h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 drop-shadow-[0_4px_24px_rgba(204,0,0,0.8)]"
+              aria-label="Escudo Filial River en Israel"
+            >
+              <defs>
+                <clipPath id="shield-clip">
+                  <path d="M50 4 L95 21 L95 70 C95 97 75 112 50 116 C25 112 5 97 5 70 L5 21 Z" />
+                </clipPath>
+              </defs>
+              {/* Shield white background */}
+              <path d="M50 4 L95 21 L95 70 C95 97 75 112 50 116 C25 112 5 97 5 70 L5 21 Z" fill="white" />
+              {/* Red diagonal sash (River Plate) */}
+              <rect x="-15" y="50" width="130" height="34" fill="#cc0000" clipPath="url(#shield-clip)" transform="rotate(-22 50 67)" />
+              {/* Star of David — Israeli blue, above sash */}
+              <g clipPath="url(#shield-clip)">
+                <polygon points="50,13 38,31 62,31" fill="none" stroke="#0038b8" strokeWidth="2.8" strokeLinejoin="round" />
+                <polygon points="50,37 38,19 62,19" fill="none" stroke="#0038b8" strokeWidth="2.8" strokeLinejoin="round" />
+              </g>
+              {/* Shield border */}
+              <path d="M50 4 L95 21 L95 70 C95 97 75 112 50 116 C25 112 5 97 5 70 L5 21 Z" fill="none" stroke="#cc0000" strokeWidth="3.5" />
+            </svg>
           </motion.div>
         </div>
 
@@ -105,13 +121,13 @@ export default function Home() {
       </section>
 
       {/* ================= ACTUALIDAD SECTION ================= */}
-      <section id="actualidad" className="py-24 bg-gray-50 relative">
+      <section id="actualidad" className="py-24 bg-[#111] relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-river-red to-transparent"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-6">
             <div>
-              <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black">Actualidad <span className="text-river-red">Millonaria</span></h2>
-              <p className="text-muted-foreground mt-2 text-lg">Lo último del mundo River y nuestra filial.</p>
+              <h2 className="text-4xl md:text-5xl font-display font-bold text-white">Actualidad <span className="text-river-red">Millonaria</span></h2>
+              <p className="text-gray-400 mt-2 text-lg">Lo último del mundo River y nuestra filial.</p>
               <Button variant="outline" className="rounded-full border-river-red text-river-red hover:bg-river-red hover:text-white mt-4">
                 Ver todas las noticias
               </Button>
