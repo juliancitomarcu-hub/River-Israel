@@ -127,31 +127,59 @@ router.post("/enviar-telegram", async (req, res) => {
       })
       .returning();
 
-    const mensajeTexto =
-      `📰 *NUEVA NOTA — River en Israel*\n\n` +
-      `*${titulo}*\n\n` +
-      `${contenido.slice(0, 700)}${contenido.length > 700 ? "..." : ""}\n\n` +
-      `${tags}\n\n` +
-      `_¿Publicamos esta nota en el sitio?_`;
+    const replyMarkup = {
+      inline_keyboard: [
+        [
+          { text: "✅ Publicar", callback_data: `publicar_${noticia.id}` },
+          { text: "✏️ Editar", callback_data: `editar_${noticia.id}` },
+          { text: "❌ Rechazar", callback_data: `rechazar_${noticia.id}` },
+        ],
+      ],
+    };
 
-    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: mensajeTexto,
-        parse_mode: "Markdown",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: "✅ Publicar", callback_data: `publicar_${noticia.id}` },
-              { text: "✏️ Editar", callback_data: `editar_${noticia.id}` },
-              { text: "❌ Rechazar", callback_data: `rechazar_${noticia.id}` },
-            ],
-          ],
-        },
-      }),
-    });
+    let tgRes: Response;
+
+    if (imagenPortada) {
+      const domain = process.env.REPLIT_DEV_DOMAIN;
+      const fotoUrl = `https://${domain}/api/storage${imagenPortada}`;
+      const captionMaxLen = 950;
+      const caption =
+        `📰 *NUEVA NOTA — River en Israel*\n\n` +
+        `*${titulo}*\n\n` +
+        `${contenido.slice(0, captionMaxLen)}${contenido.length > captionMaxLen ? "..." : ""}\n\n` +
+        `${tags}\n\n` +
+        `_¿Publicamos esta nota en el sitio?_`;
+
+      tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          photo: fotoUrl,
+          caption,
+          parse_mode: "Markdown",
+          reply_markup: replyMarkup,
+        }),
+      });
+    } else {
+      const mensajeTexto =
+        `📰 *NUEVA NOTA — River en Israel*\n\n` +
+        `*${titulo}*\n\n` +
+        `${contenido.slice(0, 700)}${contenido.length > 700 ? "..." : ""}\n\n` +
+        `${tags}\n\n` +
+        `_¿Publicamos esta nota en el sitio?_`;
+
+      tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: mensajeTexto,
+          parse_mode: "Markdown",
+          reply_markup: replyMarkup,
+        }),
+      });
+    }
 
     const tgData = await tgRes.json() as { ok: boolean; result?: { message_id: number } };
 
