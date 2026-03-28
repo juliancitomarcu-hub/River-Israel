@@ -65,12 +65,6 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
       action: () => window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(texto)}`, "_blank"),
     },
     {
-      label: "Canal de WhatsApp",
-      icon: <WHATSAPP_ICON />,
-      color: "text-emerald-600",
-      action: () => window.open("https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s", "_blank"),
-    },
-    {
       label: copied ? "¡Enlace copiado!" : "Copiar enlace",
       icon: copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />,
       color: copied ? "text-green-500" : "text-gray-500",
