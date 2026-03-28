@@ -166,6 +166,8 @@ let liveCache: { data: PartidoDetallado; at: number } | null = null;
 const LIVE_CACHE_TTL = 30 * 1000; // 30 segundos
 
 router.get("/partidos-river", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
   try {
     const ahora = Date.now();
     if (cache && ahora - cache.at < CACHE_TTL) {
