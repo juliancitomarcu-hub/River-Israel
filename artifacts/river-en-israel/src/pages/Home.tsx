@@ -62,11 +62,8 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex flex-col max-w-[58%]"
           >
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-white leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-              RIVER EN <span className="text-transparent bg-clip-text bg-gradient-to-r from-river-red to-red-400">ISRAEL</span>
-            </h1>
-            <p className="text-xs sm:text-sm md:text-base text-gray-200 mt-2 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
-              La Banda del Millonario latiendo fuerte desde la Tierra Santa.<br className="hidden sm:block" /> Uniendo pasiones a miles de kilómetros.
+            <p className="text-base sm:text-xl md:text-2xl text-gray-100 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] font-medium leading-snug">
+              La misma pasión a miles de kilómetros.
             </p>
             <div className="flex flex-row gap-3">
               <a
