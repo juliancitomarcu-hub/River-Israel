@@ -41,22 +41,56 @@ export default function Redactor() {
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [errorImagen, setErrorImagen] = useState("");
 
+  const procesarImagenCanvas = (file: File): Promise<{ blob: Blob; previewUrl: string }> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const srcUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(srcUrl);
+        const TARGET_W = 1280;
+        const TARGET_H = 720;
+        const targetRatio = TARGET_W / TARGET_H;
+        const srcRatio = img.width / img.height;
+        let sx = 0, sy = 0, sw = img.width, sh = img.height;
+        if (srcRatio > targetRatio) {
+          sw = img.height * targetRatio;
+          sx = (img.width - sw) / 2;
+        } else {
+          sh = img.width / targetRatio;
+          sy = (img.height - sh) / 2;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = TARGET_W;
+        canvas.height = TARGET_H;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas no soportado")); return; }
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
+        const previewUrl = canvas.toDataURL("image/jpeg", 0.85);
+        canvas.toBlob((blob) => {
+          if (blob) resolve({ blob, previewUrl });
+          else reject(new Error("Error al procesar la imagen"));
+        }, "image/jpeg", 0.9);
+      };
+      img.onerror = () => reject(new Error("No se pudo cargar la imagen"));
+      img.src = srcUrl;
+    });
+
   const subirImagen = async (file: File) => {
     if (!file.type.startsWith("image/")) { setErrorImagen("Solo se permiten imágenes"); return; }
-    if (file.size > 10 * 1024 * 1024) { setErrorImagen("La imagen no puede superar 10MB"); return; }
+    if (file.size > 15 * 1024 * 1024) { setErrorImagen("La imagen no puede superar 15MB"); return; }
     setSubiendoImagen(true);
     setErrorImagen("");
-    const preview = URL.createObjectURL(file);
-    setImagenPreview(preview);
     try {
+      const { blob, previewUrl } = await procesarImagenCanvas(file);
+      setImagenPreview(previewUrl);
       const urlRes = await fetch("/api/storage/uploads/request-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+        body: JSON.stringify({ name: file.name.replace(/\.[^.]+$/, ".jpg"), size: blob.size, contentType: "image/jpeg" }),
       });
       if (!urlRes.ok) throw new Error("No se pudo obtener URL de subida");
       const { uploadURL, objectPath } = await urlRes.json() as { uploadURL: string; objectPath: string };
-      const putRes = await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      const putRes = await fetch(uploadURL, { method: "PUT", body: blob, headers: { "Content-Type": "image/jpeg" } });
       if (!putRes.ok) throw new Error("Error al subir la imagen");
       setImagenPortada(objectPath);
     } catch (err) {
@@ -482,8 +516,11 @@ export default function Redactor() {
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) subirImagen(f); }}
                   />
                   <Upload className="w-5 h-5 text-gray-300 group-hover:text-river-red transition-colors" />
-                  <span className="text-xs text-gray-400 group-hover:text-gray-600">
+                  <span className="text-xs text-gray-400 group-hover:text-gray-600 text-center">
                     Clic o arrastrá una imagen aquí
+                  </span>
+                  <span className="text-xs text-gray-300 group-hover:text-gray-400">
+                    Se recorta automáticamente a 16:9 (1280×720)
                   </span>
                 </label>
               )}
@@ -631,6 +668,37 @@ export default function Redactor() {
                   </motion.div>
                 )}
               </AnimatePresence>
+            )}
+
+            {/* Preview del artículo — aparece cuando hay imagen y el resultado está listo */}
+            {estado === "listo" && !editando && imagenPreview && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl overflow-hidden border border-gray-200 shadow-sm"
+              >
+                <p className="text-xs font-semibold text-gray-400 px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center gap-1.5">
+                  <ImageIcon className="w-3 h-3" /> Vista previa — así se verá en el sitio
+                </p>
+                <div className="relative">
+                  <img
+                    src={imagenPreview}
+                    alt="Portada"
+                    className="w-full aspect-video object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <p className="text-white font-display font-bold text-sm leading-snug line-clamp-2 drop-shadow">
+                      {resultado.match(/\*\*Título:\*\*\s*(.+)/)?.[1]?.trim() ?? "Título de la nota"}
+                    </p>
+                    {imagenPortada && (
+                      <span className="inline-block mt-1 text-xs text-green-300 font-medium">
+                        ✓ Imagen 1280×720 lista
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
             )}
 
             {estado === "listo" && !editando && (
