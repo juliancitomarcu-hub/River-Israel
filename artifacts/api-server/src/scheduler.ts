@@ -238,9 +238,9 @@ async function subirImagenDesdeUrl(imageUrl: string): Promise<string | null> {
   }
 }
 
-async function ejecutarCiclo(): Promise<void> {
-  const fuente = FUENTES[fuenteIndex % FUENTES.length];
-  fuenteIndex++;
+async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
+  const fuente = fuenteOverride ?? FUENTES[fuenteIndex % FUENTES.length];
+  if (!fuenteOverride) fuenteIndex++;
 
   logger.info({ fuente, fuenteIndex }, "Scheduler: iniciando ciclo automático");
 

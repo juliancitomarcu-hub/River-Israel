@@ -229,9 +229,10 @@ router.post("/enviar-telegram", async (req, res) => {
 });
 
 router.post("/test-scheduler", async (req, res) => {
+  const { fuente } = req.body as { fuente?: string };
   const { ejecutarCiclo } = await import("../scheduler");
   res.json({ ok: true, mensaje: "Ciclo iniciado en segundo plano — mirá tu Telegram en ~60 segundos" });
-  ejecutarCiclo().catch((err) => req.log.error({ err }, "Error en test-scheduler"));
+  ejecutarCiclo(fuente).catch((err) => req.log.error({ err }, "Error en test-scheduler"));
 });
 
 export default router;
