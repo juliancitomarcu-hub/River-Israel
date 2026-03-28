@@ -1,5 +1,4 @@
-// Datos mock para el sitio de hinchas
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export interface NewsItem {
   id: string;
@@ -28,34 +27,14 @@ export interface TimelineEvent {
   description: string;
 }
 
-// --- Datos Mock ---
-
-const MOCK_NEWS: NewsItem[] = [
-  {
-    id: "1",
-    title: "¡Banda Monumental! River aplasta a su rival en el cierre del torneo",
-    excerpt: "Con una actuación estelar de Miguel Borja, el Millonario demostró por qué es el más grande de Argentina.",
-    date: "12 Oct 2024",
-    imageUrl: "https://images.unsplash.com/photo-1518605368461-1e122c4cdce0?q=80&w=2070&auto=format&fit=crop",
-    category: "Primer Equipo"
-  },
-  {
-    id: "2",
-    title: "Nueva reunión de la Filial Ramat Gan programada para el Superclásico",
-    excerpt: "Nos juntamos este domingo en el bar de siempre para vivir el partido más importante del año. ¡No faltes!",
-    date: "10 Oct 2024",
-    imageUrl: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=2069&auto=format&fit=crop",
-    category: "Filial Israel"
-  },
-  {
-    id: "3",
-    title: "El Monumental sigue batiendo récords de asistencia",
-    excerpt: "Más de 85,000 almas tiñeron de rojo y blanco las tribunas en otra noche mágica de Copa Libertadores.",
-    date: "05 Oct 2024",
-    imageUrl: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?q=80&w=2076&auto=format&fit=crop",
-    category: "Institucional"
-  }
-];
+interface NoticiaPublicada {
+  id: number;
+  titulo: string;
+  contenido: string;
+  tags: string;
+  fuente: string;
+  createdAt: string;
+}
 
 const MOCK_MATCHES: MatchResult[] = [
   { id: "m1", competition: "Liga Profesional", date: "10/10/2024", homeTeam: "River Plate", awayTeam: "Independiente", homeScore: 3, awayScore: 0, status: "FINISHED", isRiverHome: true },
@@ -72,15 +51,65 @@ const MOCK_TIMELINE: TimelineEvent[] = [
   { year: "2018", title: "La Gloria Eterna en Madrid", description: "El 9 de diciembre de 2018, River Plate vence a su eterno rival 3-1 en el Santiago Bernabéu, conquistando la Libertadores más importante de la historia." },
 ];
 
-// --- Hooks ---
+const MOCK_NEWS_FALLBACK: NewsItem[] = [
+  {
+    id: "mock-1",
+    title: "¡Bienvenidos a River en Israel!",
+    excerpt: "Publicá tu primera noticia desde el Redactor IA y aparecerá acá automáticamente.",
+    date: new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" }),
+    imageUrl: "https://images.unsplash.com/photo-1518605368461-1e122c4cdce0?q=80&w=2070&auto=format&fit=crop",
+    category: "Filial Israel"
+  },
+];
+
+function formatearFecha(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function noticiaANewsItem(n: NoticiaPublicada): NewsItem {
+  const primerParrafo = n.contenido
+    .split("\n")
+    .find((l) => l.trim().length > 20 && !l.startsWith("**") && !l.startsWith("•")) ?? n.contenido.slice(0, 120);
+
+  const categorias: Record<string, string> = {
+    "tyc sports": "TyC Sports",
+    "olé": "Olé",
+    "ole": "Olé",
+  };
+  const categoria = categorias[n.fuente.toLowerCase()] ?? "Actualidad";
+
+  const IMAGENES = [
+    "https://images.unsplash.com/photo-1518605368461-1e122c4cdce0?q=80&w=2070&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?q=80&w=2076&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=2069&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=2070&auto=format&fit=crop",
+  ];
+
+  return {
+    id: String(n.id),
+    title: n.titulo,
+    excerpt: primerParrafo.slice(0, 160),
+    date: formatearFecha(n.createdAt),
+    imageUrl: IMAGENES[n.id % IMAGENES.length],
+    category: categoria,
+  };
+}
 
 export function useNews() {
   return useQuery({
-    queryKey: ['news'],
-    queryFn: async () => {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return MOCK_NEWS;
-    }
+    queryKey: ["noticias-publicadas"],
+    queryFn: async (): Promise<NewsItem[]> => {
+      const res = await fetch("/api/noticias-publicadas");
+      if (!res.ok) return MOCK_NEWS_FALLBACK;
+      const data = await res.json() as { noticias: NoticiaPublicada[] };
+      if (!data.noticias || data.noticias.length === 0) return MOCK_NEWS_FALLBACK;
+      return data.noticias.map(noticiaANewsItem);
+    },
+    staleTime: 30_000,
   });
 }
 

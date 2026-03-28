@@ -2,13 +2,14 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
-  Send, Search, ExternalLink, RefreshCw, ChevronDown
+  Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 type Estado = "idle" | "procesando" | "listo" | "error";
 type EstadoTelegram = "idle" | "enviando" | "enviado" | "error";
+type EstadoPublicar = "idle" | "publicando" | "publicado" | "error";
 type FuenteNoticias = "tyc" | "ole";
 
 interface NoticiaRaw {
@@ -24,6 +25,8 @@ export default function Redactor() {
   const [copiado, setCopiado] = useState(false);
   const [telegramEstado, setTelegramEstado] = useState<EstadoTelegram>("idle");
   const [telegramError, setTelegramError] = useState("");
+  const [publicarEstado, setPublicarEstado] = useState<EstadoPublicar>("idle");
+  const [publicarError, setPublicarError] = useState("");
   const [noticias, setNoticias] = useState<NoticiaRaw[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [errorBusqueda, setErrorBusqueda] = useState("");
@@ -115,6 +118,36 @@ export default function Redactor() {
     setEstado("idle");
     setTelegramEstado("idle");
     setTelegramError("");
+    setPublicarEstado("idle");
+    setPublicarError("");
+  };
+
+  const publicarEnSitio = async () => {
+    if (!resultado.trim()) return;
+    setPublicarEstado("publicando");
+    setPublicarError("");
+    try {
+      const noticiaSeleccionada = noticias.find((n) => n.titulo === textoOriginal);
+      const res = await fetch("/api/publicar-noticia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          textoResultado: resultado,
+          textoOriginal,
+          fuente: noticiaSeleccionada?.fuente ?? fuente,
+        }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setPublicarEstado("error");
+        setPublicarError(data.error ?? "Error desconocido");
+      } else {
+        setPublicarEstado("publicado");
+      }
+    } catch {
+      setPublicarEstado("error");
+      setPublicarError("No se pudo conectar al servidor");
+    }
   };
 
   const enviarTelegram = async () => {
@@ -380,6 +413,7 @@ export default function Redactor() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-2"
               >
+                {/* Enviar a Telegram */}
                 <Button
                   onClick={enviarTelegram}
                   disabled={telegramEstado === "enviando" || telegramEstado === "enviado"}
@@ -393,15 +427,36 @@ export default function Redactor() {
                   ) : telegramEstado === "enviado" ? (
                     <><Check className="w-4 h-4" /> ¡Llegó a tu Telegram!</>
                   ) : (
-                    <><Send className="w-4 h-4" /> Enviar a mi Telegram privado</>
+                    <><Send className="w-4 h-4" /> Previsualizar en Telegram</>
                   )}
                 </Button>
                 {telegramEstado === "error" && (
                   <p className="text-xs text-red-500 text-center bg-red-50 rounded-lg px-3 py-2">{telegramError}</p>
                 )}
-                {telegramEstado === "enviado" && (
-                  <p className="text-xs text-green-600 text-center">
-                    ✅ La nota te llegó a tu Telegram. ¡Revisá el celular!
+
+                {/* Publicar en el sitio */}
+                <Button
+                  onClick={publicarEnSitio}
+                  disabled={publicarEstado === "publicando" || publicarEstado === "publicado"}
+                  className="w-full gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold h-12"
+                >
+                  {publicarEstado === "publicando" ? (
+                    <>
+                      <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                      Publicando...
+                    </>
+                  ) : publicarEstado === "publicado" ? (
+                    <><Check className="w-4 h-4" /> ¡Publicada en el sitio!</>
+                  ) : (
+                    <><Globe className="w-4 h-4" /> Publicar en el sitio web</>
+                  )}
+                </Button>
+                {publicarEstado === "error" && (
+                  <p className="text-xs text-red-500 text-center bg-red-50 rounded-lg px-3 py-2">{publicarError}</p>
+                )}
+                {publicarEstado === "publicado" && (
+                  <p className="text-xs text-green-600 text-center font-semibold">
+                    ✅ ¡La nota ya está visible en la sección Actualidad del sitio!
                   </p>
                 )}
               </motion.div>
