@@ -43,190 +43,73 @@ export default function Home() {
     <div className="w-full bg-background overflow-hidden">
 
       {/* ================= HERO SECTION ================= */}
-      <section className="relative h-screen min-h-[640px] flex items-center justify-center overflow-hidden">
-
-        {/* Fondo: Estadio Monumental */}
+      <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-river-black z-10" />
           <img
             src={`${import.meta.env.BASE_URL}images/hero-monumental.png`}
             alt="Estadio Monumental"
-            className="w-full h-full object-cover scale-110 brightness-50"
-            style={{ transformOrigin: "center 40%" }}
+            className="w-full h-full object-cover scale-105"
           />
-          {/* Gradiente dramático rojo-negro */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 to-black/90" />
-          {/* Velo rojo lateral izquierdo — evoca la banda de River */}
-          <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-river-red/30 to-transparent" />
         </div>
 
-        {/* Banda diagonal — sello de River Plate */}
-        <div
-          className="absolute inset-0 z-[1] pointer-events-none overflow-hidden"
-          aria-hidden="true"
-        >
-          {/* Sash diagonal roja, muy sutil */}
-          <div
-            className="absolute top-0 right-0 w-[200%] h-[200%] origin-top-right opacity-[0.07]"
-            style={{
-              background: "linear-gradient(115deg, transparent 35%, #cc0000 35%, #cc0000 42%, transparent 42%)",
-              transform: "translateX(10%)"
-            }}
-          />
-          {/* Borde superior rojo River */}
-          <div className="absolute top-0 inset-x-0 h-1.5 bg-river-red shadow-[0_0_24px_4px_rgba(204,0,0,0.8)]" />
-        </div>
-
-        {/* Contenido central */}
         <div className="relative z-20 text-center px-4 max-w-5xl mx-auto flex flex-col items-center">
-
-          {/* Logo con halo rojo */}
           <motion.div
-            initial={{ scale: 0.7, opacity: 0 }}
+            initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-8 relative"
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="mb-6 relative"
           >
-            <div className="absolute -inset-10 bg-river-red/25 blur-[50px] rounded-full" />
-            <div className="absolute -inset-6 bg-white/5 blur-xl rounded-full" />
+            <div className="absolute -inset-8 bg-river-red/20 blur-3xl rounded-full"></div>
             <img
               src={`${import.meta.env.BASE_URL}images/filial-logo.png`}
               alt="Logo Filial Ramat Gan"
-              className="w-28 h-28 md:w-44 md:h-44 object-contain drop-shadow-[0_0_30px_rgba(204,0,0,1)] relative z-10"
+              className="w-32 h-32 md:w-48 md:h-48 object-contain drop-shadow-[0_0_20px_rgba(204,0,0,0.8)] relative z-10"
             />
           </motion.div>
 
-          {/* Título */}
-          <motion.div
-            initial={{ y: 40, opacity: 0 }}
+          <motion.h1
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.25 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-white mb-4 leading-tight"
           >
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-display font-bold leading-none mb-3 tracking-tight">
-              <span className="text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">RIVER </span>
-              <span
-                className="relative inline-block"
-                style={{
-                  WebkitTextStroke: "2px #cc0000",
-                  color: "transparent",
-                  textShadow: "0 0 40px rgba(204,0,0,0.6)"
-                }}
-              >EN</span>
-              <span className="text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]"> ISRAEL</span>
-            </h1>
-            {/* Línea roja debajo del título */}
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="h-px flex-1 max-w-[80px] bg-gradient-to-r from-transparent to-river-red" />
-              <div className="w-3 h-3 rounded-full bg-river-red shadow-[0_0_12px_rgba(204,0,0,0.9)]" />
-              <div className="h-px flex-1 max-w-[80px] bg-gradient-to-l from-transparent to-river-red" />
-            </div>
-          </motion.div>
+            RIVER EN <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white">ISRAEL</span>
+          </motion.h1>
 
-          {/* Tagline */}
           <motion.p
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.45 }}
-            className="text-lg md:text-2xl lg:text-3xl text-gray-100 font-medium mb-12 max-w-2xl leading-snug drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-xl md:text-3xl text-gray-200 font-medium mb-10 max-w-3xl"
           >
-            La Banda del Millonario latiendo fuerte desde la Tierra Santa.{" "}
-            <span className="text-white font-semibold">Uniendo pasiones a miles de kilómetros.</span>
+            La Banda del Millonario latiendo fuerte desde la Tierra Santa.
+            <br className="hidden md:block" /> Uniendo pasiones a miles de kilómetros.
           </motion.p>
 
-          {/* Botones estilo butaca de estadio */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.65 }}
-            className="flex flex-col sm:flex-row gap-6 items-center"
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4"
           >
-            {/* Butaca Roja — Unite a la Filial */}
             <a
               href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative select-none"
-              style={{ filter: "drop-shadow(0 8px 24px rgba(204,0,0,0.6))" }}
+              className="px-8 py-4 bg-river-red text-white font-bold rounded-full text-lg uppercase tracking-wider hover:bg-river-red-hover transition-all hover:scale-105 shadow-[0_0_20px_rgba(204,0,0,0.5)]"
             >
-              {/* Respaldo de la butaca */}
-              <div
-                className="relative px-8 pt-5 pb-4 font-display font-bold text-lg uppercase tracking-widest text-white transition-all duration-200 group-hover:-translate-y-1"
-                style={{
-                  background: "linear-gradient(180deg, #e60000 0%, #a80000 100%)",
-                  borderRadius: "50% 50% 6px 6px / 28px 28px 6px 6px",
-                  boxShadow: "inset 0 2px 0 rgba(255,255,255,0.3), inset 0 -4px 0 rgba(0,0,0,0.3), 0 6px 0 #700000"
-                }}
-              >
-                {/* Brillo del plástico en la parte superior */}
-                <div
-                  className="absolute top-1.5 left-1/2 -translate-x-1/2 w-3/4 h-3 rounded-full pointer-events-none"
-                  style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0.35) 0%, transparent 100%)" }}
-                />
-                Unite a la Filial
-              </div>
-              {/* Asiento (base de la butaca) */}
-              <div
-                className="h-2 mx-2"
-                style={{ background: "#700000", borderRadius: "0 0 4px 4px" }}
-              />
+              Unite a la Filial
             </a>
-
-            {/* Butaca Blanca — Últimas Noticias */}
-            <a
-              href="#actualidad"
-              className="group relative select-none"
-              style={{ filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.5))" }}
-            >
-              <div
-                className="relative px-8 pt-5 pb-4 font-display font-bold text-lg uppercase tracking-widest text-river-black transition-all duration-200 group-hover:-translate-y-1"
-                style={{
-                  background: "linear-gradient(180deg, #ffffff 0%, #d8d8d8 100%)",
-                  borderRadius: "50% 50% 6px 6px / 28px 28px 6px 6px",
-                  boxShadow: "inset 0 2px 0 rgba(255,255,255,0.9), inset 0 -4px 0 rgba(0,0,0,0.15), 0 6px 0 #999"
-                }}
-              >
-                <div
-                  className="absolute top-1.5 left-1/2 -translate-x-1/2 w-3/4 h-3 rounded-full pointer-events-none"
-                  style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0.8) 0%, transparent 100%)" }}
-                />
-                Últimas Noticias
-              </div>
-              <div
-                className="h-2 mx-2"
-                style={{ background: "#999", borderRadius: "0 0 4px 4px" }}
-              />
+            <a href="#actualidad" className="px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full text-lg uppercase tracking-wider hover:bg-white hover:text-river-black transition-all">
+              Últimas Noticias
             </a>
-          </motion.div>
-
-          {/* Fila de butacas decorativas — evoca la tribuna */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 1.1 }}
-            className="mt-10 flex items-end gap-1.5 justify-center"
-            aria-hidden="true"
-          >
-            {["#cc0000","#fff","#cc0000","#cc0000","#fff","#cc0000","#fff","#cc0000","#cc0000","#fff","#cc0000","#cc0000","#fff","#cc0000"].map((color, i) => (
-              <div
-                key={i}
-                style={{
-                  width: 18,
-                  height: i % 3 === 0 ? 26 : i % 2 === 0 ? 22 : 24,
-                  background: color === "#fff"
-                    ? "linear-gradient(180deg,#fff 0%,#ccc 100%)"
-                    : "linear-gradient(180deg,#e60000 0%,#990000 100%)",
-                  borderRadius: "40% 40% 4px 4px / 40% 40% 4px 4px",
-                  opacity: 0.55 + (i % 4) * 0.12,
-                  boxShadow: "0 3px 0 rgba(0,0,0,0.4)"
-                }}
-              />
-            ))}
           </motion.div>
         </div>
 
-        {/* Flecha hacia abajo */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 animate-bounce">
-          <a href="#actualidad" className="text-white/60 hover:text-river-red transition-colors">
-            <ChevronDown size={36} />
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 animate-bounce">
+          <a href="#actualidad" className="text-white/70 hover:text-white">
+            <ChevronDown size={40} />
           </a>
         </div>
       </section>
