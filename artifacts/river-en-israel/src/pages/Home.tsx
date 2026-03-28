@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Play, Calendar, Trophy, ChevronLeft, CheckCircle2, ChevronDown } from "lucide-react";
+import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline, useSubmitContact } from "@/hooks/use-river-data";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,10 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 const contactSchema = z.object({
-  name: z.string().min(2, "השם קצר מדי"),
-  email: z.string().email("כתובת מייל לא תקינה"),
-  phone: z.string().min(6, "מספר טלפון קצר מדי"),
-  message: z.string().min(10, "ההודעה חייבת להכיל לפחות 10 תווים"),
+  name: z.string().min(2, "El nombre es muy corto"),
+  email: z.string().email("Email inválido"),
+  phone: z.string().min(6, "Teléfono muy corto"),
+  message: z.string().min(10, "El mensaje debe tener al menos 10 caracteres"),
 });
 type ContactFormValues = z.infer<typeof contactSchema>;
 
@@ -33,21 +33,13 @@ export default function Home() {
     });
   };
 
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.2 }
-    }
-  };
-
   const fadeIn = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };
 
   return (
-    <div className="w-full bg-background overflow-hidden" dir="rtl">
+    <div className="w-full bg-background overflow-hidden">
 
       {/* ================= HERO SECTION ================= */}
       <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
@@ -55,9 +47,8 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-river-black z-10" />
           <img
             src={`${import.meta.env.BASE_URL}images/hero-monumental.png`}
-            alt="אצטדיון המונומנטאל"
+            alt="Estadio Monumental"
             className="w-full h-full object-cover scale-105"
-            style={{ animationDuration: '20s' }}
           />
         </div>
 
@@ -71,7 +62,7 @@ export default function Home() {
             <div className="absolute -inset-8 bg-river-red/20 blur-3xl rounded-full"></div>
             <img
               src={`${import.meta.env.BASE_URL}images/filial-logo.png`}
-              alt="לוגו סניף רמת גן"
+              alt="Logo Filial Ramat Gan"
               className="w-32 h-32 md:w-48 md:h-48 object-contain drop-shadow-[0_0_20px_rgba(204,0,0,0.8)] relative z-10"
             />
           </motion.div>
@@ -82,7 +73,7 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-white mb-4 leading-tight"
           >
-            ריבר <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white">בישראל</span>
+            RIVER EN <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white">ISRAEL</span>
           </motion.h1>
 
           <motion.p
@@ -91,8 +82,8 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-xl md:text-3xl text-gray-200 font-medium mb-10 max-w-3xl"
           >
-            בנדה דל מיליונריו פועמת בעוז מהארץ הקדושה.
-            <br className="hidden md:block" /> מחברים תשוקות מאלפי קילומטרים.
+            La Banda del Millonario latiendo fuerte desde la Tierra Santa.
+            <br className="hidden md:block" /> Uniendo pasiones a miles de kilómetros.
           </motion.p>
 
           <motion.div
@@ -101,11 +92,11 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <a href="#filial" className="px-8 py-4 bg-river-red text-white font-bold rounded-full text-lg hover:bg-river-red-hover transition-all hover:scale-105 shadow-[0_0_20px_rgba(204,0,0,0.5)]">
-              הצטרף לסניף
+            <a href="#filial" className="px-8 py-4 bg-river-red text-white font-bold rounded-full text-lg uppercase tracking-wider hover:bg-river-red-hover transition-all hover:scale-105 shadow-[0_0_20px_rgba(204,0,0,0.5)]">
+              Unite a la Filial
             </a>
-            <a href="#actualidad" className="px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full text-lg hover:bg-white hover:text-river-black transition-all">
-              חדשות אחרונות
+            <a href="#actualidad" className="px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full text-lg uppercase tracking-wider hover:bg-white hover:text-river-black transition-all">
+              Últimas Noticias
             </a>
           </motion.div>
         </div>
@@ -117,22 +108,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= חדשות ================= */}
+      {/* ================= ACTUALIDAD SECTION ================= */}
       <section id="actualidad" className="py-24 bg-gray-50 relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-river-red to-transparent"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
             <div>
-              <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black">חדשות <span className="text-river-red">המיליונרים</span></h2>
-              <p className="text-muted-foreground mt-2 text-lg">הכל מעולם ריבר ומהסניף שלנו.</p>
+              <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black">Actualidad <span className="text-river-red">Millonaria</span></h2>
+              <p className="text-muted-foreground mt-2 text-lg">Lo último del mundo River y nuestra filial.</p>
             </div>
             <Button variant="outline" className="rounded-full border-river-red text-river-red hover:bg-river-red hover:text-white">
-              כל החדשות
+              Ver todas las noticias
             </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* רשת חדשות */}
+            {/* News Grid */}
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
               {news?.map((item, i) => (
                 <motion.div
@@ -153,14 +144,14 @@ export default function Home() {
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute top-4 right-4 z-20">
-                      <span className="bg-river-red text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                    <div className="absolute top-4 left-4 z-20">
+                      <span className="bg-river-red text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
                         {item.category}
                       </span>
                     </div>
                   </div>
                   <div className="p-6">
-                    <span className="text-sm text-gray-500 flex items-center gap-2 mb-2 flex-row-reverse justify-end">
+                    <span className="text-sm text-gray-500 flex items-center gap-2 mb-2">
                       <Calendar className="w-4 h-4" /> {item.date}
                     </span>
                     <h3 className={cn("font-display font-bold text-river-black group-hover:text-river-red transition-colors mb-3", i === 0 ? "text-2xl" : "text-xl")}>
@@ -172,7 +163,7 @@ export default function Home() {
               ))}
             </div>
 
-            {/* סיידבר משחקים */}
+            {/* Matches Sidebar */}
             <motion.div
               initial="hidden"
               whileInView="show"
@@ -180,21 +171,21 @@ export default function Home() {
               variants={fadeIn}
               className="bg-river-black rounded-2xl p-6 shadow-2xl text-white relative overflow-hidden"
             >
-              <div className="absolute top-0 left-0 w-32 h-32 bg-river-red blur-[80px] rounded-full opacity-50"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-river-red blur-[80px] rounded-full opacity-50"></div>
 
               <h3 className="font-display text-2xl font-bold mb-6 flex items-center gap-3 relative z-10">
-                <Trophy className="text-river-red" /> תוצאות ולוח משחקים
+                <Trophy className="text-river-red" /> Fixture y Resultados
               </h3>
 
               <div className="space-y-4 relative z-10">
                 {matches?.map((match) => (
                   <div key={match.id} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors">
                     <div className="flex justify-between text-xs text-gray-400 mb-3">
-                      <span>{match.date}</span>
                       <span>{match.competition}</span>
+                      <span>{match.date}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className={cn("font-bold text-right", match.isRiverHome ? "text-white" : "text-gray-400")}>
+                      <div className={cn("font-bold", match.isRiverHome ? "text-white" : "text-gray-400")}>
                         {match.homeTeam}
                       </div>
                       <div className="flex items-center gap-2 font-display text-xl bg-black/40 px-3 py-1 rounded">
@@ -202,14 +193,14 @@ export default function Home() {
                         <span className="text-river-red">:</span>
                         <span>{match.awayScore !== null ? match.awayScore : '-'}</span>
                       </div>
-                      <div className={cn("font-bold", !match.isRiverHome ? "text-white" : "text-gray-400")}>
+                      <div className={cn("font-bold text-right", !match.isRiverHome ? "text-white" : "text-gray-400")}>
                         {match.awayTeam}
                       </div>
                     </div>
                     {match.status === 'UPCOMING' && (
                       <div className="mt-3 text-center">
-                        <span className="text-xs bg-river-red text-white px-2 py-1 rounded font-bold">
-                          משחק קרוב
+                        <span className="text-xs bg-river-red text-white px-2 py-1 rounded font-bold uppercase tracking-widest">
+                          Próximo Partido
                         </span>
                       </div>
                     )}
@@ -218,34 +209,34 @@ export default function Home() {
               </div>
 
               <Button className="w-full mt-6 bg-white text-river-black hover:bg-gray-200">
-                לוח משחקים מלא
+                Ver Calendario Completo
               </Button>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ================= היסטוריה ================= */}
+      {/* ================= HISTORIA SECTION ================= */}
       <section id="historia" className="py-24 bg-white relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-diagonal-red opacity-5 -skew-y-3 origin-top-left -z-10"></div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-4">הגדול <span className="text-river-red">מכולם</span></h2>
-            <p className="text-lg text-gray-600">סיור בין הרגעים שעיצבו את ההיסטוריה המפוארת שלנו.</p>
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-4">El Más <span className="text-river-red">Grande</span></h2>
+            <p className="text-lg text-gray-600">Un repaso por los momentos que forjaron nuestra gloriosa historia.</p>
           </div>
 
-          <div className="relative border-r-4 border-river-red/20 mr-4 md:mr-0 space-y-12 pr-8 md:pr-0">
+          <div className="relative border-l-4 border-river-red/20 ml-4 space-y-12 pl-8">
             {timeline?.map((item, index) => (
               <motion.div
                 key={item.year}
-                initial={{ opacity: 0, x: index % 2 === 0 ? 50 : -50 }}
+                initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="relative"
               >
-                <div className="absolute top-0 right-[-11px] w-6 h-6 rounded-full bg-river-red border-4 border-white shadow-md z-10"></div>
+                <div className="absolute top-0 left-[-43px] w-6 h-6 rounded-full bg-river-red border-4 border-white shadow-md z-10"></div>
 
                 <div className="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <span className="font-display text-4xl font-bold text-river-red/20 block mb-2">{item.year}</span>
@@ -258,22 +249,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= סרטונים וגולים ================= */}
+      {/* ================= VIDEOS SECTION ================= */}
       <section id="videos" className="py-24 bg-river-black text-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center mb-12">
             <div>
-              <h2 className="text-4xl md:text-5xl font-display font-bold">סרטונים & <span className="text-river-red">גולים</span></h2>
-              <p className="text-gray-400 mt-2 text-lg">חוו מחדש את הרגעים הגדולים.</p>
+              <h2 className="text-4xl md:text-5xl font-display font-bold">Videos & <span className="text-river-red">Goles</span></h2>
+              <p className="text-gray-400 mt-2 text-lg">Reviví las emociones más grandes.</p>
             </div>
             <a href="https://www.youtube.com/@RiverPlate" target="_blank" rel="noreferrer" className="mt-4 md:mt-0 flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
-              הערוץ הרשמי <ChevronLeft className="w-4 h-4" />
+              Canal Oficial <ChevronRight className="w-4 h-4" />
             </a>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* סרטון מומלץ */}
-            <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-2xl shadow-black border border-white/10 aspect-video relative group">
+            {/* Featured Video */}
+            <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-2xl shadow-black border border-white/10 aspect-video">
               <iframe
                 width="100%"
                 height="100%"
@@ -286,13 +277,13 @@ export default function Home() {
               ></iframe>
             </div>
 
-            {/* רשימת סרטונים */}
+            {/* Video Playlist links */}
             <div className="flex flex-col gap-4">
               {[
-                { title: "הגמר במדריד - המשחק המלא", image: "https://images.unsplash.com/photo-1574629810360-7efbc5ea002c?q=80&w=2000&auto=format&fit=crop", query: "River Boca Madrid 2018 final completa" },
-                { title: "הגולים הטובים - עידן גאיארדו", image: "https://images.unsplash.com/photo-1508344928928-7165b67de128?q=80&w=2070&auto=format&fit=crop", query: "Mejores goles Marcelo Gallardo River Plate" },
-                { title: "שירי האוהדים במונומנטאל", image: "https://images.unsplash.com/photo-1614632537190-23e4146777db?q=80&w=2000&auto=format&fit=crop", query: "River Plate hinchada canciones Monumental" },
-                { title: "תקציר המשחק האחרון", image: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=2070&auto=format&fit=crop", query: "River Plate resumen goles ultimo partido" },
+                { title: "La Final de Madrid Completa", image: "https://images.unsplash.com/photo-1574629810360-7efbc5ea002c?q=80&w=2000&auto=format&fit=crop", query: "River Boca Madrid 2018 final completa" },
+                { title: "Mejores goles Era Gallardo", image: "https://images.unsplash.com/photo-1508344928928-7165b67de128?q=80&w=2070&auto=format&fit=crop", query: "Mejores goles Marcelo Gallardo River Plate" },
+                { title: "Cantitos de la Hinchada", image: "https://images.unsplash.com/photo-1614632537190-23e4146777db?q=80&w=2000&auto=format&fit=crop", query: "River Plate hinchada canciones Monumental" },
+                { title: "Resumen Último Partido", image: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=2070&auto=format&fit=crop", query: "River Plate resumen goles ultimo partido" },
               ].map((vid, i) => (
                 <a
                   key={i}
@@ -307,9 +298,9 @@ export default function Home() {
                       <Play className="w-6 h-6 text-white opacity-80 group-hover:opacity-100 group-hover:text-river-red transition-colors" fill="currentColor" />
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div>
                     <h4 className="font-bold text-sm line-clamp-2 group-hover:text-river-red transition-colors">{vid.title}</h4>
-                    <span className="text-xs text-gray-400 mt-1 block">צפה ב-YouTube</span>
+                    <span className="text-xs text-gray-400 mt-1 block">Ver en YouTube</span>
                   </div>
                 </a>
               ))}
@@ -318,49 +309,49 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= סניף רמת גן ================= */}
+      {/* ================= FILIAL RAMAT GAN SECTION ================= */}
       <section id="filial" className="py-24 bg-gray-50 relative overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-[0.03]">
           <img
             src={`${import.meta.env.BASE_URL}images/ramat-gan-bg.png`}
-            alt="רמת גן רקע"
+            alt="Ramat Gan Background"
             className="w-full h-full object-cover"
           />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col lg:flex-row-reverse">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col lg:flex-row">
 
-            {/* צד מידע */}
+            {/* Info Side */}
             <div className="lg:w-5/12 bg-river-black text-white p-10 lg:p-16 flex flex-col justify-center relative overflow-hidden">
-              <div className="absolute -top-20 -left-20 w-64 h-64 bg-river-red rounded-full blur-[100px] opacity-40"></div>
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-river-red rounded-full blur-[100px] opacity-40"></div>
 
               <div className="mb-8">
-                <span className="bg-white/10 px-4 py-1.5 rounded-full text-sm font-semibold text-river-red border border-river-red/30">
-                  מטה רשמי בישראל
+                <span className="bg-white/10 px-4 py-1.5 rounded-full text-sm font-semibold tracking-wider uppercase text-river-red border border-river-red/30">
+                  Sede Oficial en Israel
                 </span>
               </div>
 
               <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
-                הצטרף למשפחה <br /> <span className="text-river-red">הריברפלייטנסה</span>
+                Unite a la <br /> <span className="text-river-red">Familia Riverplatense</span>
               </h2>
 
               <p className="text-gray-300 text-lg mb-8">
-                לא משנה כמה רחוק אנחנו מהמונומנטאל, התשוקה מאחדת אותנו. הצטרף לסניף שלנו לצפות במשחקים, להשתתף באירועים ולהרגיש כמו בבית.
+                No importa qué tan lejos estemos del Monumental, la pasión nos une. Sumate a nuestra filial para ver los partidos, participar en eventos y sentirte como en casa.
               </p>
 
               <ul className="space-y-4 mb-10">
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>מפגשים לצפייה בכל המשחקים</span>
+                  <span>Encuentros para ver todos los partidos</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>ברביקיו ואירועים לכל המשפחה</span>
+                  <span>Asados y eventos para toda la familia</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>קשר ישיר עם הקלוב בבואנוס איירס</span>
+                  <span>Contacto directo con el Club en Bs As</span>
                 </li>
               </ul>
 
@@ -370,14 +361,14 @@ export default function Home() {
                 rel="noreferrer"
                 className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"
               >
-                הצטרף לקבוצת הווטסאפ
+                Unite al Grupo de WhatsApp
               </a>
             </div>
 
-            {/* צד טופס */}
+            {/* Form Side */}
             <div className="lg:w-7/12 p-10 lg:p-16">
-              <h3 className="font-display text-3xl font-bold text-river-black mb-2">השאר את הפרטים שלך</h3>
-              <p className="text-gray-500 mb-8">מלא את הטופס ונצור קשר כדי להצטרף רשמית.</p>
+              <h3 className="font-display text-3xl font-bold text-river-black mb-2">Dejanos tus datos</h3>
+              <p className="text-gray-500 mb-8">Completá el formulario y nos pondremos en contacto para sumarte oficialmente.</p>
 
               {isSubmitSuccessful ? (
                 <motion.div
@@ -386,30 +377,30 @@ export default function Home() {
                   className="bg-green-50 border border-green-200 text-green-800 p-8 rounded-2xl text-center"
                 >
                   <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h4 className="text-2xl font-bold mb-2">!תודה שהצטרפת</h4>
-                  <p>קיבלנו את הפרטים שלך. ניצור קשר בקרוב.</p>
+                  <h4 className="text-2xl font-bold mb-2">¡Gracias por sumarte!</h4>
+                  <p>Hemos recibido tus datos. Pronto te contactaremos.</p>
                   <Button
                     onClick={() => reset()}
                     variant="outline"
                     className="mt-6 border-green-500 text-green-700 hover:bg-green-100"
                   >
-                    שלח הודעה נוספת
+                    Enviar otro mensaje
                   </Button>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">שם מלא</label>
+                      <label className="text-sm font-semibold text-gray-700">Nombre Completo</label>
                       <Input
                         {...register("name")}
-                        placeholder="לדוגמה: אנצו פרנסקולי"
+                        placeholder="Ej: Enzo Francescoli"
                         className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
                       />
                       {errors.name && <span className="text-xs text-red-500">{errors.name.message}</span>}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700">טלפון (וואטסאפ)</label>
+                      <label className="text-sm font-semibold text-gray-700">Teléfono (WhatsApp)</label>
                       <Input
                         {...register("phone")}
                         placeholder="+972 50-XXX-XXXX"
@@ -420,21 +411,21 @@ export default function Home() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">כתובת אימייל</label>
+                    <label className="text-sm font-semibold text-gray-700">Correo Electrónico</label>
                     <Input
                       type="email"
                       {...register("email")}
-                      placeholder="example@email.com"
+                      placeholder="tuemail@ejemplo.com"
                       className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
                     />
                     {errors.email && <span className="text-xs text-red-500">{errors.email.message}</span>}
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">הודעה או עיר מגורים</label>
+                    <label className="text-sm font-semibold text-gray-700">Mensaje o Ciudad de Residencia</label>
                     <Textarea
                       {...register("message")}
-                      placeholder="ספר לנו מאיפה אתה עוקב..."
+                      placeholder="Contanos desde dónde alentás..."
                       className={errors.message ? "border-red-500 focus-visible:ring-red-500" : ""}
                     />
                     {errors.message && <span className="text-xs text-red-500">{errors.message.message}</span>}
@@ -445,7 +436,7 @@ export default function Home() {
                     className="w-full h-14 text-lg bg-river-red hover:bg-river-red-hover"
                     disabled={submitContact.isPending}
                   >
-                    {submitContact.isPending ? "שולח..." : "רוצה להצטרף"}
+                    {submitContact.isPending ? "Enviando..." : "Quiero unirme"}
                   </Button>
                 </form>
               )}
@@ -454,25 +445,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= גלריה ================= */}
+      {/* ================= GALERIA SECTION ================= */}
       <section id="galeria" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-4">התשוקה <span className="text-river-red">בתמונות</span></h2>
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-4">La <span className="text-river-red">Pasión</span> en Imágenes</h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="col-span-2 row-span-2 overflow-hidden rounded-xl">
-              <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=2000&auto=format&fit=crop" alt="אוהדים" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=2000&auto=format&fit=crop" alt="Hinchada" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
             </div>
             <div className="overflow-hidden rounded-xl h-48 md:h-64">
-              <img src="https://images.unsplash.com/photo-1508344928928-7165b67de128?q=80&w=2070&auto=format&fit=crop" alt="כדורגל" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              <img src="https://images.unsplash.com/photo-1508344928928-7165b67de128?q=80&w=2070&auto=format&fit=crop" alt="Pelota" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
             </div>
             <div className="overflow-hidden rounded-xl h-48 md:h-64">
-              <img src="https://images.unsplash.com/photo-1556056504-5c7696c4c28d?q=80&w=2076&auto=format&fit=crop" alt="אורות האצטדיון" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              <img src="https://images.unsplash.com/photo-1556056504-5c7696c4c28d?q=80&w=2076&auto=format&fit=crop" alt="Luces" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
             </div>
             <div className="col-span-2 overflow-hidden rounded-xl h-48 md:h-64">
-              <img src="https://images.unsplash.com/photo-1614632537190-23e4146777db?q=80&w=2000&auto=format&fit=crop" alt="חגיגה" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              <img src="https://images.unsplash.com/photo-1614632537190-23e4146777db?q=80&w=2000&auto=format&fit=crop" alt="Festejo" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
             </div>
           </div>
         </div>
