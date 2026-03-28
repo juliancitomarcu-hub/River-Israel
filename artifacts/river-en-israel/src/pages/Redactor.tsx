@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
-  Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2
+  Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
+  BookOpen, CalendarDays, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+type Tab = "redactor" | "publicaciones";
 type Estado = "idle" | "procesando" | "listo" | "error";
 type EstadoTelegram = "idle" | "enviando" | "enviado" | "error";
 type EstadoPublicar = "idle" | "publicando" | "publicado" | "error";
@@ -18,7 +20,17 @@ interface NoticiaRaw {
   fuente: string;
 }
 
+interface NoticiaPublicada {
+  id: number;
+  titulo: string;
+  contenido: string;
+  fuente: string;
+  imagenPortada: string;
+  createdAt: string;
+}
+
 export default function Redactor() {
+  const [tab, setTab] = useState<Tab>("redactor");
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
@@ -40,6 +52,44 @@ export default function Redactor() {
   const [imagenPreview, setImagenPreview] = useState<string>("");
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [errorImagen, setErrorImagen] = useState("");
+
+  // Mis publicaciones
+  const [misPublicaciones, setMisPublicaciones] = useState<NoticiaPublicada[]>([]);
+  const [cargandoPublicaciones, setCargandoPublicaciones] = useState(false);
+  const [errorPublicaciones, setErrorPublicaciones] = useState("");
+  const [eliminandoId, setEliminandoId] = useState<number | null>(null);
+  const [confirmEliminarId, setConfirmEliminarId] = useState<number | null>(null);
+
+  const cargarPublicaciones = async () => {
+    setCargandoPublicaciones(true);
+    setErrorPublicaciones("");
+    try {
+      const res = await fetch("/api/noticias-publicadas");
+      const data = await res.json() as { noticias?: NoticiaPublicada[] };
+      setMisPublicaciones(data.noticias ?? []);
+    } catch {
+      setErrorPublicaciones("No se pudieron cargar las publicaciones");
+    } finally {
+      setCargandoPublicaciones(false);
+    }
+  };
+
+  const eliminarPublicacion = async (id: number) => {
+    setEliminandoId(id);
+    try {
+      await fetch(`/api/noticias-publicadas/${id}`, { method: "DELETE" });
+      setMisPublicaciones((prev) => prev.filter((n) => n.id !== id));
+      setConfirmEliminarId(null);
+    } catch {
+      // silencioso
+    } finally {
+      setEliminandoId(null);
+    }
+  };
+
+  const editarPublicacion = (id: number) => {
+    window.location.href = `/redactor?editar=${id}`;
+  };
 
   const procesarImagenCanvas = (file: File): Promise<{ blob: Blob; previewUrl: string }> =>
     new Promise((resolve, reject) => {
@@ -341,6 +391,145 @@ export default function Redactor() {
             Elegí un medio (TyC, Olé, Infobae, Clarín, La Nación y más), la IA transforma la nota al estilo israelí, y aprobás o rechazás desde tu Telegram.
           </p>
         </div>
+
+        {/* Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm gap-1">
+            <button
+              onClick={() => setTab("redactor")}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "redactor"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <Sparkles className="w-4 h-4" /> Redactor IA
+            </button>
+            <button
+              onClick={() => { setTab("publicaciones"); cargarPublicaciones(); }}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "publicaciones"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <BookOpen className="w-4 h-4" /> Mis publicaciones
+            </button>
+          </div>
+        </div>
+
+        {/* ── MIS PUBLICACIONES ─────────────────────────────────────────── */}
+        {tab === "publicaciones" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-display text-xl font-bold text-river-black">Noticias publicadas</h2>
+              <button
+                onClick={cargarPublicaciones}
+                disabled={cargandoPublicaciones}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${cargandoPublicaciones ? "animate-spin" : ""}`} />
+                Actualizar
+              </button>
+            </div>
+
+            {errorPublicaciones && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {errorPublicaciones}
+              </div>
+            )}
+
+            {cargandoPublicaciones && (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/4" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!cargandoPublicaciones && misPublicaciones.length === 0 && !errorPublicaciones && (
+              <div className="text-center py-16 text-gray-400">
+                <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-200" />
+                <p className="font-medium">No hay publicaciones todavía</p>
+                <p className="text-sm mt-1">Las noticias aprobadas aparecerán acá</p>
+              </div>
+            )}
+
+            {!cargandoPublicaciones && misPublicaciones.map((n) => (
+              <motion.div
+                key={n.id}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
+              >
+                <div className="flex gap-4 p-4">
+                  {n.imagenPortada && (
+                    <img
+                      src={`/api/storage${n.imagenPortada}`}
+                      alt=""
+                      className="w-24 h-16 object-cover rounded-xl shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold text-river-black text-sm leading-snug line-clamp-2 mb-1">
+                      {n.titulo}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />
+                        {new Date(n.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                      {n.fuente && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{n.fuente}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {confirmEliminarId === n.id ? (
+                  <div className="border-t border-gray-100 bg-red-50 px-4 py-3 flex items-center justify-between gap-3">
+                    <p className="text-sm text-red-600 font-medium">¿Eliminar esta nota del sitio?</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setConfirmEliminarId(null)}
+                        className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => eliminarPublicacion(n.id)}
+                        disabled={eliminandoId === n.id}
+                        className="px-3 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-60"
+                      >
+                        {eliminandoId === n.id ? "Eliminando..." : "Sí, eliminar"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-t border-gray-100 px-4 py-2.5 flex gap-2">
+                    <button
+                      onClick={() => editarPublicacion(n.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-river-red hover:text-river-red transition-colors"
+                    >
+                      <Pencil className="w-3 h-3" /> Editar
+                    </button>
+                    <button
+                      onClick={() => setConfirmEliminarId(n.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-red-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" /> Eliminar
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* ── REDACTOR IA ───────────────────────────────────────────────── */}
+        {tab === "redactor" && <>
 
         {/* Flujo 3 pasos */}
         <div className="flex items-center justify-center gap-3 mb-10 text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -785,6 +974,8 @@ export default function Redactor() {
             </div>
           </div>
         </div>
+
+        </>}
       </div>
     </div>
   );

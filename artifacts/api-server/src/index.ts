@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { iniciarScheduler } from "./scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -54,4 +55,6 @@ app.listen(port, (err) => {
   registrarWebhookTelegram().catch((err) => {
     logger.error({ err }, "Error en registro de webhook");
   });
+
+  iniciarScheduler();
 });
