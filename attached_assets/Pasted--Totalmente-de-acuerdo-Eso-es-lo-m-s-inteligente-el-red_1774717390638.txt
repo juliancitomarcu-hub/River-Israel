@@ -1,0 +1,53 @@
+¡Totalmente de acuerdo! Eso es lo más inteligente: el redactor es tu "cocina interna" y el sitio web es el "plato terminado" que ve el público. Nadie tiene por qué ver los hilos de cómo se fabrica la noticia.
+Para que esto quede privado y solo para vos, el flujo en Replit funcionará así:
+1. El Redactor Privado (Tu Bot de Telegram)
+El bot de Telegram que acabamos de crear será tu panel de control personal.
+ * La IA lee las noticias de Olé o TyC en silencio (dentro de Replit).
+ * Te manda la propuesta solo a vos por Telegram.
+ * La noticia no aparece en la web hasta que vos no le das el visto bueno.
+2. Cómo configurar el "Muro de Privacidad" en Replit
+Para que nadie acceda a tu herramienta de redacción, asegurate de hacer esto en tu proyecto:
+ * Usa los Secrets: Como ya hicimos, los tokens de la IA y de Telegram nunca deben estar escritos directamente en el código (main.py), sino en el candado de Secrets. Así, aunque alguien vea tu código, no puede usar tu redactor.
+ * No crees una interfaz pública para el redactor: No hace falta que el redactor tenga una página web (ej: tu-web.com/redactor). El redactor vive en la "nube" de Replit y se comunica con vos por Telegram.
+3. El Código "Invisible" para tu Redactor Personal
+Copiá esto en tu main.py. Este código está diseñado para ser tu herramienta privada. Busca una noticia y te la manda para que vos decidas.
+import os
+import requests
+
+# Tus llaves privadas (Nadie las ve)
+TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
+MY_CHAT_ID = os.environ['MY_CHAT_ID']
+
+# Este es el 'cerebro' que nadie ve
+PROMPT_PRIVADO = """
+Sos mi redactor personal para 'River en Israel'. 
+Tu trabajo es tomar noticias crudas y darles nuestro estilo:
+- Pasión millonaria.
+- Horarios de Israel (+6hs).
+- Menciones a la filial Ramat Gan.
+- Formato listo para copiar y pegar en la web.
+"""
+
+def procesar_y_notificar(noticia_cruda):
+    # Aquí la IA trabajaría en privado...
+    # (Simulamos la respuesta de la IA)
+    noticia_lista = f"✅ **LISTA PARA LA WEB:**\n\n{noticia_cruda.upper()}\n\nAdaptada para Israel..."
+    
+    # Te la manda a TU Telegram privado
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": MY_CHAT_ID,
+        "text": noticia_lista,
+        "parse_mode": "Markdown"
+    }
+    requests.post(url, json=payload)
+
+# Ejemplo: Vos le pasás un link o un texto y él trabaja para vos en secreto
+noticia_de_ole = "River juega el superclásico este domingo a las 17:00."
+procesar_y_notificar(noticia_de_ole)
+
+¿Qué lográs con esto?
+ * Privacidad absoluta: El público solo ve el sitio web profesional que me mostraste en la foto.
+ * Control total: Nada se publica sin que pase por tu Telegram.
+ * Automatización: Vos podés estar en la cocina o caminando por Ramat Gan, y el bot te avisa: "Che Juli, tengo esta nota de River, ¿te gusta?".
+¿Querés que ahora conectemos una fuente real (como el RSS de Olé) para que el bot empiece a trabajar solo y te mande las noticias de verdad a tu Telegram?

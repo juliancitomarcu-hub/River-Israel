@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, MapPin, Sparkles } from "lucide-react";
+import { Menu, X, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -82,14 +82,6 @@ export function Navbar() {
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
               </a>
             ))}
-            <Link
-              href="/redactor"
-              className="flex items-center gap-1.5 text-white/80 hover:text-white font-medium text-sm uppercase tracking-wider relative group py-2"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-river-red" />
-              Redactor IA
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
-            </Link>
             <a
               href="#filial"
               onClick={(e) => { e.preventDefault(); handleNavClick('#filial'); }}
@@ -134,14 +126,6 @@ export function Navbar() {
                   {link.name}
                 </a>
               ))}
-              <Link
-                href="/redactor"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg uppercase tracking-wider transition-colors"
-              >
-                <Sparkles className="w-5 h-5 text-river-red" />
-                Redactor IA
-              </Link>
               <a
                 href="#filial"
                 onClick={(e) => { e.preventDefault(); handleNavClick('#filial'); }}

@@ -1,16 +1,19 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Copy, Check, RotateCcw, Newspaper, ChevronDown } from "lucide-react";
+import { Sparkles, Copy, Check, RotateCcw, Newspaper, ChevronDown, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 type Estado = "idle" | "procesando" | "listo" | "error";
+type EstadoTelegram = "idle" | "enviando" | "enviado" | "error";
 
 export default function Redactor() {
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
   const [copiado, setCopiado] = useState(false);
+  const [telegramEstado, setTelegramEstado] = useState<EstadoTelegram>("idle");
+  const [telegramError, setTelegramError] = useState("");
   const resultadoRef = useRef<HTMLDivElement>(null);
 
   const ejemplos = [
@@ -86,6 +89,31 @@ export default function Redactor() {
     setTextoOriginal("");
     setResultado("");
     setEstado("idle");
+    setTelegramEstado("idle");
+    setTelegramError("");
+  };
+
+  const enviarTelegram = async () => {
+    if (!resultado.trim()) return;
+    setTelegramEstado("enviando");
+    setTelegramError("");
+    try {
+      const res = await fetch("/api/enviar-telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto: resultado }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setTelegramEstado("error");
+        setTelegramError(data.error ?? "Error desconocido");
+      } else {
+        setTelegramEstado("enviado");
+      }
+    } catch {
+      setTelegramEstado("error");
+      setTelegramError("No se pudo conectar al servidor");
+    }
   };
 
   const usarEjemplo = (ejemplo: string) => {
@@ -261,12 +289,37 @@ export default function Redactor() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between"
+                      className="mt-6 pt-4 border-t border-gray-100 space-y-3"
                     >
-                      <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Nota lista para publicar
-                      </span>
-                      <span className="text-xs text-gray-400">Generada con IA · River en Israel</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Nota lista para publicar
+                        </span>
+                        <span className="text-xs text-gray-400">Generada con IA · River en Israel</span>
+                      </div>
+                      <Button
+                        onClick={enviarTelegram}
+                        disabled={telegramEstado === "enviando" || telegramEstado === "enviado"}
+                        className="w-full gap-2 bg-[#229ED9] hover:bg-[#1a8bbf] text-white font-bold"
+                      >
+                        {telegramEstado === "enviando" ? (
+                          <>
+                            <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                            Enviando a Telegram...
+                          </>
+                        ) : telegramEstado === "enviado" ? (
+                          <>
+                            <Check className="w-4 h-4" /> ¡Enviado a tu Telegram!
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" /> Enviar a mi Telegram
+                          </>
+                        )}
+                      </Button>
+                      {telegramEstado === "error" && (
+                        <p className="text-xs text-red-500 text-center">{telegramError}</p>
+                      )}
                     </motion.div>
                   )}
                 </motion.div>

@@ -68,4 +68,46 @@ router.post("/procesar-noticia", async (req, res) => {
   }
 });
 
+router.post("/enviar-telegram", async (req, res) => {
+  const { texto } = req.body as { texto?: string };
+
+  const token = process.env.TELEGRAM_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!token || !chatId) {
+    res.status(503).json({ error: "Telegram no está configurado. Agregá TELEGRAM_TOKEN y TELEGRAM_CHAT_ID en los secrets." });
+    return;
+  }
+
+  if (!texto || texto.trim().length < 5) {
+    res.status(400).json({ error: "Falta el texto a enviar" });
+    return;
+  }
+
+  try {
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `📢 *Propuesta para River en Israel:*\n\n${texto}`,
+        parse_mode: "Markdown",
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      req.log.error({ err }, "Error enviando a Telegram");
+      res.status(500).json({ error: "Error al enviar a Telegram" });
+      return;
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Error conectando a Telegram");
+    res.status(500).json({ error: "Error de conexión con Telegram" });
+  }
+});
+
 export default router;
