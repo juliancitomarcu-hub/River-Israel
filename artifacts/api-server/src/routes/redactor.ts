@@ -140,8 +140,6 @@ router.post("/enviar-telegram", async (req, res) => {
     let tgRes: Response;
 
     if (imagenPortada) {
-      const domain = process.env.REPLIT_DEV_DOMAIN;
-      const fotoUrl = `https://${domain}/api/storage${imagenPortada}`;
       const encabezado = `📰 *NUEVA NOTA — River en Israel*\n\n*${titulo}*\n\n`;
       const pie = `\n\n${tags}\n\n_¿Publicamos esta nota en el sitio?_`;
       const maxContenido = 1024 - encabezado.length - pie.length - 3;
@@ -150,17 +148,43 @@ router.post("/enviar-telegram", async (req, res) => {
         : contenido;
       const caption = encabezado + contenidoRecortado + pie;
 
-      tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          photo: fotoUrl,
-          caption,
-          parse_mode: "Markdown",
-          reply_markup: replyMarkup,
-        }),
-      });
+      try {
+        // Descargamos la imagen desde nuestro servidor local y la enviamos como binario
+        const port = process.env.PORT;
+        const imgRes = await fetch(`http://localhost:${port}/api/storage${imagenPortada}`, {
+          signal: AbortSignal.timeout(15000),
+        });
+
+        if (!imgRes.ok) throw new Error("No se pudo descargar imagen");
+
+        const imgBuffer = await imgRes.arrayBuffer();
+        const contentType = imgRes.headers.get("content-type") ?? "image/jpeg";
+        const form = new FormData();
+        form.append("chat_id", chatId);
+        form.append("caption", caption);
+        form.append("parse_mode", "Markdown");
+        form.append("reply_markup", JSON.stringify(replyMarkup));
+        form.append("photo", new Blob([imgBuffer], { type: contentType }), "portada.jpg");
+
+        tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+          method: "POST",
+          body: form,
+        });
+      } catch {
+        // Si falla la foto, enviamos como texto simple
+        const mensajeTexto =
+          `📰 *NUEVA NOTA — River en Israel*\n\n` +
+          `*${titulo}*\n\n` +
+          `${contenido.slice(0, 700)}${contenido.length > 700 ? "..." : ""}\n\n` +
+          `${tags}\n\n` +
+          `_¿Publicamos esta nota en el sitio?_`;
+
+        tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: mensajeTexto, parse_mode: "Markdown", reply_markup: replyMarkup }),
+        });
+      }
     } else {
       const mensajeTexto =
         `📰 *NUEVA NOTA — River en Israel*\n\n` +
