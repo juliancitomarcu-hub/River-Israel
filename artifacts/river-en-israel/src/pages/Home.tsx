@@ -63,6 +63,7 @@ export default function Home() {
             className="flex flex-col max-w-[58%]"
           >
             <p className="text-base sm:text-xl md:text-2xl text-gray-100 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] font-medium leading-snug">
+              La Banda del Millonario latiendo fuerte desde Tierra Santa.<br />
               La misma pasión a miles de kilómetros.
             </p>
             <div className="flex flex-row gap-3">
