@@ -105,22 +105,35 @@ export default function Home() {
       </section>
 
       {/* ================= ACTUALIDAD SECTION ================= */}
-      <section id="actualidad" className="py-24 bg-[#111] relative">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-river-red to-transparent"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-6">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-display font-bold text-white">Actualidad <span className="text-river-red">Millonaria</span></h2>
-              <p className="text-gray-400 mt-2 text-lg">Lo último del mundo River y nuestra filial.</p>
-              <Button variant="outline" className="rounded-full border-river-red text-river-red hover:bg-river-red hover:text-white mt-4">
-                Ver todas las noticias
-              </Button>
-            </div>
-            <div className="flex-shrink-0">
-              <ProximoPartidoWidget />
+      <section id="actualidad" className="bg-[#111] relative">
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-river-red to-transparent z-10"></div>
+
+        {/* Header con foto de fondo */}
+        <div className="relative overflow-hidden">
+          <img
+            src={`${import.meta.env.BASE_URL}images/estadio-river.jpeg`}
+            alt="Estadio Monumental"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-[#111]" />
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+              <div>
+                <h2 className="text-4xl md:text-5xl font-display font-bold text-white">Actualidad <span className="text-river-red">Millonaria</span></h2>
+                <p className="text-gray-300 mt-2 text-lg">Lo último del mundo River y nuestra filial.</p>
+                <Button variant="outline" className="rounded-full border-river-red text-river-red hover:bg-river-red hover:text-white mt-4">
+                  Ver todas las noticias
+                </Button>
+              </div>
+              <div className="flex-shrink-0">
+                <ProximoPartidoWidget />
+              </div>
             </div>
           </div>
+        </div>
 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* News Grid */}
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
