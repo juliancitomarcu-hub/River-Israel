@@ -211,13 +211,13 @@ async function ejecutarCiclo(): Promise<void> {
 
     if (imagenPortada && domain) {
       const fotoUrl = `https://${domain}/api/storage${imagenPortada}`;
-      const captionMaxLen = 950;
-      const caption =
-        `🤖 *AUTO — River en Israel*\n\n` +
-        `*${titulo}*\n\n` +
-        `${contenido.slice(0, captionMaxLen)}${contenido.length > captionMaxLen ? "..." : ""}\n\n` +
-        `${tags}\n\n` +
-        `_¿Publicamos esta nota en el sitio?_`;
+      const encabezado = `🤖 *AUTO — River en Israel*\n\n*${titulo}*\n\n`;
+      const pie = `\n\n${tags}\n\n_¿Publicamos esta nota en el sitio?_`;
+      const maxContenido = 1024 - encabezado.length - pie.length - 3;
+      const contenidoRecortado = contenido.length > maxContenido
+        ? contenido.slice(0, maxContenido) + "..."
+        : contenido;
+      const caption = encabezado + contenidoRecortado + pie;
 
       tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
         method: "POST",
@@ -260,6 +260,8 @@ async function ejecutarCiclo(): Promise<void> {
     logger.error({ err }, "Scheduler: error inesperado en ciclo automático");
   }
 }
+
+export { ejecutarCiclo };
 
 const INTERVALO_MS = 2 * 60 * 60 * 1000; // 2 horas
 const PRIMER_CICLO_MS = 30 * 60 * 1000;  // 30 minutos tras arrancar el servidor
