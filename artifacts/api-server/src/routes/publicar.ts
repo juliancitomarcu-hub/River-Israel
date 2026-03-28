@@ -55,6 +55,39 @@ router.post("/publicar-noticia", async (req, res) => {
   }
 });
 
+router.get("/noticia-pendiente/:id", async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+  try {
+    const [noticia] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, id)).limit(1);
+    if (!noticia) { res.status(404).json({ error: "Noticia no encontrada" }); return; }
+    res.json({ noticia });
+  } catch (err) {
+    req.log.error({ err }, "Error obteniendo noticia pendiente");
+    res.status(500).json({ error: "Error al cargar la noticia" });
+  }
+});
+
+router.put("/noticia-pendiente/:id", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { textoResultado } = req.body as { textoResultado?: string };
+  if (isNaN(id) || !textoResultado || textoResultado.trim().length < 10) {
+    res.status(400).json({ error: "Faltan datos" }); return;
+  }
+  try {
+    const { titulo, contenido, tags } = parsearResultado(textoResultado);
+    const [updated] = await db
+      .update(noticiasTable)
+      .set({ titulo, contenido, tags, publicada: true, pendiente: false })
+      .where(eq(noticiasTable.id, id))
+      .returning();
+    res.json({ ok: true, noticia: updated });
+  } catch (err) {
+    req.log.error({ err }, "Error actualizando noticia");
+    res.status(500).json({ error: "Error al actualizar la noticia" });
+  }
+});
+
 router.get("/noticias-publicadas/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) {

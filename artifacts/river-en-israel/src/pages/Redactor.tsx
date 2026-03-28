@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
-  Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe
+  Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +32,55 @@ export default function Redactor() {
   const [errorBusqueda, setErrorBusqueda] = useState("");
   const [fuente, setFuente] = useState<FuenteNoticias>("tyc");
   const resultadoRef = useRef<HTMLDivElement>(null);
+  const [editando, setEditando] = useState(false);
+  const [resultadoEditado, setResultadoEditado] = useState("");
+  const [modoEdicionId, setModoEdicionId] = useState<number | null>(null);
+  const [actualizandoEstado, setActualizandoEstado] = useState<"idle" | "guardando" | "guardado" | "error">("idle");
+
+  const cargarParaEditar = async (id: number) => {
+    try {
+      const res = await fetch(`/api/noticia-pendiente/${id}`);
+      const data = await res.json() as { noticia?: { id: number; titulo: string; contenido: string; tags: string } };
+      if (data.noticia) {
+        const n = data.noticia;
+        const texto = `**Título:** ${n.titulo}\n\n**Contenido:**\n${n.contenido}\n\n**Tags:** ${n.tags}`;
+        setResultado(texto);
+        setEstado("listo");
+        setModoEdicionId(n.id);
+        setEditando(true);
+        setResultadoEditado(texto);
+      }
+    } catch { /* silencioso */ }
+  };
+
+  const actualizarYPublicar = async () => {
+    if (!modoEdicionId || !resultadoEditado.trim()) return;
+    setActualizandoEstado("guardando");
+    try {
+      const res = await fetch(`/api/noticia-pendiente/${modoEdicionId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ textoResultado: resultadoEditado }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) throw new Error(data.error ?? "Error al guardar");
+      setResultado(resultadoEditado);
+      setEditando(false);
+      setActualizandoEstado("guardado");
+      setPublicarEstado("publicado");
+    } catch {
+      setActualizandoEstado("error");
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const editarId = params.get("editar");
+    if (editarId) {
+      const id = parseInt(editarId);
+      if (!isNaN(id)) cargarParaEditar(id);
+    }
+  }, []);
 
   const buscarNoticias = async () => {
     setBuscando(true);
@@ -377,54 +426,123 @@ export default function Redactor() {
 
           {/* Panel Derecho — Output */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg font-bold text-river-black flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-river-red" />
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-display text-lg font-bold text-river-black flex items-center gap-2 min-w-0">
+                <Sparkles className="w-5 h-5 text-river-red flex-shrink-0" />
                 Paso 3 — Aprobar y publicar
               </h2>
-              {resultado && (
-                <Button variant="outline" size="sm" onClick={copiar} className="gap-1 border-river-red text-river-red hover:bg-river-red hover:text-white h-8">
-                  {copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiado ? "¡Copiado!" : "Copiar"}
-                </Button>
-              )}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {resultado && !editando && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setEditando(true); setResultadoEditado(resultado); setActualizandoEstado("idle"); }}
+                    className="gap-1 border-amber-400 text-amber-600 hover:bg-amber-50 h-8"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Editar
+                  </Button>
+                )}
+                {resultado && !editando && (
+                  <Button variant="outline" size="sm" onClick={copiar} className="gap-1 border-river-red text-river-red hover:bg-river-red hover:text-white h-8">
+                    {copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiado ? "¡Copiado!" : "Copiar"}
+                  </Button>
+                )}
+              </div>
             </div>
 
-            <AnimatePresence mode="wait">
-              {!resultado ? (
-                <motion.div
-                  key="idle"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="min-h-[220px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-center p-6"
-                >
-                  <Sparkles className="w-8 h-8 text-gray-300 mb-3" />
-                  <p className="text-gray-400 font-medium">El artículo aparecerá acá</p>
-                  <p className="text-gray-300 text-sm mt-1">Transformá una noticia con IA</p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="resultado"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="min-h-[220px] bg-gray-50 rounded-xl p-4 relative overflow-hidden"
-                >
-                  {estado === "procesando" && (
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-river-red/20">
-                      <div className="h-full bg-river-red animate-pulse rounded-full" style={{ width: "60%" }} />
-                    </div>
+            {/* Modo edición */}
+            {editando ? (
+              <motion.div key="edicion" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                {modoEdicionId && (
+                  <p className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                    ✏️ Editando nota #{modoEdicionId} — viniste desde Telegram
+                  </p>
+                )}
+                <Textarea
+                  value={resultadoEditado}
+                  onChange={(e) => setResultadoEditado(e.target.value)}
+                  className="min-h-[280px] resize-none text-sm leading-relaxed font-mono border-amber-300 focus-visible:ring-amber-400"
+                  placeholder="Editá el texto de la nota aquí..."
+                />
+                <p className="text-xs text-gray-400">
+                  Formato: <code className="bg-gray-100 px-1 rounded">**Título:**</code>, <code className="bg-gray-100 px-1 rounded">**Contenido:**</code>, <code className="bg-gray-100 px-1 rounded">**Tags:**</code>
+                </p>
+                <div className="flex gap-2">
+                  {modoEdicionId ? (
+                    <Button
+                      onClick={actualizarYPublicar}
+                      disabled={actualizandoEstado === "guardando" || actualizandoEstado === "guardado"}
+                      className="flex-1 gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold h-11"
+                    >
+                      {actualizandoEstado === "guardando" ? (
+                        <><span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block" /> Publicando...</>
+                      ) : actualizandoEstado === "guardado" ? (
+                        <><Check className="w-4 h-4" /> ¡Publicada!</>
+                      ) : (
+                        <><Globe className="w-4 h-4" /> Guardar y Publicar</>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => { setResultado(resultadoEditado); setEditando(false); }}
+                      className="flex-1 gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold h-11"
+                    >
+                      <Check className="w-4 h-4" /> Guardar cambios
+                    </Button>
                   )}
-                  <div ref={resultadoRef} className="prose prose-sm max-w-none">
-                    {renderResultado(resultado)}
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditando(false)}
+                    className="gap-1 h-11 px-4"
+                  >
+                    <X className="w-4 h-4" /> Cancelar
+                  </Button>
+                </div>
+                {actualizandoEstado === "error" && (
+                  <p className="text-xs text-red-500 text-center bg-red-50 rounded-lg px-3 py-2">Error al guardar. Intentá de nuevo.</p>
+                )}
+                {actualizandoEstado === "guardado" && (
+                  <p className="text-xs text-green-600 text-center font-semibold">✅ ¡La nota editada ya está publicada en el sitio!</p>
+                )}
+              </motion.div>
+            ) : (
+              <AnimatePresence mode="wait">
+                {!resultado ? (
+                  <motion.div
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="min-h-[220px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-center p-6"
+                  >
+                    <Sparkles className="w-8 h-8 text-gray-300 mb-3" />
+                    <p className="text-gray-400 font-medium">El artículo aparecerá acá</p>
+                    <p className="text-gray-300 text-sm mt-1">Transformá una noticia con IA</p>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="resultado"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="min-h-[220px] bg-gray-50 rounded-xl p-4 relative overflow-hidden"
+                  >
                     {estado === "procesando" && (
-                      <span className="inline-block w-2 h-5 bg-river-red animate-pulse rounded ml-1" />
+                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-river-red/20">
+                        <div className="h-full bg-river-red animate-pulse rounded-full" style={{ width: "60%" }} />
+                      </div>
                     )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <div ref={resultadoRef} className="prose prose-sm max-w-none">
+                      {renderResultado(resultado)}
+                      {estado === "procesando" && (
+                        <span className="inline-block w-2 h-5 bg-river-red animate-pulse rounded ml-1" />
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
 
-            {estado === "listo" && (
+            {estado === "listo" && !editando && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -452,7 +570,7 @@ export default function Redactor() {
                 )}
                 {telegramEstado === "enviado" && (
                   <p className="text-xs text-green-600 text-center">
-                    📱 La nota llegó a tu Telegram con botones ✅ <strong>Publicar</strong> / ❌ <strong>Rechazar</strong>. ¡Aprobá desde el celular!
+                    📱 La nota llegó a tu Telegram con botones ✅ <strong>Publicar</strong> / ✏️ <strong>Editar</strong> / ❌ <strong>Rechazar</strong>. ¡Aprobá desde el celular!
                   </p>
                 )}
 

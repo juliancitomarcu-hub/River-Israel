@@ -79,6 +79,27 @@ router.post("/telegram-webhook", async (req, res) => {
         );
       }
     }
+  } else if (data.startsWith("editar_")) {
+    const noticiaId = parseInt(data.replace("editar_", ""));
+    const domain = process.env.REPLIT_DEV_DOMAIN;
+
+    if (!isNaN(noticiaId) && domain) {
+      const editUrl = `https://${domain}/redactor?editar=${noticiaId}`;
+
+      await responderCallback(token, callbackId, "✏️ Abrí el link para editar");
+
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `✏️ *Editar nota #${noticiaId}*\n\nHacé clic acá para editar la nota antes de publicarla:\n${editUrl}`,
+          parse_mode: "Markdown",
+        }),
+      });
+    } else {
+      await responderCallback(token, callbackId, "No se pudo generar el link");
+    }
   } else if (data.startsWith("rechazar_")) {
     const noticiaId = parseInt(data.replace("rechazar_", ""));
 

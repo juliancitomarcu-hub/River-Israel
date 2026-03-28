@@ -141,6 +141,7 @@ router.post("/enviar-telegram", async (req, res) => {
           inline_keyboard: [
             [
               { text: "✅ Publicar", callback_data: `publicar_${noticia.id}` },
+              { text: "✏️ Editar", callback_data: `editar_${noticia.id}` },
               { text: "❌ Rechazar", callback_data: `rechazar_${noticia.id}` },
             ],
           ],
