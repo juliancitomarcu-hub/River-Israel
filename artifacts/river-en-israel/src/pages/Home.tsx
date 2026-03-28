@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, ExternalLink } from "lucide-react";
+import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline, useSubmitContact } from "@/hooks/use-river-data";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -248,14 +248,9 @@ export default function Home() {
                 })}
               </div>
 
-              <a
-                href="https://www.promiedos.com.ar/team/river-plate/igi"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full mt-4 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-bold py-2.5 rounded-xl transition-colors relative z-10"
-              >
-                Ver en Promiedos <ExternalLink className="w-4 h-4" />
-              </a>
+              <Button className="w-full mt-4 bg-white text-river-black hover:bg-gray-200 relative z-10">
+                Fixture Completo
+              </Button>
             </motion.div>
           </div>
         </div>
