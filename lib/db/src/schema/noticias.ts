@@ -12,6 +12,7 @@ export const noticiasTable = pgTable("noticias", {
   publicada: boolean("publicada").notNull().default(false),
   pendiente: boolean("pendiente").notNull().default(false),
   telegramMessageId: text("telegram_message_id").default(""),
+  imagenPortada: text("imagen_portada").default(""),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

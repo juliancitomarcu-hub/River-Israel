@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
-  Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X
+  Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +36,36 @@ export default function Redactor() {
   const [resultadoEditado, setResultadoEditado] = useState("");
   const [modoEdicionId, setModoEdicionId] = useState<number | null>(null);
   const [actualizandoEstado, setActualizandoEstado] = useState<"idle" | "guardando" | "guardado" | "error">("idle");
+  const [imagenPortada, setImagenPortada] = useState<string>("");
+  const [imagenPreview, setImagenPreview] = useState<string>("");
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
+  const [errorImagen, setErrorImagen] = useState("");
+
+  const subirImagen = async (file: File) => {
+    if (!file.type.startsWith("image/")) { setErrorImagen("Solo se permiten imágenes"); return; }
+    if (file.size > 10 * 1024 * 1024) { setErrorImagen("La imagen no puede superar 10MB"); return; }
+    setSubiendoImagen(true);
+    setErrorImagen("");
+    const preview = URL.createObjectURL(file);
+    setImagenPreview(preview);
+    try {
+      const urlRes = await fetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error("No se pudo obtener URL de subida");
+      const { uploadURL, objectPath } = await urlRes.json() as { uploadURL: string; objectPath: string };
+      const putRes = await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      if (!putRes.ok) throw new Error("Error al subir la imagen");
+      setImagenPortada(objectPath);
+    } catch (err) {
+      setErrorImagen(err instanceof Error ? err.message : "Error al subir");
+      setImagenPreview("");
+    } finally {
+      setSubiendoImagen(false);
+    }
+  };
 
   const cargarParaEditar = async (id: number) => {
     try {
@@ -169,6 +199,9 @@ export default function Redactor() {
     setTelegramError("");
     setPublicarEstado("idle");
     setPublicarError("");
+    setImagenPortada("");
+    setImagenPreview("");
+    setErrorImagen("");
   };
 
   const publicarEnSitio = async () => {
@@ -184,6 +217,7 @@ export default function Redactor() {
           textoResultado: resultado,
           textoOriginal,
           fuente: noticiaSeleccionada?.fuente ?? fuente,
+          imagenPortada,
         }),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
@@ -212,6 +246,7 @@ export default function Redactor() {
           texto: resultado,
           textoOriginal,
           fuente: noticiaSeleccionada?.fuente ?? fuente,
+          imagenPortada,
         }),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
@@ -400,6 +435,62 @@ export default function Redactor() {
               className="min-h-[220px] resize-none text-base leading-relaxed border-gray-200 focus-visible:ring-river-red"
               disabled={estado === "procesando"}
             />
+
+            {/* Foto de portada */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" /> Foto de portada <span className="font-normal text-gray-400">(opcional)</span>
+              </p>
+              {imagenPreview ? (
+                <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                  <img
+                    src={imagenPreview}
+                    alt="Portada"
+                    className="w-full h-36 object-cover"
+                  />
+                  {subiendoImagen && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <span className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full inline-block" />
+                    </div>
+                  )}
+                  {!subiendoImagen && imagenPortada && (
+                    <div className="absolute top-2 right-2">
+                      <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Subida
+                      </span>
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setImagenPortada(""); setImagenPreview(""); setErrorImagen(""); }}
+                    className="absolute bottom-2 right-2 bg-white/90 hover:bg-white text-gray-700 h-7 gap-1 text-xs"
+                  >
+                    <Trash2 className="w-3 h-3" /> Quitar
+                  </Button>
+                </div>
+              ) : (
+                <label
+                  className="flex flex-col items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-river-red hover:bg-red-50/30 transition-colors group"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) subirImagen(f); }}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) subirImagen(f); }}
+                  />
+                  <Upload className="w-5 h-5 text-gray-300 group-hover:text-river-red transition-colors" />
+                  <span className="text-xs text-gray-400 group-hover:text-gray-600">
+                    Clic o arrastrá una imagen aquí
+                  </span>
+                </label>
+              )}
+              {errorImagen && (
+                <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-1.5">{errorImagen}</p>
+              )}
+            </div>
 
             <div className="flex gap-2">
               <Button

@@ -5,10 +5,12 @@ import noticiasRouter from "./noticias";
 import publicarRouter from "./publicar";
 import telegramWebhookRouter from "./telegram-webhook";
 import partidosRouter from "./partidos";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(storageRouter);
 router.use(redactorRouter);
 router.use(noticiasRouter);
 router.use(publicarRouter);

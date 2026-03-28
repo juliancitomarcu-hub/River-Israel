@@ -35,6 +35,7 @@ interface NoticiaPublicada {
   contenido: string;
   tags: string;
   fuente: string;
+  imagenPortada?: string;
   createdAt: string;
 }
 
@@ -91,12 +92,16 @@ function noticiaANewsItem(n: NoticiaPublicada): NewsItem {
     "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=2070&auto=format&fit=crop",
   ];
 
+  const imageUrl = n.imagenPortada
+    ? `/api/storage${n.imagenPortada}`
+    : IMAGENES[n.id % IMAGENES.length];
+
   return {
     id: String(n.id),
     title: n.titulo,
     excerpt: primerParrafo.slice(0, 160),
     date: formatearFecha(n.createdAt),
-    imageUrl: IMAGENES[n.id % IMAGENES.length],
+    imageUrl,
     category: categoria,
   };
 }

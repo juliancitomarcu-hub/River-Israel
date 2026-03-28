@@ -22,10 +22,11 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
 }
 
 router.post("/publicar-noticia", async (req, res) => {
-  const { textoResultado, textoOriginal, fuente } = req.body as {
+  const { textoResultado, textoOriginal, fuente, imagenPortada } = req.body as {
     textoResultado?: string;
     textoOriginal?: string;
     fuente?: string;
+    imagenPortada?: string;
   };
 
   if (!textoResultado || textoResultado.trim().length < 20) {
@@ -45,6 +46,7 @@ router.post("/publicar-noticia", async (req, res) => {
         textoOriginal: textoOriginal ?? "",
         fuente: fuente ?? "",
         publicada: true,
+        imagenPortada: imagenPortada ?? "",
       })
       .returning();
 

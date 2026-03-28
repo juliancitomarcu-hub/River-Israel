@@ -10,6 +10,7 @@ interface NoticiaCompleta {
   tags: string;
   fuente: string;
   textoOriginal: string;
+  imagenPortada?: string;
   createdAt: string;
 }
 
@@ -75,7 +76,11 @@ export default function Noticia() {
 
   if (!match) return null;
 
-  const imagenUrl = data ? IMAGENES[data.id % IMAGENES.length] : IMAGENES[0];
+  const imagenUrl = data?.imagenPortada
+    ? `/api/storage${data.imagenPortada}`
+    : data
+    ? IMAGENES[data.id % IMAGENES.length]
+    : IMAGENES[0];
 
   return (
     <>

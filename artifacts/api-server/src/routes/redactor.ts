@@ -90,10 +90,11 @@ router.post("/procesar-noticia", async (req, res) => {
 });
 
 router.post("/enviar-telegram", async (req, res) => {
-  const { texto, textoOriginal, fuente } = req.body as {
+  const { texto, textoOriginal, fuente, imagenPortada } = req.body as {
     texto?: string;
     textoOriginal?: string;
     fuente?: string;
+    imagenPortada?: string;
   };
 
   const token = process.env.TELEGRAM_TOKEN;
@@ -122,6 +123,7 @@ router.post("/enviar-telegram", async (req, res) => {
         fuente: fuente ?? "",
         publicada: false,
         pendiente: true,
+        imagenPortada: imagenPortada ?? "",
       })
       .returning();
 
