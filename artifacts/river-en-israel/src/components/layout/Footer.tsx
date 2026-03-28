@@ -1,6 +1,20 @@
+import { useState } from "react";
+import { Link } from "wouter";
 import { MapPin, Mail, Phone, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
 
 export function Footer() {
+  const [clicks, setClicks] = useState(0);
+
+  const handleLogoClick = () => {
+    const next = clicks + 1;
+    setClicks(next);
+    if (next >= 3) {
+      setClicks(0);
+      window.location.href = "/redactor";
+    }
+    setTimeout(() => setClicks(0), 1500);
+  };
+
   return (
     <footer className="bg-river-black text-white border-t-4 border-river-red pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -9,9 +23,14 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="relative w-12 h-12 overflow-hidden rounded-full border-2 border-white">
+              <button
+                onClick={handleLogoClick}
+                className="relative w-12 h-12 overflow-hidden rounded-full border-2 border-white cursor-default select-none focus:outline-none"
+                aria-hidden="true"
+                tabIndex={-1}
+              >
                 <div className="absolute inset-0 bg-diagonal-red"></div>
-              </div>
+              </button>
               <span className="font-display font-bold text-3xl">RIVER EN ISRAEL</span>
             </div>
             <p className="text-gray-400 max-w-sm mt-4">
@@ -70,6 +89,7 @@ export function Footer() {
           <div className="flex gap-4 mt-4 md:mt-0">
             <a href="#" className="hover:text-white transition-colors">Privacidad</a>
             <a href="#" className="hover:text-white transition-colors">Términos</a>
+            <Link href="/redactor" className="text-white/5 hover:text-white/5 transition-none select-none" tabIndex={-1} aria-hidden="true">1901</Link>
           </div>
         </div>
       </div>
