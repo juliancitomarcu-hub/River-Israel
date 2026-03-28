@@ -46,7 +46,7 @@ export default function Home() {
       <section className="relative w-full bg-river-black overflow-hidden" style={{ aspectRatio: "1200/420", maxHeight: "520px", minHeight: "260px" }}>
         {/* Banner de portada */}
         <img
-          src={`${import.meta.env.BASE_URL}images/hero-monumental.png`}
+          src={`${import.meta.env.BASE_URL}images/hero-monumental.png?v=2`}
           alt="Portada River en Israel"
           className="absolute inset-0 w-full h-full object-cover"
           draggable={false}
