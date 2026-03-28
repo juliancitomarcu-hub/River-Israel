@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown } from "lucide-react";
+import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, ExternalLink } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline, useSubmitContact } from "@/hooks/use-river-data";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -187,40 +187,75 @@ export default function Home() {
                 <Trophy className="text-river-red" /> Fixture y Resultados
               </h3>
 
-              <div className="space-y-4 relative z-10">
-                {matches?.map((match) => (
-                  <div key={match.id} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors">
-                    <div className="flex justify-between text-xs text-gray-400 mb-3">
-                      <span>{match.competition}</span>
-                      <span>{match.date}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className={cn("font-bold", match.isRiverHome ? "text-white" : "text-gray-400")}>
-                        {match.homeTeam}
+              <div className="space-y-3 relative z-10 max-h-[520px] overflow-y-auto pr-1 scrollbar-thin">
+                {!matches && (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-2 border-river-red border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                {matches?.map((match) => {
+                  const [golesRiver, golesRival] = match.isRiverHome
+                    ? [match.homeScore, match.awayScore]
+                    : [match.awayScore, match.homeScore];
+                  const ganamos = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver > golesRival;
+                  const perdimos = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver < golesRival;
+                  const empate = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver === golesRival;
+
+                  return (
+                    <div key={match.id} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                      <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
+                        <span className="font-semibold text-gray-300">{match.competition}</span>
+                        <div className="flex items-center gap-1.5">
+                          {match.status === 'LIVE' && (
+                            <span className="flex items-center gap-1 bg-green-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold animate-pulse">
+                              🔴 EN VIVO
+                            </span>
+                          )}
+                          {match.status === 'FINISHED' && (
+                            <span className={cn(
+                              "px-1.5 py-0.5 rounded text-[10px] font-bold",
+                              ganamos ? "bg-green-600 text-white" : perdimos ? "bg-red-700 text-white" : "bg-gray-600 text-white"
+                            )}>
+                              {ganamos ? "✓ Ganamos" : perdimos ? "✗ Perdimos" : "= Empate"}
+                            </span>
+                          )}
+                          <span>{match.date}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 font-display text-xl bg-black/40 px-3 py-1 rounded">
-                        <span>{match.homeScore !== null ? match.homeScore : '-'}</span>
-                        <span className="text-river-red">:</span>
-                        <span>{match.awayScore !== null ? match.awayScore : '-'}</span>
-                      </div>
-                      <div className={cn("font-bold text-right", !match.isRiverHome ? "text-white" : "text-gray-400")}>
-                        {match.awayTeam}
-                      </div>
-                    </div>
-                    {match.status === 'UPCOMING' && (
-                      <div className="mt-3 text-center">
-                        <span className="text-xs bg-river-red text-white px-2 py-1 rounded font-bold uppercase tracking-widest">
-                          Próximo Partido
+
+                      <div className="flex items-center gap-2">
+                        <span className={cn("flex-1 font-bold text-sm truncate", match.isRiverHome ? "text-white" : "text-gray-300")}>
+                          {match.homeTeam}
+                        </span>
+                        <div className="font-display text-lg bg-black/40 px-2.5 py-0.5 rounded tabular-nums flex-shrink-0">
+                          {match.status === 'FINISHED' || match.status === 'LIVE'
+                            ? <span>{match.homeScore} <span className="text-river-red/70">-</span> {match.awayScore}</span>
+                            : <span className="text-gray-400 text-sm">vs</span>
+                          }
+                        </div>
+                        <span className={cn("flex-1 font-bold text-sm text-right truncate", !match.isRiverHome ? "text-white" : "text-gray-300")}>
+                          {match.awayTeam}
                         </span>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {match.status === 'UPCOMING' && match.horaIsrael && (
+                        <p className="text-xs text-river-red font-semibold mt-1.5 text-center">
+                          ⏰ {match.horaIsrael}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
-              <Button className="w-full mt-6 bg-white text-river-black hover:bg-gray-200">
-                Ver Calendario Completo
-              </Button>
+              <a
+                href="https://www.promiedos.com.ar/team/river-plate/igi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full mt-4 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-bold py-2.5 rounded-xl transition-colors relative z-10"
+              >
+                Ver en Promiedos <ExternalLink className="w-4 h-4" />
+              </a>
             </motion.div>
           </div>
         </div>

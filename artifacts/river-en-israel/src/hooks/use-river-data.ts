@@ -13,12 +13,14 @@ export interface MatchResult {
   id: string;
   competition: string;
   date: string;
+  horaIsrael: string;
   homeTeam: string;
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
-  status: 'FINISHED' | 'UPCOMING';
+  status: 'FINISHED' | 'UPCOMING' | 'LIVE';
   isRiverHome: boolean;
+  resultado: string | null;
 }
 
 export interface TimelineEvent {
@@ -113,13 +115,44 @@ export function useNews() {
   });
 }
 
+interface PartidoAPI {
+  id: string;
+  competicion: string;
+  fecha: string;
+  horaIsrael: string;
+  equipoLocal: string;
+  equipoVisitante: string;
+  golesLocal: number | null;
+  golesVisitante: number | null;
+  estado: "FINALIZADO" | "PROXIMO" | "EN_CURSO";
+  esLocalRiver: boolean;
+  resultado: string | null;
+}
+
 export function useMatches() {
   return useQuery({
-    queryKey: ['matches'],
-    queryFn: async () => {
-      await new Promise(resolve => setTimeout(resolve, 400));
-      return MOCK_MATCHES;
-    }
+    queryKey: ["partidos-river"],
+    queryFn: async (): Promise<MatchResult[]> => {
+      const res = await fetch("/api/partidos-river");
+      if (!res.ok) return MOCK_MATCHES;
+      const json = await res.json() as { partidos: PartidoAPI[] };
+      if (!json.partidos?.length) return MOCK_MATCHES;
+
+      return json.partidos.map((p): MatchResult => ({
+        id: p.id,
+        competition: p.competicion,
+        date: p.fecha,
+        horaIsrael: p.horaIsrael,
+        homeTeam: p.equipoLocal,
+        awayTeam: p.equipoVisitante,
+        homeScore: p.golesLocal,
+        awayScore: p.golesVisitante,
+        status: p.estado === "FINALIZADO" ? "FINISHED" : p.estado === "EN_CURSO" ? "LIVE" : "UPCOMING",
+        isRiverHome: p.esLocalRiver,
+        resultado: p.resultado,
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
