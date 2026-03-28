@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle
+  BookOpen, CalendarDays, AlertTriangle, Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,6 +52,7 @@ export default function Redactor() {
   const [imagenPreview, setImagenPreview] = useState<string>("");
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [errorImagen, setErrorImagen] = useState("");
+  const [ajustandoImagen, setAjustandoImagen] = useState(false);
 
   // Mis publicaciones
   const [misPublicaciones, setMisPublicaciones] = useState<NoticiaPublicada[]>([]);
@@ -148,6 +149,29 @@ export default function Redactor() {
       setImagenPreview("");
     } finally {
       setSubiendoImagen(false);
+    }
+  };
+
+  const ajustarImagenConIA = async () => {
+    if (!imagenPortada && !imagenPreview) return;
+    setAjustandoImagen(true);
+    setErrorImagen("");
+    try {
+      let blob: Blob;
+      if (imagenPortada) {
+        const res = await fetch(`/api/storage${imagenPortada}`);
+        if (!res.ok) throw new Error("No se pudo cargar la imagen");
+        blob = await res.blob();
+      } else {
+        const res = await fetch(imagenPreview);
+        blob = await res.blob();
+      }
+      const file = new File([blob], "portada.jpg", { type: blob.type || "image/jpeg" });
+      await subirImagen(file);
+    } catch (err) {
+      setErrorImagen(err instanceof Error ? err.message : "Error al ajustar la imagen");
+    } finally {
+      setAjustandoImagen(false);
     }
   };
 
@@ -882,6 +906,22 @@ export default function Redactor() {
                 {actualizandoEstado === "guardado" && (
                   <p className="text-xs text-green-600 text-center font-semibold">✅ ¡La nota editada ya está publicada en el sitio!</p>
                 )}
+
+                {/* Ajustar imagen — solo si hay imagen cargada en modo edición */}
+                {(imagenPortada || imagenPreview) && (
+                  <Button
+                    variant="outline"
+                    onClick={ajustarImagenConIA}
+                    disabled={ajustandoImagen || subiendoImagen}
+                    className="w-full gap-2 h-10 text-sm border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
+                  >
+                    {ajustandoImagen ? (
+                      <><span className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full inline-block" /> Ajustando imagen...</>
+                    ) : (
+                      <><Wand2 className="w-3.5 h-3.5" /> Ajustar imagen con IA</>
+                    )}
+                  </Button>
+                )}
               </motion.div>
             ) : (
               <AnimatePresence mode="wait">
@@ -1006,6 +1046,25 @@ export default function Redactor() {
                   <p className="text-xs text-green-600 text-center font-semibold">
                     ✅ ¡La nota ya está visible en la sección Actualidad del sitio!
                   </p>
+                )}
+
+                {/* Ajustar imagen — solo si hay imagen cargada */}
+                {(imagenPortada || imagenPreview) && (
+                  <Button
+                    variant="outline"
+                    onClick={ajustarImagenConIA}
+                    disabled={ajustandoImagen || subiendoImagen}
+                    className="w-full gap-2 h-10 text-sm border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
+                  >
+                    {ajustandoImagen ? (
+                      <><span className="animate-spin w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full inline-block" /> Ajustando imagen...</>
+                    ) : (
+                      <><Wand2 className="w-3.5 h-3.5" /> Ajustar imagen con IA</>
+                    )}
+                  </Button>
+                )}
+                {errorImagen && (
+                  <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-1.5 text-center">{errorImagen}</p>
                 )}
               </motion.div>
             )}
