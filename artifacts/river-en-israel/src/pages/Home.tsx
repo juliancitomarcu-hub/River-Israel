@@ -88,7 +88,7 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="relative flex-shrink-0"
+            className="relative flex-shrink-0 mr-4 sm:mr-10 md:mr-20"
           >
             <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
             <img
