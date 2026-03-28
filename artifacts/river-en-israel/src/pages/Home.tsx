@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
+import ShareButton from "@/components/ShareButton";
 
 const contactSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
@@ -146,8 +147,8 @@ export default function Home() {
                   variants={fadeIn}
                   className={cn(i === 0 ? "md:col-span-2" : "")}
                 >
-                  <Link href={`/noticia/${item.id}`}>
-                    <div className="group bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 cursor-pointer h-full">
+                  <div className="group bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
+                    <Link href={`/noticia/${item.id}`} className="flex-1 flex flex-col">
                       <div className={cn("relative overflow-hidden", i === 0 ? "h-64 md:h-80" : "h-48")}>
                         <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10"></div>
                         <img
@@ -161,20 +162,23 @@ export default function Home() {
                           </span>
                         </div>
                       </div>
-                      <div className="p-6">
+                      <div className="p-6 flex-1 flex flex-col">
                         <span className="text-sm text-gray-500 flex items-center gap-2 mb-2">
                           <Calendar className="w-4 h-4" /> {item.date}
                         </span>
                         <h3 className={cn("font-display font-bold text-river-black group-hover:text-river-red transition-colors mb-3", i === 0 ? "text-2xl" : "text-xl")}>
                           {item.title}
                         </h3>
-                        <p className="text-gray-600 line-clamp-2">{item.excerpt}</p>
+                        <p className="text-gray-600 line-clamp-2 flex-1">{item.excerpt}</p>
                         <span className="inline-flex items-center gap-1 mt-4 text-river-red text-sm font-bold group-hover:gap-2 transition-all">
                           Leer nota completa <ChevronRight className="w-4 h-4" />
                         </span>
                       </div>
+                    </Link>
+                    <div className="px-6 pb-4 border-t border-gray-100 pt-3 flex justify-end">
+                      <ShareButton titulo={item.title} id={item.id} />
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               ))}
             </div>

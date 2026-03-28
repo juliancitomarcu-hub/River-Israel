@@ -2,6 +2,7 @@ import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Calendar, ArrowLeft, Tag } from "lucide-react";
+import ShareButton from "@/components/ShareButton";
 
 interface NoticiaCompleta {
   id: number;
@@ -135,13 +136,18 @@ export default function Noticia() {
               <h1 className="text-3xl md:text-5xl font-display font-bold text-white leading-tight">
                 {data.titulo}
               </h1>
-              <div className="flex items-center gap-4 mt-4 text-white/60 text-sm">
+              <div className="flex items-center gap-4 mt-4 text-white/60 text-sm flex-wrap">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" />
                   {formatearFecha(data.createdAt)}
                 </span>
                 <span className="text-white/40">·</span>
                 <span>River en Israel — Filial Ramat Gan</span>
+                <ShareButton
+                  titulo={data.titulo}
+                  id={data.id}
+                  className="ml-auto"
+                />
               </div>
             </div>
           </div>
