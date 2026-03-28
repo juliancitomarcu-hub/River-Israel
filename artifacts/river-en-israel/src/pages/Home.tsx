@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline, useSubmitContact } from "@/hooks/use-river-data";
-import escudoFilial from "@assets/image_1774735608321.png";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -44,7 +43,7 @@ export default function Home() {
     <div className="w-full bg-background overflow-hidden">
 
       {/* ================= HERO SECTION ================= */}
-      <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden bg-river-black">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-river-black z-10" />
           <img
@@ -63,9 +62,10 @@ export default function Home() {
           >
             <div className="absolute -inset-8 bg-river-red/20 blur-3xl rounded-full"></div>
             <img
-              src={escudoFilial}
+              src={`${import.meta.env.BASE_URL}escudo-filial.png`}
               alt="Escudo Filial River en Israel"
-              className="w-32 h-32 md:w-48 md:h-48 object-contain drop-shadow-[0_0_20px_rgba(204,0,0,0.8)] relative z-10"
+              className="w-32 h-32 md:w-48 md:h-48 object-contain relative z-10"
+              style={{ filter: "drop-shadow(0 0 24px rgba(204,0,0,0.85))" }}
             />
           </motion.div>
 
