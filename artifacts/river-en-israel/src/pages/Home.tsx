@@ -53,14 +53,14 @@ export default function Home() {
         />
 
         {/* Layout: texto izquierda, escudo derecha */}
-        <div className="absolute inset-0 z-10 flex items-center justify-between px-6 sm:px-10 md:px-16 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+        <div className="absolute inset-0 z-10 flex items-end justify-between px-6 sm:px-10 md:px-16 pb-8 sm:pb-10 bg-gradient-to-t from-black/75 via-black/20 to-transparent">
 
           {/* Texto — izquierda */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-col justify-center max-w-[55%]"
+            className="flex flex-col max-w-[58%]"
           >
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-white leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
               RIVER EN <span className="text-transparent bg-clip-text bg-gradient-to-r from-river-red to-red-400">ISRAEL</span>
@@ -68,7 +68,7 @@ export default function Home() {
             <p className="text-xs sm:text-sm md:text-base text-gray-200 mt-2 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
               La Banda del Millonario latiendo fuerte desde la Tierra Santa.<br className="hidden sm:block" /> Uniendo pasiones a miles de kilómetros.
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-row gap-3">
               <a
                 href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
                 target="_blank"
@@ -88,7 +88,7 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="relative flex-shrink-0"
+            className="relative flex-shrink-0 self-center"
           >
             <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
             <img
