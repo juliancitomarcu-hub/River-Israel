@@ -53,7 +53,7 @@ export default function Home() {
         />
 
         {/* Layout: texto izquierda, escudo derecha */}
-        <div className="absolute inset-0 z-10 flex items-end justify-between px-6 sm:px-10 md:px-16 pb-8 sm:pb-10 bg-gradient-to-t from-black/75 via-black/20 to-transparent">
+        <div className="absolute inset-0 z-10 flex items-end justify-between px-6 sm:px-10 md:px-16 pb-4 sm:pb-6 bg-gradient-to-t from-black/75 via-black/20 to-transparent">
 
           {/* Texto — izquierda */}
           <motion.div
