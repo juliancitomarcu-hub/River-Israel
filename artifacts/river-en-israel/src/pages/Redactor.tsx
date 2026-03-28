@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 type Estado = "idle" | "procesando" | "listo" | "error";
 type EstadoTelegram = "idle" | "enviando" | "enviado" | "error";
 type EstadoPublicar = "idle" | "publicando" | "publicado" | "error";
-type FuenteNoticias = "tyc" | "ole";
+type FuenteNoticias = "tyc" | "ole" | "infobae" | "clarin" | "lanacion" | "bolavip" | "as" | "superdeportivo";
 
 interface NoticiaRaw {
   titulo: string;
@@ -220,8 +220,7 @@ export default function Redactor() {
             Redactor <span className="text-river-red">IA</span>
           </h1>
           <p className="text-gray-500 max-w-xl mx-auto">
-            Buscá la última noticia de TyC o Olé, la IA la transforma al estilo israelí,
-            y aprobás o rechazás la publicación desde tu Telegram.
+            Elegí un medio (TyC, Olé, Infobae, Clarín, La Nación y más), la IA transforma la nota al estilo israelí, y aprobás o rechazás desde tu Telegram.
           </p>
         </div>
 
@@ -241,21 +240,34 @@ export default function Redactor() {
             Paso 1 — Buscar última noticia
           </h2>
 
-          <div className="flex flex-wrap gap-3 mb-4">
-            <div className="flex rounded-xl overflow-hidden border border-gray-200">
-              <button
-                onClick={() => setFuente("tyc")}
-                className={`px-5 py-2.5 text-sm font-bold transition-colors ${fuente === "tyc" ? "bg-river-red text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
-              >
-                TyC Sports
-              </button>
-              <button
-                onClick={() => setFuente("ole")}
-                className={`px-5 py-2.5 text-sm font-bold transition-colors ${fuente === "ole" ? "bg-river-red text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
-              >
-                Olé
-              </button>
+          <div className="mb-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><Globe className="w-3 h-3" /> Elegí el medio</p>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { id: "tyc", label: "TyC Sports" },
+                { id: "ole", label: "Olé" },
+                { id: "infobae", label: "Infobae" },
+                { id: "clarin", label: "Clarín" },
+                { id: "lanacion", label: "La Nación" },
+                { id: "bolavip", label: "Bolavip" },
+                { id: "as", label: "AS Argentina" },
+                { id: "superdeportivo", label: "SuperDeportivo" },
+              ] as { id: FuenteNoticias; label: string }[]).map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => { setFuente(f.id); setNoticias([]); setErrorBusqueda(""); }}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${
+                    fuente === f.id
+                      ? "bg-river-red text-white border-river-red"
+                      : "bg-white text-gray-500 border-gray-200 hover:border-river-red hover:text-river-red"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
+          </div>
+          <div className="flex gap-3 mb-4">
 
             <Button
               onClick={buscarNoticias}
