@@ -52,6 +52,58 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
   return { titulo, contenido, tags };
 }
 
+function esImagenGenerica(url: string): boolean {
+  if (!url) return true;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes("site_image") ||
+    lower.includes("og-default") ||
+    lower.includes("og_default") ||
+    lower.includes("default-image") ||
+    lower.includes("default_image") ||
+    lower.includes("placeholder") ||
+    lower.includes("/brand/") ||
+    lower.includes("/logo") ||
+    lower.endsWith("logo.jpg") ||
+    lower.endsWith("logo.png") ||
+    lower.endsWith("logo.webp") ||
+    lower.includes("favicon") ||
+    lower.includes("icon.png") ||
+    lower.includes("icon.jpg")
+  );
+}
+
+async function buscarArticuloUrl(seccionUrl: string, tituloNoticia: string): Promise<string | null> {
+  try {
+    const res = await fetch(seccionUrl, {
+      headers: { "User-Agent": UA, "Accept-Language": "es-AR,es;q=0.9" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    const palabrasClave = tituloNoticia.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+    let mejorUrl: string | null = null;
+    let mejorScore = 0;
+
+    $("a[href]").each((_, el) => {
+      const href = $(el).attr("href") ?? "";
+      const texto = $(el).text().toLowerCase();
+      const hrefLower = href.toLowerCase();
+      const score = palabrasClave.filter(p => texto.includes(p) || hrefLower.includes(p)).length;
+      if (score > mejorScore && href.length > 10 && !href.startsWith("#")) {
+        mejorScore = score;
+        mejorUrl = href.startsWith("http") ? href : `${new URL(seccionUrl).origin}${href}`;
+      }
+    });
+
+    return mejorScore >= 2 ? mejorUrl : null;
+  } catch {
+    return null;
+  }
+}
+
 async function obtenerContenidoArticulo(url: string): Promise<{ texto: string; ogImage: string | null }> {
   try {
     const res = await fetch(url, {
@@ -63,10 +115,30 @@ async function obtenerContenidoArticulo(url: string): Promise<{ texto: string; o
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    const ogImage =
-      $('meta[property="og:image"]').attr("content") ??
-      $('meta[name="og:image"]').attr("content") ??
-      null;
+    const candidatosOg = [
+      $('meta[property="og:image:secure_url"]').attr("content"),
+      $('meta[property="og:image"]').attr("content"),
+      $('meta[name="og:image"]').attr("content"),
+      $('meta[name="twitter:image"]').attr("content"),
+      $('meta[property="twitter:image"]').attr("content"),
+    ].filter(Boolean) as string[];
+
+    let ogImage: string | null = candidatosOg.find(src => !esImagenGenerica(src)) ?? null;
+
+    if (!ogImage) {
+      const imgsCuerpo: string[] = [];
+      $("article img, .article-body img, .nota-body img, .article__content img, .post-content img, .detail-body img, figure img").each((_, el) => {
+        const src = $(el).attr("src") ?? $(el).attr("data-src") ?? $(el).attr("data-lazy-src") ?? "";
+        if (src && src.startsWith("http") && !esImagenGenerica(src)) {
+          const width = parseInt($(el).attr("width") ?? "0", 10);
+          const height = parseInt($(el).attr("height") ?? "0", 10);
+          if (width >= 300 || height >= 200 || (!width && !height)) {
+            imgsCuerpo.push(src);
+          }
+        }
+      });
+      ogImage = imgsCuerpo[0] ?? null;
+    }
 
     const parrafos = $("article p, .article-body p, .nota-body p, .article__content p, .post-content p, .detail-body p")
       .map((_: number, el: cheerio.Element) => $(el).text().trim())
@@ -77,6 +149,60 @@ async function obtenerContenidoArticulo(url: string): Promise<{ texto: string; o
     return { texto: texto.length > 200 ? texto : "", ogImage };
   } catch {
     return { texto: "", ogImage: null };
+  }
+}
+
+function extraerNombreProtagonista(titulo: string): string {
+  const stopWords = new Set([
+    "river","plate","para","desde","tras","ante","esta","este","los","las",
+    "del","que","con","por","una","uno","como","pero","hay","muy","más",
+    "fue","son","hay","sus","ser","han","van","sin","tal","así","era",
+    "estaba","estoy","tengo","nunca","siempre","ahora","después","antes",
+    "cuando","donde","quien","cuál","cómo","esto","algo","todo","nada",
+    "solo","cada","otro","otra","nuevo","nueva","gran","buen","bien","mal"
+  ]);
+  // Solo tomamos la parte antes del primer : para evitar frases dentro de comillas
+  const partePrincipal = titulo.split(/[:"«]/)[0] ?? titulo;
+  const palabras = partePrincipal
+    .replace(/[,;¿?¡!]/g, " ")
+    .split(/\s+/)
+    .filter(p => /^[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,}/.test(p) && !stopWords.has(p.toLowerCase()));
+  return palabras.slice(0, 2).join(" ");
+}
+
+async function buscarImagenWikipedia(termino: string): Promise<string | null> {
+  if (!termino || termino.length < 4) return null;
+  try {
+    // Primero buscar sin "River Plate" para obtener la foto del jugador directamente
+    const query = encodeURIComponent(termino);
+    const url = `https://es.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${query}&prop=pageimages&format=json&pithumbsize=1600&gsrlimit=5&origin=*`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "RiverEnIsrael/1.0" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { query?: { pages?: Record<string, { thumbnail?: { source: string } }> } };
+    const pages = data.query?.pages;
+    if (!pages) return null;
+
+    const imagenes = Object.values(pages)
+      .map(p => p.thumbnail?.source)
+      .filter(Boolean)
+      .filter((src): src is string => {
+        if (!src) return false;
+        const lower = src.toLowerCase();
+        // Excluir logos SVG, escudos y banderas
+        return !lower.includes(".svg") &&
+               !lower.includes("logo") &&
+               !lower.includes("escudo") &&
+               !lower.includes("flag") &&
+               !lower.includes("bandera") &&
+               !lower.includes("coat_of_arms");
+      });
+
+    return imagenes[0] ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -144,9 +270,27 @@ async function ejecutarCiclo(): Promise<void> {
     let ogImage: string | null = null;
 
     if (noticia.url) {
-      const { texto, ogImage: img } = await obtenerContenidoArticulo(noticia.url);
+      let urlArticulo = noticia.url;
+
+      const esSeccion = /\.(html?|com\.ar|com)\/?$/.test(noticia.url) ||
+        noticia.url.split("/").filter(Boolean).length <= 3;
+
+      if (esSeccion) {
+        const urlEspecifica = await buscarArticuloUrl(noticia.url, noticia.titulo);
+        if (urlEspecifica) {
+          logger.info({ urlEspecifica }, "Scheduler: URL de artículo específico encontrada");
+          urlArticulo = urlEspecifica;
+        }
+      }
+
+      const { texto, ogImage: img } = await obtenerContenidoArticulo(urlArticulo);
       if (texto) textoParaIA = `${noticia.titulo}\n\n${texto}`;
       ogImage = img;
+
+      if (!ogImage && urlArticulo !== noticia.url) {
+        const { ogImage: imgSeccion } = await obtenerContenidoArticulo(noticia.url);
+        ogImage = imgSeccion;
+      }
     }
 
     const completion = await openai.chat.completions.create({
@@ -165,6 +309,18 @@ async function ejecutarCiclo(): Promise<void> {
     }
 
     const { titulo, contenido, tags } = parsearResultado(resultado);
+
+    if (!ogImage) {
+      const protagonista = extraerNombreProtagonista(noticia.titulo);
+      if (protagonista) {
+        logger.info({ protagonista }, "Scheduler: buscando imagen en Wikipedia");
+        const wikiImg = await buscarImagenWikipedia(protagonista);
+        if (wikiImg) {
+          logger.info({ wikiImg }, "Scheduler: imagen Wikipedia encontrada");
+          ogImage = wikiImg;
+        }
+      }
+    }
 
     let imagenPortada = "";
     if (ogImage) {
