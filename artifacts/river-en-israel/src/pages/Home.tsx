@@ -245,10 +245,8 @@ export default function Home() {
                 })}
               </div>
 
-              <Link href="/fixture">
-                <a className="w-full mt-4 flex items-center justify-center bg-white text-river-black hover:bg-gray-100 font-bold py-2.5 rounded-xl transition-colors relative z-10 text-sm">
-                  Fixture Completo
-                </a>
+              <Link href="/fixture" className="w-full mt-4 flex items-center justify-center bg-white text-river-black hover:bg-gray-100 font-bold py-2.5 rounded-xl transition-colors relative z-10 text-sm">
+                Fixture Completo
               </Link>
             </motion.div>
           </div>
