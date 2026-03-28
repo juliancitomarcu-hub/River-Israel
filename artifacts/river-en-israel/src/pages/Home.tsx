@@ -90,29 +90,13 @@ export default function Home() {
             className="relative flex-shrink-0 self-center"
           >
             <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
-            <svg
-              viewBox="0 0 100 118"
-              xmlns="http://www.w3.org/2000/svg"
-              className="relative z-10 w-28 h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 drop-shadow-[0_4px_24px_rgba(204,0,0,0.8)]"
-              aria-label="Escudo Filial River en Israel"
-            >
-              <defs>
-                <clipPath id="shield-clip">
-                  <path d="M50 4 L95 21 L95 70 C95 97 75 112 50 116 C25 112 5 97 5 70 L5 21 Z" />
-                </clipPath>
-              </defs>
-              {/* Shield white background */}
-              <path d="M50 4 L95 21 L95 70 C95 97 75 112 50 116 C25 112 5 97 5 70 L5 21 Z" fill="white" />
-              {/* Red diagonal sash (River Plate) */}
-              <rect x="-15" y="50" width="130" height="34" fill="#cc0000" clipPath="url(#shield-clip)" transform="rotate(-22 50 67)" />
-              {/* Star of David — Israeli blue, above sash */}
-              <g clipPath="url(#shield-clip)">
-                <polygon points="50,13 38,31 62,31" fill="none" stroke="#0038b8" strokeWidth="2.8" strokeLinejoin="round" />
-                <polygon points="50,37 38,19 62,19" fill="none" stroke="#0038b8" strokeWidth="2.8" strokeLinejoin="round" />
-              </g>
-              {/* Shield border */}
-              <path d="M50 4 L95 21 L95 70 C95 97 75 112 50 116 C25 112 5 97 5 70 L5 21 Z" fill="none" stroke="#cc0000" strokeWidth="3.5" />
-            </svg>
+            <img
+              src={`${import.meta.env.BASE_URL}images/escudo-carp.png`}
+              alt="Escudo Club Atlético River Plate"
+              className="relative z-10 w-28 h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 object-contain"
+              style={{ filter: "drop-shadow(0 4px 28px rgba(204,0,0,0.9))" }}
+              draggable={false}
+            />
           </motion.div>
         </div>
 
