@@ -93,7 +93,12 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <a href="#filial" className="px-8 py-4 bg-river-red text-white font-bold rounded-full text-lg uppercase tracking-wider hover:bg-river-red-hover transition-all hover:scale-105 shadow-[0_0_20px_rgba(204,0,0,0.5)]">
+            <a
+              href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-4 bg-river-red text-white font-bold rounded-full text-lg uppercase tracking-wider hover:bg-river-red-hover transition-all hover:scale-105 shadow-[0_0_20px_rgba(204,0,0,0.5)]"
+            >
               Unite a la Filial
             </a>
             <a href="#actualidad" className="px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full text-lg uppercase tracking-wider hover:bg-white hover:text-river-black transition-all">
@@ -361,7 +366,7 @@ export default function Home() {
               </ul>
 
               <a
-                href="https://wa.me/972501234567"
+                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
                 target="_blank"
                 rel="noreferrer"
                 className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"
