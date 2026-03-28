@@ -52,18 +52,21 @@ export default function Home() {
           draggable={false}
         />
 
-        {/* Capa de texto — esquina inferior izquierda, estilo portada FB */}
-        <div className="absolute inset-0 z-10 flex flex-col justify-end pb-6 pl-6 sm:pb-8 sm:pl-10 bg-gradient-to-t from-black/70 via-transparent to-transparent">
+        {/* Layout: texto izquierda, escudo derecha */}
+        <div className="absolute inset-0 z-10 flex items-center justify-between px-6 sm:px-10 md:px-16 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+
+          {/* Texto — izquierda */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
+            className="flex flex-col justify-center max-w-[55%]"
           >
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-white leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
               RIVER EN <span className="text-transparent bg-clip-text bg-gradient-to-r from-river-red to-red-400">ISRAEL</span>
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-gray-200 mt-1 mb-4 max-w-lg drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
-              La Banda del Millonario latiendo fuerte desde la Tierra Santa. Uniendo pasiones a miles de kilómetros.
+            <p className="text-xs sm:text-sm md:text-base text-gray-200 mt-2 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
+              La Banda del Millonario latiendo fuerte desde la Tierra Santa.<br className="hidden sm:block" /> Uniendo pasiones a miles de kilómetros.
             </p>
             <div className="flex flex-wrap gap-3">
               <a
@@ -78,6 +81,23 @@ export default function Home() {
                 Últimas Noticias
               </a>
             </div>
+          </motion.div>
+
+          {/* Escudo — derecha */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+            className="relative flex-shrink-0"
+          >
+            <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
+            <img
+              src={`${import.meta.env.BASE_URL}escudo-filial.png`}
+              alt="Escudo Filial River en Israel"
+              className="relative z-10 w-36 h-36 sm:w-52 sm:h-52 md:w-64 md:h-64 object-contain"
+              style={{ filter: "drop-shadow(0 4px 28px rgba(204,0,0,0.9))" }}
+              draggable={false}
+            />
           </motion.div>
         </div>
 
