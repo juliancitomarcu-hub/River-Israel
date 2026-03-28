@@ -42,77 +42,47 @@ export default function Home() {
   return (
     <div className="w-full bg-background overflow-hidden">
 
-      {/* ================= HERO SECTION ================= */}
-      <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden bg-river-black">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-river-black z-10" />
-          <img
-            src={`${import.meta.env.BASE_URL}images/hero-monumental.png`}
-            alt="Estadio Monumental"
-            className="w-full h-full object-cover scale-105"
-          />
-        </div>
+      {/* ================= HERO / PORTADA ================= */}
+      <section className="relative w-full bg-river-black overflow-hidden" style={{ aspectRatio: "1200/420", maxHeight: "520px", minHeight: "260px" }}>
+        {/* Banner de portada */}
+        <img
+          src={`${import.meta.env.BASE_URL}images/hero-monumental.png`}
+          alt="Portada River en Israel"
+          className="absolute inset-0 w-full h-full object-cover"
+          draggable={false}
+        />
 
-        <div className="relative z-20 text-center px-4 max-w-5xl mx-auto flex flex-col items-center">
+        {/* Capa de texto — esquina inferior izquierda, estilo portada FB */}
+        <div className="absolute inset-0 z-10 flex flex-col justify-end pb-6 pl-6 sm:pb-8 sm:pl-10 bg-gradient-to-t from-black/70 via-transparent to-transparent">
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="mb-6 relative"
-          >
-            <div className="absolute -inset-8 bg-river-red/20 blur-3xl rounded-full"></div>
-            <img
-              src={`${import.meta.env.BASE_URL}escudo-filial.png`}
-              alt="Escudo Filial River en Israel"
-              className="w-52 h-52 md:w-80 md:h-80 object-contain relative z-10"
-              style={{ filter: "drop-shadow(0 0 24px rgba(204,0,0,0.85))" }}
-            />
-          </motion.div>
-
-          <motion.h1
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-white mb-4 leading-tight"
           >
-            RIVER EN <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white">ISRAEL</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-xl md:text-3xl text-gray-200 font-medium mb-10 max-w-3xl"
-          >
-            La Banda del Millonario latiendo fuerte desde la Tierra Santa.
-            <br className="hidden md:block" /> Uniendo pasiones a miles de kilómetros.
-          </motion.p>
-
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4"
-          >
-            <a
-              href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-8 py-4 bg-river-red text-white font-bold rounded-full text-lg uppercase tracking-wider hover:bg-river-red-hover transition-all hover:scale-105 shadow-[0_0_20px_rgba(204,0,0,0.5)]"
-            >
-              Unite a la Filial
-            </a>
-            <a href="#actualidad" className="px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full text-lg uppercase tracking-wider hover:bg-white hover:text-river-black transition-all">
-              Últimas Noticias
-            </a>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-white leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+              RIVER EN <span className="text-transparent bg-clip-text bg-gradient-to-r from-river-red to-red-400">ISRAEL</span>
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg text-gray-200 mt-1 mb-4 max-w-lg drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
+              La Banda del Millonario latiendo fuerte desde la Tierra Santa. Uniendo pasiones a miles de kilómetros.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 bg-river-red text-white font-bold rounded-full text-sm uppercase tracking-wider hover:bg-river-red-hover transition-all hover:scale-105 shadow-[0_0_16px_rgba(204,0,0,0.5)]"
+              >
+                Unite a la Filial
+              </a>
+              <a href="#actualidad" className="px-5 py-2.5 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-sm uppercase tracking-wider hover:bg-white/25 transition-all">
+                Últimas Noticias
+              </a>
+            </div>
           </motion.div>
         </div>
 
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 animate-bounce">
-          <a href="#actualidad" className="text-white/70 hover:text-white">
-            <ChevronDown size={40} />
-          </a>
-        </div>
+        {/* Línea roja inferior */}
+        <div className="absolute bottom-0 inset-x-0 h-1 bg-river-red z-20" />
       </section>
 
       {/* ================= ACTUALIDAD SECTION ================= */}
