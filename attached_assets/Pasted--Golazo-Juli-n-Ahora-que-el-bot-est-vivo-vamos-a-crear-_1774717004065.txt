@@ -1,0 +1,51 @@
+¡Golazo, Julián! Ahora que el bot está vivo, vamos a crear el Prompt Maestro. Este es el que va a "instruir" a la IA para que cada vez que encuentre una noticia de Olé o TyC, la transforme en un artículo perfecto para River en Israel.
+Copiá y pegá este bloque de texto en un lugar seguro o directamente en un comentario de tu código en Replit. Este es el que usaremos para alimentar a la API de la IA (como GPT-4 o Gemini):
+📝 El Prompt Maestro (System Prompt)
+> Rol: Actúa como el Editor Jefe de "River en Israel", la comunidad oficial de hinchas en Ramat Gan. Tu tarea es reescribir noticias de River Plate para el sitio web.
+> Instrucciones de Redacción:
+>  * Identidad: Hablá en español rioplatense pero con un toque internacional. Usá términos como "El Más Grande", "El Millo" o "La Banda".
+>  * Contexto Israel: >    - Si la noticia menciona un horario de partido en Argentina, calculá y escribí: "En Israel lo vivimos a las [HORA+6]".
+>    * Mencioná que la Filial Ramat Gan está expectante.
+>  * Estructura de la Nota:
+>    * Titular: Impactante y corto (ej: "¡Vuelve el Muñeco!").
+>    * Cuerpo: 3 párrafos breves. Usa viñetas (•) para datos clave o formaciones.
+>    * Llamado a la acción: Invitá a los hinchas en Israel a unirse a la filial.
+>  * Salida Técnica: Devuelve la respuesta siempre con este formato:
+>    * Título: [Título]
+>    * Contenido: [Cuerpo del artículo]
+>    * Tags: #RiverPlate #RiverIsrael #RamatGan
+> 
+🚀 ¿Cómo lo pasamos a Replit?
+Para que esto funcione de verdad, tu archivo main.py en Replit debería verse así (mezclando el Bot de Telegram con la IA):
+import os
+import requests
+# Nota: Necesitás instalar 'openai' o usar la API de Replit para IA
+
+PROMPT_SISTEMA = """
+(PEGÁ ACÁ TODO EL TEXTO DEL PROMPT MAESTRO QUE TE DI ARRIBA)
+"""
+
+def procesar_noticia_con_ia(texto_original_de_ole):
+    # Aquí es donde el código le manda la noticia de Olé a la IA
+    # junto con el PROMPT_SISTEMA para que la transforme.
+    pass
+
+def enviar_a_telegram(noticia_ia):
+    token = os.environ['TELEGRAM_TOKEN']
+    chat_id = os.environ['MY_CHAT_ID']
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    
+    payload = {
+        "chat_id": chat_id,
+        "text": f"📢 **Propuesta para la Web:**\n\n{noticia_ia}",
+        "parse_mode": "Markdown"
+    }
+    requests.post(url, json=payload)
+
+# Ejemplo de uso:
+noticia_cruda = "River juega el domingo a las 18hs contra Boca en el Monumental."
+# noticia_lista = procesar_noticia_con_ia(noticia_cruda)
+# enviar_a_telegram(noticia_lista)
+
+Próximo paso:
+¿Querés que te ayude a armar la parte del código que "lee" automáticamente las noticias de Olé para que no tengas que copiar y pegar los links manualmente?
