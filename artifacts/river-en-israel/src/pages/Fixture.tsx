@@ -145,6 +145,12 @@ function MatchCard({ match, index }: { match: MatchResult; index: number }) {
           ⏰ {match.horaIsrael}
         </p>
       )}
+      {match.estadio && (
+        <p className="text-center text-xs text-gray-400 mt-1.5 flex items-center justify-center gap-1">
+          <span>🏟</span>
+          <span>{match.estadio}</span>
+        </p>
+      )}
     </motion.div>
   );
 }

@@ -253,6 +253,12 @@ export default function Home() {
                           ⏰ {match.horaIsrael}
                         </p>
                       )}
+                      {match.estadio && (
+                        <p className="text-[10px] text-gray-500 mt-1 text-center flex items-center justify-center gap-1">
+                          <span>🏟</span>
+                          <span>{match.estadio}</span>
+                        </p>
+                      )}
                     </div>
                   );
                 })}

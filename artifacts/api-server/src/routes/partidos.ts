@@ -67,6 +67,7 @@ export interface Partido {
   estado: "FINALIZADO" | "PROXIMO" | "EN_CURSO";
   esLocalRiver: boolean;
   resultado: string | null;
+  estadio?: string;
 }
 
 function parsearFechaHora(startTime: string | undefined): { fecha: string; horaArgentina: string } {
@@ -114,6 +115,10 @@ function mapearPartido(row: PromediosRow, tipo: "proximo" | "resultado"): Partid
 
   const competicion = game.stage_round_name ?? "Partido";
 
+  const estadioVal = row.values.find((v) => v.key === "stadium")?.value
+    ?? ((game as any).venue?.name)
+    ?? (esLocalRiver ? "Estadio Monumental" : undefined);
+
   return {
     id: game.id,
     competicion,
@@ -126,6 +131,7 @@ function mapearPartido(row: PromediosRow, tipo: "proximo" | "resultado"): Partid
     estado,
     esLocalRiver,
     resultado: resultVal,
+    estadio: estadioVal,
   };
 }
 
@@ -157,6 +163,7 @@ export interface PartidoDetallado {
   goles: Gol[];
   alineacionLocal: Formacion[] | null;
   alineacionVisitante: Formacion[] | null;
+  estadio?: string;
 }
 
 let cache: { data: Partido[]; at: number } | null = null;
@@ -303,6 +310,10 @@ router.get("/partido-proximo", async (req, res) => {
       }
     }
 
+    const estadio = (game as any).venue?.name
+      ?? (game as any).stadium?.name
+      ?? (esLocalRiver ? "Estadio Monumental" : undefined);
+
     const resultado: PartidoDetallado = {
       id: game.id,
       competicion: game.stage_round_name ?? "Partido",
@@ -318,6 +329,7 @@ router.get("/partido-proximo", async (req, res) => {
       goles,
       alineacionLocal,
       alineacionVisitante,
+      estadio,
     };
 
     if (estado === "EN_CURSO") {

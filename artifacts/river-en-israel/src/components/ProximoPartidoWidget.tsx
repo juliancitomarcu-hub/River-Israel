@@ -29,6 +29,7 @@ interface PartidoDetallado {
   goles: Gol[];
   alineacionLocal: Formacion[] | null;
   alineacionVisitante: Formacion[] | null;
+  estadio?: string;
 }
 
 function FormacionModal({ local, visitante, equipoLocal, equipoVisitante, onClose }: {
@@ -84,6 +85,7 @@ export default function ProximoPartidoWidget() {
   const [partido, setPartido] = useState<PartidoDetallado | null>(null);
   const [error, setError] = useState(false);
   const [showFormaciones, setShowFormaciones] = useState(false);
+  const [expandido, setExpandido] = useState(false);
 
   async function fetchPartido() {
     try {
@@ -127,7 +129,13 @@ export default function ProximoPartidoWidget() {
         />
       )}
 
-      <div className="bg-river-black rounded-2xl px-5 py-4 text-white shadow-xl border border-white/8 min-w-[240px] max-w-xs">
+      <div
+        className={cn(
+          "bg-river-black rounded-2xl px-5 py-4 text-white shadow-xl border border-white/8 min-w-[240px] max-w-xs cursor-pointer select-none transition-all duration-300",
+          expandido ? "ring-1 ring-river-red/30" : "hover:border-white/16"
+        )}
+        onClick={() => setExpandido((v) => !v)}
+      >
 
         {/* Header fila */}
         <div className="flex items-center justify-between gap-3 mb-3">
@@ -138,7 +146,13 @@ export default function ProximoPartidoWidget() {
               ? "Resultado"
               : "Próximo Partido"}
           </span>
-          <span className="text-[10px] text-gray-400 truncate">{partido.competicion}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-gray-400 truncate">{partido.competicion}</span>
+            <span className={cn(
+              "text-gray-500 text-[10px] transition-transform duration-200",
+              expandido ? "rotate-180" : "rotate-0"
+            )}>▾</span>
+          </div>
         </div>
 
         {/* Marcador / vs */}
@@ -176,40 +190,70 @@ export default function ProximoPartidoWidget() {
           </div>
         )}
 
-        {/* Fecha / hora (próximo) */}
-        {partido.estado === "PROXIMO" && (
-          <div className="mt-2 flex items-center justify-center gap-2 text-xs text-gray-400">
-            <span>{partido.fecha}</span>
-            {partido.horaIsrael && (
-              <span className="text-river-red font-semibold">{partido.horaIsrael}</span>
+        {/* Fecha / hora y estadio — siempre visible */}
+        <div className="mt-2 space-y-1">
+          {partido.estado === "PROXIMO" && (
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+              <span>{partido.fecha}</span>
+              {partido.horaIsrael && (
+                <span className="text-river-red font-semibold">{partido.horaIsrael}</span>
+              )}
+            </div>
+          )}
+          {partido.estadio && (
+            <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500">
+              <span>🏟</span>
+              <span className="truncate">{partido.estadio}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Contenido expandido */}
+        {expandido && (
+          <div className="mt-3 border-t border-white/10 pt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
+
+            {/* Info extra: fecha/hora en resultado o en vivo */}
+            {partido.estado !== "PROXIMO" && (partido.fecha || partido.horaIsrael) && (
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                {partido.fecha && <span>{partido.fecha}</span>}
+                {partido.horaIsrael && (
+                  <span className="text-gray-500">{partido.horaIsrael}</span>
+                )}
+              </div>
+            )}
+
+            {/* Goles */}
+            {partido.goles.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Goles</p>
+                {partido.goles.map((g, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs text-gray-300">
+                    <span className="text-gray-500 w-6 text-right tabular-nums">{g.minuto}'</span>
+                    <span className="text-river-red">⚽</span>
+                    <span className={g.esRiver ? "text-white font-semibold" : "text-gray-400"}>
+                      {g.jugador}
+                    </span>
+                    {g.esRiver && <span className="text-[9px] text-river-red font-bold ml-auto">RIVER</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Formaciones */}
+            {tieneFormaciones && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowFormaciones(true); }}
+                className="w-full text-xs font-bold text-river-red border border-river-red/40 rounded-lg py-1.5 hover:bg-river-red/10 transition-colors"
+              >
+                Ver Posibles Formaciones
+              </button>
+            )}
+
+            {/* Hint si no hay nada extra */}
+            {partido.goles.length === 0 && !tieneFormaciones && (
+              <p className="text-center text-[10px] text-gray-600">Sin datos adicionales aún</p>
             )}
           </div>
-        )}
-
-        {/* Goles */}
-        {partido.goles.length > 0 && (
-          <div className="mt-3 border-t border-white/10 pt-3 space-y-1">
-            {partido.goles.map((g, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-gray-300">
-                <span className="text-gray-500 w-6 text-right tabular-nums">{g.minuto}'</span>
-                <span className="text-river-red">⚽</span>
-                <span className={g.esRiver ? "text-white font-semibold" : "text-gray-400"}>
-                  {g.jugador}
-                </span>
-                {g.esRiver && <span className="text-[9px] text-river-red font-bold ml-auto">RIVER</span>}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Botón formaciones */}
-        {tieneFormaciones && (
-          <button
-            onClick={() => setShowFormaciones(true)}
-            className="mt-3 w-full text-xs font-bold text-river-red border border-river-red/40 rounded-lg py-1.5 hover:bg-river-red/10 transition-colors"
-          >
-            Ver Posibles Formaciones
-          </button>
         )}
       </div>
     </>

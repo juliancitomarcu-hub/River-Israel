@@ -21,6 +21,7 @@ export interface MatchResult {
   status: 'FINISHED' | 'UPCOMING' | 'LIVE';
   isRiverHome: boolean;
   resultado: string | null;
+  estadio?: string;
 }
 
 export interface TimelineEvent {
@@ -132,6 +133,7 @@ interface PartidoAPI {
   estado: "FINALIZADO" | "PROXIMO" | "EN_CURSO";
   esLocalRiver: boolean;
   resultado: string | null;
+  estadio?: string;
 }
 
 export function useMatches() {
@@ -155,6 +157,7 @@ export function useMatches() {
         status: p.estado === "FINALIZADO" ? "FINISHED" : p.estado === "EN_CURSO" ? "LIVE" : "UPCOMING",
         isRiverHome: p.esLocalRiver,
         resultado: p.resultado,
+        estadio: p.estadio,
       }));
     },
     staleTime: 60_000,
