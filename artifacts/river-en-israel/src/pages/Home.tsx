@@ -64,7 +64,7 @@ export default function Home() {
             <img
               src={`${import.meta.env.BASE_URL}escudo-filial.png`}
               alt="Escudo Filial River en Israel"
-              className="w-32 h-32 md:w-48 md:h-48 object-contain relative z-10"
+              className="w-44 h-44 md:w-64 md:h-64 object-contain relative z-10"
               style={{ filter: "drop-shadow(0 0 24px rgba(204,0,0,0.85))" }}
             />
           </motion.div>
