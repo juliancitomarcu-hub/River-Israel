@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Calendar, ArrowLeft, Tag } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
+import { useNews, type NewsItem } from "@/hooks/use-river-data";
 
 interface NoticiaCompleta {
   id: number;
@@ -27,6 +28,14 @@ function formatearFecha(dateStr: string): string {
     weekday: "long",
     day: "numeric",
     month: "long",
+    year: "numeric",
+  });
+}
+
+function formatearFechaCorta(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "short",
     year: "numeric",
   });
 }
@@ -58,6 +67,52 @@ function renderContenido(texto: string) {
       </p>
     );
   });
+}
+
+function NoticiasRelacionadas({ currentId }: { currentId: number }) {
+  const { data: allNews } = useNews();
+
+  const relacionadas: NewsItem[] = (allNews ?? [])
+    .filter((n) => n.id !== String(currentId) && !n.id.startsWith("mock"))
+    .slice(0, 3);
+
+  if (relacionadas.length === 0) return null;
+
+  return (
+    <div className="mt-12 pt-10 border-t border-gray-100">
+      <h2 className="text-xl font-display font-bold text-river-black mb-6 uppercase tracking-wide">
+        También te puede interesar
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {relacionadas.map((noticia) => (
+          <Link key={noticia.id} href={`/noticia/${noticia.id}`}>
+            <div className="group cursor-pointer rounded-xl overflow-hidden border border-gray-100 hover:border-river-red/30 hover:shadow-md transition-all duration-200">
+              <div className="relative h-36 overflow-hidden">
+                <img
+                  src={noticia.imageUrl}
+                  alt={noticia.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <span className="absolute top-2 left-2 bg-river-red text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                  {noticia.category}
+                </span>
+              </div>
+              <div className="p-3">
+                <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {noticia.date}
+                </p>
+                <p className="text-sm font-bold text-river-black leading-snug group-hover:text-river-red transition-colors line-clamp-2">
+                  {noticia.title}
+                </p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function Noticia() {
@@ -171,6 +226,9 @@ export default function Noticia() {
                 </div>
               </div>
             )}
+
+            {/* Noticias relacionadas */}
+            <NoticiasRelacionadas currentId={data.id} />
 
             {/* CTA Filial */}
             <div className="mt-10 bg-river-black rounded-2xl p-8 text-center text-white">
