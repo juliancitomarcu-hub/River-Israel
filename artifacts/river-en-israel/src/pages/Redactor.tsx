@@ -1970,9 +1970,6 @@ export default function Redactor() {
           </div>
         )}
 
-        {/* ── FOTOS DE GALERÍA ─────────────────────────────────────────── */}
-        {tab === "galeria" && <GaleriaTab />}
-
         {/* Info */}
         <div className="mt-8 bg-river-black text-white rounded-2xl p-6 md:p-8">
           <h3 className="font-display text-xl font-bold mb-3 text-river-red">Cómo funciona el Prompt Maestro</h3>
@@ -1997,6 +1994,9 @@ export default function Redactor() {
         </div>
 
         </>}
+
+        {/* ── FOTOS DE GALERÍA ─────────────────────────────────────────── */}
+        {tab === "galeria" && <GaleriaTab />}
       </div>
     </div>
   );
