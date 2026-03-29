@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
-import { JUGADORES, PlayerCard } from "@/pages/Equipo";
 import ShareButton from "@/components/ShareButton";
 import CredencialGenerador from "@/components/CredencialGenerador";
 
@@ -70,8 +69,6 @@ export default function Home() {
   const PAGE_SIZE = COLS * ROWS;
   const totalPaginas = Math.max(1, Math.ceil(galeriaFotos.length / PAGE_SIZE));
   const dragStartX = useRef<number | null>(null);
-  const [sliderIdx, setSliderIdx] = useState(0);
-  const sliderDragX = useRef<number | null>(null);
 
   useEffect(() => {
     fetch("/api/galeria", { cache: "no-store" })
@@ -233,67 +230,8 @@ export default function Home() {
                   Ver todas las noticias
                 </Button>
               </div>
-              <div className="flex-shrink-0 flex flex-col gap-3 items-end ml-auto">
+              <div className="flex-shrink-0">
                 <ProximoPartidoWidget />
-
-                {/* Widget: 2 tarjetas de jugadores lado a lado */}
-                <div
-                  className="relative select-none flex gap-2 pb-6"
-                  onMouseDown={e => { sliderDragX.current = e.clientX; }}
-                  onMouseUp={e => {
-                    if (sliderDragX.current === null) return;
-                    const diff = sliderDragX.current - e.clientX;
-                    if (diff > 30) setSliderIdx(i => (i + 1) % JUGADORES.length);
-                    else if (diff < -30) setSliderIdx(i => (i - 1 + JUGADORES.length) % JUGADORES.length);
-                    sliderDragX.current = null;
-                  }}
-                  onTouchStart={e => { sliderDragX.current = e.touches[0].clientX; }}
-                  onTouchEnd={e => {
-                    if (sliderDragX.current === null) return;
-                    const diff = sliderDragX.current - e.changedTouches[0].clientX;
-                    if (diff > 30) setSliderIdx(i => (i + 1) % JUGADORES.length);
-                    else if (diff < -30) setSliderIdx(i => (i - 1 + JUGADORES.length) % JUGADORES.length);
-                    sliderDragX.current = null;
-                  }}
-                >
-                  {[sliderIdx, (sliderIdx + 1) % JUGADORES.length].map((idx, pos) => (
-                    <div key={`${idx}-${pos}`} style={{ width: "148px", aspectRatio: "3/4" }} className="relative">
-                      <AnimatePresence mode="wait" initial={false}>
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, x: pos === 0 ? -20 : 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.25 }}
-                          className="absolute inset-0"
-                        >
-                          <PlayerCard jugador={JUGADORES[idx]} index={pos} />
-                        </motion.div>
-                      </AnimatePresence>
-                    </div>
-                  ))}
-
-                  {/* Flechas */}
-                  <button
-                    onClick={e => { e.stopPropagation(); setSliderIdx(i => (i - 1 + JUGADORES.length) % JUGADORES.length); }}
-                    className="absolute -left-3 top-1/2 -translate-y-1/2 z-30 bg-black/70 hover:bg-river-red text-white rounded-full p-1.5 transition-colors shadow-lg"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={e => { e.stopPropagation(); setSliderIdx(i => (i + 1) % JUGADORES.length); }}
-                    className="absolute -right-3 top-1/2 -translate-y-1/2 z-30 bg-black/70 hover:bg-river-red text-white rounded-full p-1.5 transition-colors shadow-lg"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  {/* Indicador */}
-                  <div className="absolute bottom-0 left-0 right-0 flex justify-center z-30">
-                    <span className="text-white/40 text-[10px] font-semibold">
-                      {sliderIdx + 1}–{(sliderIdx + 1) % JUGADORES.length + 1} / {JUGADORES.length}
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
