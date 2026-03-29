@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Mic, Video, Heart, Send, AlertCircle, Paperclip, X } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Mic, Video, Heart, Send, AlertCircle, Paperclip, X, ChevronLeft, Download, ZoomIn } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline } from "@/hooks/use-river-data";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,13 @@ import { Link } from "wouter";
 import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
 import ShareButton from "@/components/ShareButton";
 import CredencialGenerador from "@/components/CredencialGenerador";
+
+interface GaleriaFoto {
+  id: number;
+  url: string;
+  caption: string;
+  orden: number;
+}
 
 const postulSchema = z.object({
   nombre: z.string().min(2, "Ingresá tu nombre"),
@@ -34,6 +41,39 @@ export default function Home() {
   const [postulEstado, setPostulEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [postulError, setPostulError] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
+
+  // Galería
+  const [galeriaFotos, setGaleriaFotos] = useState<GaleriaFoto[]>([]);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/galeria")
+      .then(r => r.json())
+      .then((d: { fotos?: GaleriaFoto[] }) => setGaleriaFotos(d.fotos ?? []))
+      .catch(() => {/* silencioso */});
+  }, []);
+
+  const abrirLightbox = (idx: number) => setLightboxIdx(idx);
+  const cerrarLightbox = () => setLightboxIdx(null);
+  const irAnterior = useCallback(() => setLightboxIdx(i => i !== null ? (i - 1 + galeriaFotos.length) % galeriaFotos.length : null), [galeriaFotos.length]);
+  const irSiguiente = useCallback(() => setLightboxIdx(i => i !== null ? (i + 1) % galeriaFotos.length : null), [galeriaFotos.length]);
+
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") irAnterior();
+      if (e.key === "ArrowRight") irSiguiente();
+      if (e.key === "Escape") cerrarLightbox();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [lightboxIdx, irAnterior, irSiguiente]);
+
+  function resolverUrl(url: string) {
+    if (url.startsWith("/objects/")) return `/api/storage/objects${url.slice(8)}`;
+    return url;
+  }
+
   const { data: news } = useNews();
   const { data: matches } = useMatches();
   const { data: timeline } = useHistoryTimeline();
@@ -592,28 +632,123 @@ export default function Home() {
       </section>
 
       {/* ================= GALERIA SECTION ================= */}
-      <section id="galeria" className="py-24 bg-white">
+      <section id="galeria" className="py-24 bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-4">La <span className="text-river-red">Pasión</span> en Imágenes</h2>
+            <span className="inline-block text-river-red font-bold text-xs uppercase tracking-[0.3em] mb-3">Filial Ramat Gan · Israel</span>
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">La <span className="text-river-red">Pasión</span> en Imágenes</h2>
+            <p className="text-gray-400 max-w-lg mx-auto">Hacé clic en cualquier foto para verla completa y descargarla.</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="col-span-2 row-span-2 overflow-hidden rounded-xl">
-              <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=2000&auto=format&fit=crop" alt="Hinchada" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+          {galeriaFotos.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-pulse">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="bg-white/5 rounded-xl h-48" />
+              ))}
             </div>
-            <div className="overflow-hidden rounded-xl h-48 md:h-64">
-              <img src="https://images.unsplash.com/photo-1508344928928-7165b67de128?q=80&w=2070&auto=format&fit=crop" alt="Pelota" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+          ) : (
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+              {galeriaFotos.map((foto, idx) => (
+                <div
+                  key={foto.id}
+                  className="break-inside-avoid overflow-hidden rounded-xl cursor-pointer relative group"
+                  onClick={() => abrirLightbox(idx)}
+                >
+                  <img
+                    src={resolverUrl(foto.url)}
+                    alt={foto.caption || `Foto ${idx + 1}`}
+                    className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
+                    <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 drop-shadow-lg" />
+                  </div>
+                  {foto.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                      <p className="text-white text-xs font-medium truncate">{foto.caption}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="overflow-hidden rounded-xl h-48 md:h-64">
-              <img src="https://images.unsplash.com/photo-1556056504-5c7696c4c28d?q=80&w=2076&auto=format&fit=crop" alt="Luces" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-            </div>
-            <div className="col-span-2 overflow-hidden rounded-xl h-48 md:h-64">
-              <img src="https://images.unsplash.com/photo-1614632537190-23e4146777db?q=80&w=2000&auto=format&fit=crop" alt="Festejo" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-            </div>
-          </div>
+          )}
         </div>
       </section>
+
+      {/* ================= LIGHTBOX ================= */}
+      <AnimatePresence>
+        {lightboxIdx !== null && galeriaFotos[lightboxIdx] && (
+          <motion.div
+            key="lightbox"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+            onClick={cerrarLightbox}
+          >
+            {/* Botón cerrar */}
+            <button
+              onClick={cerrarLightbox}
+              className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors z-10"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Contador */}
+            <span className="absolute top-5 left-1/2 -translate-x-1/2 text-white/60 text-sm font-medium">
+              {lightboxIdx + 1} / {galeriaFotos.length}
+            </span>
+
+            {/* Botones nav */}
+            <button
+              onClick={e => { e.stopPropagation(); irAnterior(); }}
+              className="absolute left-3 md:left-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors z-10"
+            >
+              <ChevronLeft className="w-7 h-7" />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); irSiguiente(); }}
+              className="absolute right-3 md:right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors z-10"
+            >
+              <ChevronRight className="w-7 h-7" />
+            </button>
+
+            {/* Imagen */}
+            <motion.div
+              key={lightboxIdx}
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="relative max-w-5xl max-h-[85vh] mx-16 flex flex-col items-center gap-3"
+              onClick={e => e.stopPropagation()}
+            >
+              <img
+                src={resolverUrl(galeriaFotos[lightboxIdx].url)}
+                alt={galeriaFotos[lightboxIdx].caption}
+                className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl"
+              />
+              <div className="flex items-center gap-4">
+                {galeriaFotos[lightboxIdx].caption && (
+                  <p className="text-white/80 text-sm">{galeriaFotos[lightboxIdx].caption}</p>
+                )}
+                <a
+                  href={resolverUrl(galeriaFotos[lightboxIdx].url)}
+                  download={`river-israel-${lightboxIdx + 1}.jpg`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 bg-river-red hover:bg-river-red/80 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Descargar
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
 

@@ -91,6 +91,43 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+## River en Israel — Proyecto Principal
+
+Fan website en español para Club Atlético River Plate / Filial Ramat Gan, Israel.
+
+### Rutas frontend (`artifacts/river-en-israel`)
+- `/` — Home (actualidad, fixtures, historia, postulación, galería)
+- `/actualidad` — Noticias publicadas
+- `/historia` — Historia del club (timeline editable)
+- `/equipo` — Plantel
+- `/filial-ramat-gan` — Info filial
+- `/postula` — Formulario para escribir en el sitio (acepta texto + PDF/Word)
+- `/redactor` — **PRIVADO** — acceso vía triple-click en logo del footer o link invisible "1901"
+
+### Redactor IA (privado)
+Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galería
+
+### API (`artifacts/api-server`)
+Rutas relevantes:
+- `GET /api/galeria` — listar fotos (auto-seed 12 fotos si vacío)
+- `POST /api/galeria` — subir nueva foto (multipart)
+- `PUT /api/galeria/:id` — editar caption
+- `DELETE /api/galeria/:id` — eliminar foto
+- `GET /api/postulaciones` — listar postulaciones
+- `POST /api/postular-redactor` — enviar postulación (texto + archivo)
+- `POST /api/publicar/:id` — publicar postulación
+- Rutas de scraping, redacción IA, Telegram webhook, etc.
+
+### DB Schema
+- `noticiasTable` — noticias + postulaciones (fuente.startsWith("Postulación"))
+- `historiaHitosTable` — hitos históricos del club
+- `galeriaTable` — fotos de la galería (url, caption, orden)
+
+### Galería
+- 12 fotos iniciales copiadas a `artifacts/river-en-israel/public/images/galeria/foto-01.jpeg` a `foto-12.jpeg`
+- Nuevas fotos se suben a object storage; URL empieza en `/objects/`
+- `resolverUrl()` en frontend convierte `/objects/...` → `/api/storage/objects/...`
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.

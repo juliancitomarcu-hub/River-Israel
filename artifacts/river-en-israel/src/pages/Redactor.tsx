@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
@@ -8,7 +8,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "historia" | "postulantes";
+type Tab = "redactor" | "publicaciones" | "historia" | "postulantes" | "galeria";
+
+interface GaleriaFoto {
+  id: number;
+  url: string;
+  caption: string;
+  orden: number;
+}
 
 interface PostulacionDB {
   id: number;
@@ -58,6 +65,206 @@ interface NoticiaPublicada {
   fuente: string;
   imagenPortada: string;
   createdAt: string;
+}
+
+interface GaleriaTabProps {
+  fotos: GaleriaFoto[];
+  cargando: boolean;
+  error: string;
+  editandoFotoId: number | null;
+  captionEditado: string;
+  guardandoCaption: boolean;
+  eliminandoFotoId: number | null;
+  subiendoFoto: boolean;
+  errorSubida: string;
+  onRecargar: () => void;
+  onIniciarEdicion: (f: GaleriaFoto) => void;
+  onCancelarEdicion: () => void;
+  onCaptionChange: (v: string) => void;
+  onGuardarCaption: (id: number) => void;
+  onEliminar: (id: number) => void;
+  onSubir: (file: File, caption: string) => void;
+  resolverUrl: (url: string) => string;
+}
+
+function GaleriaTab({
+  fotos, cargando, error,
+  editandoFotoId, captionEditado, guardandoCaption,
+  eliminandoFotoId, subiendoFoto, errorSubida,
+  onRecargar, onIniciarEdicion, onCancelarEdicion,
+  onCaptionChange, onGuardarCaption, onEliminar, onSubir, resolverUrl,
+}: GaleriaTabProps) {
+  const [nuevoCaption, setNuevoCaption] = useState("");
+  const [nuevoPreview, setNuevoPreview] = useState<string | null>(null);
+  const [nuevoFile, setNuevoFile] = useState<File | null>(null);
+  const [confirmEliminar, setConfirmEliminar] = useState<number | null>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setNuevoFile(file);
+    const reader = new FileReader();
+    reader.onload = ev => setNuevoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  function handleSubir() {
+    if (!nuevoFile) return;
+    onSubir(nuevoFile, nuevoCaption);
+    setNuevoFile(null);
+    setNuevoPreview(null);
+    setNuevoCaption("");
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-xl font-bold text-river-black flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-river-red" /> Galería de Fotos
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">{fotos.length} fotos · Editá el pie de foto, eliminá o agregá nuevas</p>
+        </div>
+        <button onClick={onRecargar} disabled={cargando}
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors">
+          <RefreshCw className={`w-3.5 h-3.5 ${cargando ? "animate-spin" : ""}`} /> Actualizar
+        </button>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+          <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
+        </div>
+      )}
+
+      {/* Subir nueva foto */}
+      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+        <p className="font-semibold text-sm text-river-black mb-3 flex items-center gap-2">
+          <Upload className="w-4 h-4 text-river-red" /> Agregar nueva foto
+        </p>
+        <div className="flex flex-col md:flex-row gap-4 items-start">
+          <label className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-river-red rounded-xl w-32 h-32 shrink-0 overflow-hidden transition-colors bg-white">
+            {nuevoPreview ? (
+              <img src={nuevoPreview} className="w-full h-full object-cover" alt="Preview" />
+            ) : (
+              <>
+                <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                <span className="text-xs text-gray-400">Elegir foto</span>
+              </>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+          </label>
+          <div className="flex-1 space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">Pie de foto (opcional)</label>
+              <input
+                value={nuevoCaption}
+                onChange={e => setNuevoCaption(e.target.value)}
+                placeholder="Ej: El Monumental en la noche mágica"
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-river-red bg-white"
+              />
+            </div>
+            {errorSubida && <p className="text-red-500 text-xs">{errorSubida}</p>}
+            <Button
+              onClick={handleSubir}
+              disabled={!nuevoFile || subiendoFoto}
+              className="bg-river-red hover:bg-river-red/90 text-white text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+            >
+              {subiendoFoto ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
+              {subiendoFoto ? "Subiendo..." : "Subir foto"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid de fotos */}
+      {cargando ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="aspect-square bg-gray-100 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : fotos.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="font-semibold">Sin fotos aún</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {fotos.map(foto => (
+            <div key={foto.id} className="group relative bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+              <img
+                src={resolverUrl(foto.url)}
+                alt={foto.caption || "Foto"}
+                className="w-full aspect-square object-cover"
+                loading="lazy"
+              />
+
+              {/* Overlay con acciones */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 gap-2">
+                {editandoFotoId === foto.id ? (
+                  <div className="space-y-1.5" onClick={e => e.stopPropagation()}>
+                    <input
+                      value={captionEditado}
+                      onChange={e => onCaptionChange(e.target.value)}
+                      className="w-full text-xs px-2 py-1.5 rounded-lg bg-white text-river-black focus:outline-none"
+                      placeholder="Pie de foto..."
+                      autoFocus
+                    />
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => onGuardarCaption(foto.id)}
+                        disabled={guardandoCaption}
+                        className="flex-1 text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 rounded-lg transition-colors"
+                      >
+                        {guardandoCaption ? "..." : "Guardar"}
+                      </button>
+                      <button
+                        onClick={onCancelarEdicion}
+                        className="flex-1 text-xs bg-white/20 hover:bg-white/30 text-white font-bold py-1 rounded-lg transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {foto.caption && (
+                      <p className="text-white text-xs font-medium leading-snug line-clamp-2">{foto.caption}</p>
+                    )}
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => onIniciarEdicion(foto)}
+                        className="flex-1 flex items-center justify-center gap-1 text-xs bg-white/20 hover:bg-white/30 text-white font-semibold py-1.5 rounded-lg transition-colors"
+                      >
+                        <Pencil className="w-3 h-3" /> Editar
+                      </button>
+                      {confirmEliminar === foto.id ? (
+                        <button
+                          onClick={() => { onEliminar(foto.id); setConfirmEliminar(null); }}
+                          disabled={eliminandoFotoId === foto.id}
+                          className="flex-1 text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 rounded-lg transition-colors"
+                        >
+                          {eliminandoFotoId === foto.id ? "..." : "¿Confirmar?"}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmEliminar(foto.id)}
+                          className="flex-1 flex items-center justify-center gap-1 text-xs bg-red-500/70 hover:bg-red-500 text-white font-semibold py-1.5 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" /> Eliminar
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Redactor() {
@@ -110,6 +317,84 @@ export default function Redactor() {
   const [errorPostul, setErrorPostul] = useState("");
   const [postulSel, setPostulSel] = useState<PostulacionDB | null>(null);
   const [accionPostul, setAccionPostul] = useState<Record<number, "publicando" | "rechazando" | "ok" | "rechazado">>({});
+
+  // Galería
+  const [galeriaFotos, setGaleriaFotos] = useState<GaleriaFoto[]>([]);
+  const [cargandoGaleria, setCargandoGaleria] = useState(false);
+  const [errorGaleria, setErrorGaleria] = useState("");
+  const [editandoFotoId, setEditandoFotoId] = useState<number | null>(null);
+  const [captionEditado, setCaptionEditado] = useState("");
+  const [guardandoCaption, setGuardandoCaption] = useState(false);
+  const [eliminandoFotoId, setEliminandoFotoId] = useState<number | null>(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [errorSubida, setErrorSubida] = useState("");
+
+  const cargarGaleria = async () => {
+    setCargandoGaleria(true);
+    setErrorGaleria("");
+    try {
+      const res = await fetch("/api/galeria");
+      const data = await res.json() as { fotos?: GaleriaFoto[] };
+      setGaleriaFotos(data.fotos ?? []);
+    } catch {
+      setErrorGaleria("Error al cargar la galería");
+    } finally {
+      setCargandoGaleria(false);
+    }
+  };
+
+  const guardarCaption = async (id: number) => {
+    setGuardandoCaption(true);
+    try {
+      const res = await fetch(`/api/galeria/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caption: captionEditado }),
+      });
+      if (res.ok) {
+        setGaleriaFotos(prev => prev.map(f => f.id === id ? { ...f, caption: captionEditado } : f));
+        setEditandoFotoId(null);
+      }
+    } finally {
+      setGuardandoCaption(false);
+    }
+  };
+
+  const eliminarFoto = async (id: number) => {
+    setEliminandoFotoId(id);
+    try {
+      await fetch(`/api/galeria/${id}`, { method: "DELETE" });
+      setGaleriaFotos(prev => prev.filter(f => f.id !== id));
+    } finally {
+      setEliminandoFotoId(null);
+    }
+  };
+
+  const subirFoto = async (file: File, caption: string) => {
+    setSubiendoFoto(true);
+    setErrorSubida("");
+    try {
+      const fd = new FormData();
+      fd.append("foto", file);
+      fd.append("caption", caption);
+      const res = await fetch("/api/galeria", { method: "POST", body: fd });
+      const data = await res.json() as { ok?: boolean; foto?: GaleriaFoto; error?: string };
+      if (data.ok && data.foto) {
+        setGaleriaFotos(prev => [...prev, data.foto!]);
+      } else {
+        setErrorSubida(data.error ?? "Error al subir");
+      }
+    } catch {
+      setErrorSubida("Error al subir la foto");
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
+
+  function resolverUrlGaleria(url: string) {
+    if (url.startsWith("/objects/")) return `/api/storage/objects${url.slice(8)}`;
+    return url;
+  }
 
   const cargarPostulaciones = async () => {
     setCargandoPostul(true);
@@ -631,6 +916,16 @@ export default function Redactor() {
                   {postulaciones.filter(p => p.pendiente).length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => { setTab("galeria"); cargarGaleria(); }}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "galeria"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" /> Fotos de Galería
             </button>
           </div>
         </div>
@@ -1699,6 +1994,29 @@ export default function Redactor() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── FOTOS DE GALERÍA ─────────────────────────────────────────── */}
+        {tab === "galeria" && (
+          <GaleriaTab
+            fotos={galeriaFotos}
+            cargando={cargandoGaleria}
+            error={errorGaleria}
+            editandoFotoId={editandoFotoId}
+            captionEditado={captionEditado}
+            guardandoCaption={guardandoCaption}
+            eliminandoFotoId={eliminandoFotoId}
+            subiendoFoto={subiendoFoto}
+            errorSubida={errorSubida}
+            onRecargar={cargarGaleria}
+            onIniciarEdicion={(f) => { setEditandoFotoId(f.id); setCaptionEditado(f.caption); }}
+            onCancelarEdicion={() => setEditandoFotoId(null)}
+            onCaptionChange={setCaptionEditado}
+            onGuardarCaption={guardarCaption}
+            onEliminar={eliminarFoto}
+            onSubir={subirFoto}
+            resolverUrl={resolverUrlGaleria}
+          />
         )}
 
         {/* Info */}
