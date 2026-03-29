@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Mic, Video, Heart, Send, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mic, Video, Heart, Send, CheckCircle2, AlertCircle, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,7 @@ const schema = z.object({
   nombre: z.string().min(2, "Ingresá tu nombre"),
   ciudad: z.string().min(2, "Ingresá tu ciudad"),
   tipo: z.enum(["Periodista", "Creador", "Fanático"], { required_error: "Elegí un perfil" }),
-  texto: z.string().min(50, "El texto debe tener al menos 50 caracteres"),
+  texto: z.string().optional(),
   link: z.string().url("URL inválida").or(z.literal("")).optional(),
 });
 
@@ -42,6 +42,7 @@ const TIPOS = [
 export default function Postulacion() {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [archivo, setArchivo] = useState<File | null>(null);
 
   const {
     register,
@@ -56,20 +57,24 @@ export default function Postulacion() {
   const tipoSeleccionado = watch("tipo");
 
   async function onSubmit(data: FormData) {
+    const textoValido = data.texto && data.texto.trim().length >= 50;
+    if (!textoValido && !archivo) {
+      setErrorMsg("Escribí tu nota (mínimo 50 caracteres) o adjuntá un archivo PDF/Word");
+      setEstado("error");
+      return;
+    }
     setEstado("enviando");
     setErrorMsg("");
     try {
-      const res = await fetch("/api/postular-redactor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: data.nombre,
-          ciudad: data.ciudad,
-          tipo: data.tipo,
-          texto: data.texto,
-          link: data.link || "",
-        }),
-      });
+      const fd = new FormData();
+      fd.append("nombre", data.nombre);
+      fd.append("ciudad", data.ciudad);
+      fd.append("tipo", data.tipo);
+      if (data.texto?.trim()) fd.append("texto", data.texto.trim());
+      if (data.link) fd.append("link", data.link);
+      if (archivo) fd.append("archivo", archivo);
+
+      const res = await fetch("/api/postular-redactor", { method: "POST", body: fd });
       const json = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok || !json.ok) {
         setErrorMsg(json.error ?? "Error al enviar. Intentá de nuevo.");
@@ -167,9 +172,10 @@ export default function Postulacion() {
               </div>
             </div>
 
+            {/* Textarea */}
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-300">
-                Tu nota, análisis o propuesta *
+                Tu nota, análisis o propuesta
               </label>
               <p className="text-xs text-gray-600">
                 Escribí con tu voz, tu estilo. Solo corregimos la ortografía, nunca cambiamos tus palabras.
@@ -177,12 +183,49 @@ export default function Postulacion() {
               <Textarea
                 {...register("texto")}
                 placeholder="Contá lo que viviste, tu análisis del partido, tu crónica... lo que quieras compartir con la comunidad."
-                rows={12}
+                rows={10}
                 className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-river-red resize-y font-normal text-sm leading-relaxed"
               />
-              {errors.texto && <p className="text-red-400 text-xs">{errors.texto.message}</p>}
             </div>
 
+            {/* Separador */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-xs text-gray-600 font-semibold uppercase tracking-widest">O adjuntá un archivo</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Upload */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-300">
+                Adjuntar nota <span className="text-gray-600 font-normal">(PDF o Word — opcional)</span>
+              </label>
+              {archivo ? (
+                <div className="flex items-center gap-3 bg-river-red/10 border border-river-red/30 rounded-xl px-4 py-3">
+                  <Paperclip className="w-4 h-4 text-river-red shrink-0" />
+                  <span className="text-sm text-white font-medium flex-1 truncate">{archivo.name}</span>
+                  <button type="button" onClick={() => setArchivo(null)} className="text-gray-500 hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center gap-3 border-2 border-dashed border-white/10 rounded-xl px-5 py-4 cursor-pointer hover:border-river-red/40 hover:bg-river-red/5 transition-colors">
+                  <Paperclip className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm text-gray-400 font-medium">Seleccionar PDF o Word (.docx)</p>
+                    <p className="text-xs text-gray-600 mt-0.5">Máximo 10 MB · La IA extrae el texto y corrige solo la ortografía</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    className="hidden"
+                    onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Link */}
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-300">
                 Link a tu canal o redes <span className="text-gray-600 font-normal">(opcional)</span>

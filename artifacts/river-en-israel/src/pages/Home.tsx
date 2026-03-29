@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Mic, Video, Heart, Send, AlertCircle } from "lucide-react";
+import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Mic, Video, Heart, Send, AlertCircle, Paperclip, X } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline } from "@/hooks/use-river-data";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +18,7 @@ const postulSchema = z.object({
   nombre: z.string().min(2, "Ingresá tu nombre"),
   ciudad: z.string().min(2, "Ingresá tu ciudad"),
   tipo: z.enum(["Periodista", "Creador", "Fanático"], { required_error: "Elegí un perfil" }),
-  texto: z.string().min(50, "Mínimo 50 caracteres"),
+  texto: z.string().optional(),
   link: z.string().url("URL inválida").or(z.literal("")).optional(),
 });
 type PostulValues = z.infer<typeof postulSchema>;
@@ -33,6 +33,7 @@ export default function Home() {
   const [mostrarCredencial, setMostrarCredencial] = useState(false);
   const [postulEstado, setPostulEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [postulError, setPostulError] = useState("");
+  const [archivo, setArchivo] = useState<File | null>(null);
   const { data: news } = useNews();
   const { data: matches } = useMatches();
   const { data: timeline } = useHistoryTimeline();
@@ -43,14 +44,24 @@ export default function Home() {
   const tipoSel = watchP("tipo");
 
   async function onSubmitPostul(data: PostulValues) {
+    const textoValido = data.texto && data.texto.trim().length >= 50;
+    if (!textoValido && !archivo) {
+      setPostulError("Escribí tu nota (mínimo 50 caracteres) o adjuntá un archivo PDF/Word");
+      setPostulEstado("error");
+      return;
+    }
     setPostulEstado("enviando");
     setPostulError("");
     try {
-      const res = await fetch("/api/postular-redactor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: data.nombre, ciudad: data.ciudad, tipo: data.tipo, texto: data.texto, link: data.link || "" }),
-      });
+      const fd = new FormData();
+      fd.append("nombre", data.nombre);
+      fd.append("ciudad", data.ciudad);
+      fd.append("tipo", data.tipo);
+      if (data.texto?.trim()) fd.append("texto", data.texto.trim());
+      if (data.link) fd.append("link", data.link);
+      if (archivo) fd.append("archivo", archivo);
+
+      const res = await fetch("/api/postular-redactor", { method: "POST", body: fd });
       const json = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok || !json.ok) { setPostulError(json.error ?? "Error al enviar"); setPostulEstado("error"); }
       else setPostulEstado("ok");
@@ -512,8 +523,42 @@ export default function Home() {
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-gray-700">Tu nota o propuesta</label>
                         <p className="text-xs text-gray-400">Solo corregimos ortografía, nunca cambiamos tu voz.</p>
-                        <Textarea {...regP("texto")} placeholder="Escribí tu análisis, crónica o lo que quieras compartir..." rows={6} className={cn("text-sm resize-none", errP.texto ? "border-red-500" : "")} />
-                        {errP.texto && <span className="text-xs text-red-500">{errP.texto.message}</span>}
+                        <Textarea {...regP("texto")} placeholder="Escribí tu análisis, crónica o lo que quieras compartir..." rows={5} className={cn("text-sm resize-none", errP.texto ? "border-red-500" : "")} />
+                      </div>
+
+                      {/* Separador O */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-xs text-gray-400 font-semibold">O adjuntá un archivo</span>
+                        <div className="flex-1 h-px bg-gray-200" />
+                      </div>
+
+                      {/* Upload de archivo */}
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-gray-700">
+                          Adjuntar nota <span className="text-gray-400 font-normal">(PDF o Word — opcional)</span>
+                        </label>
+                        {archivo ? (
+                          <div className="flex items-center gap-2 bg-river-red/5 border border-river-red/20 rounded-lg px-3 py-2.5">
+                            <Paperclip className="w-4 h-4 text-river-red shrink-0" />
+                            <span className="text-sm text-river-black font-medium flex-1 truncate">{archivo.name}</span>
+                            <button type="button" onClick={() => setArchivo(null)} className="text-gray-400 hover:text-gray-600">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-2 border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 cursor-pointer hover:border-river-red/40 hover:bg-river-red/5 transition-colors">
+                            <Paperclip className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-400">Seleccionar PDF o Word (.docx)</span>
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                              className="hidden"
+                              onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
+                            />
+                          </label>
+                        )}
+                        <p className="text-xs text-gray-400">Máximo 10 MB. La IA extrae el texto y corrige solo la ortografía.</p>
                       </div>
 
                       <div className="space-y-1.5">

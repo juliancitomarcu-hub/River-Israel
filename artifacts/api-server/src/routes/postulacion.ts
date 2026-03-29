@@ -1,10 +1,26 @@
 import { Router, type IRouter } from "express";
+import multer from "multer";
+import pdfParse from "pdf-parse";
+import mammoth from "mammoth";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 
 const router: IRouter = Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword"];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Solo se aceptan archivos PDF o Word (.docx/.doc)"));
+    }
+  },
+});
 
 const PROMPT_EDITOR_RESPETUOSO = `Actuás como corrector de estilo para "River en Israel". Tu función es TÉCNICA, NO creativa.
 
@@ -19,7 +35,17 @@ REGLAS ESTRICTAS:
 FORMATO DE SALIDA:
 Devolvé únicamente el texto corregido, listo para publicar. Sin comentarios previos ni explicaciones.`;
 
-router.post("/postular-redactor", async (req, res) => {
+async function extraerTextoDeArchivo(buffer: Buffer, mimetype: string): Promise<string> {
+  if (mimetype === "application/pdf") {
+    const data = await pdfParse(buffer);
+    return data.text.trim();
+  }
+  // DOCX o DOC
+  const result = await mammoth.extractRawText({ buffer });
+  return result.value.trim();
+}
+
+router.post("/postular-redactor", upload.single("archivo"), async (req, res) => {
   const { nombre, ciudad, tipo, texto, link } = req.body as {
     nombre?: string;
     ciudad?: string;
@@ -28,13 +54,16 @@ router.post("/postular-redactor", async (req, res) => {
     link?: string;
   };
 
-  if (!nombre?.trim() || !ciudad?.trim() || !tipo?.trim() || !texto?.trim()) {
-    res.status(400).json({ error: "Faltan campos obligatorios" });
+  if (!nombre?.trim() || !ciudad?.trim() || !tipo?.trim()) {
+    res.status(400).json({ error: "Faltan campos obligatorios (nombre, ciudad, tipo)" });
     return;
   }
 
-  if (texto.trim().length < 50) {
-    res.status(400).json({ error: "El texto es demasiado corto (mínimo 50 caracteres)" });
+  const tieneTexto = texto?.trim() && texto.trim().length >= 50;
+  const tieneArchivo = !!req.file;
+
+  if (!tieneTexto && !tieneArchivo) {
+    res.status(400).json({ error: "Incluí tu nota como texto (mínimo 50 caracteres) o adjuntá un archivo PDF/Word" });
     return;
   }
 
@@ -47,7 +76,26 @@ router.post("/postular-redactor", async (req, res) => {
   }
 
   try {
-    // Proceso el texto con la IA en modo corrector respetuoso
+    // Extraer texto del archivo si fue adjuntado
+    let textoArchivo = "";
+    if (tieneArchivo && req.file) {
+      try {
+        textoArchivo = await extraerTextoDeArchivo(req.file.buffer, req.file.mimetype);
+      } catch {
+        res.status(422).json({ error: "No se pudo leer el archivo. Verificá que sea un PDF o Word válido." });
+        return;
+      }
+    }
+
+    // Combinar: texto del textarea + texto del archivo
+    const textoRaw = [texto?.trim(), textoArchivo].filter(Boolean).join("\n\n");
+
+    if (textoRaw.length < 50) {
+      res.status(400).json({ error: "El contenido es demasiado corto (mínimo 50 caracteres)" });
+      return;
+    }
+
+    // Corrección con IA
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       max_completion_tokens: 4096,
@@ -55,17 +103,20 @@ router.post("/postular-redactor", async (req, res) => {
         { role: "system", content: PROMPT_EDITOR_RESPETUOSO },
         {
           role: "user",
-          content: `Corregí este texto de ${nombre} (${ciudad}), sin cambiar su voz:\n\n${texto}`
+          content: `Corregí este texto de ${nombre} (${ciudad}), sin cambiar su voz:\n\n${textoRaw}`
         }
       ],
     });
 
-    const textoCorregido = completion.choices[0]?.message?.content?.trim() ?? texto;
+    const textoCorregido = completion.choices[0]?.message?.content?.trim() ?? textoRaw;
 
-    // Guardo la postulación en la DB (marcada como pendiente, tipo postulacion)
+    // Guardar en DB
     const titulo = `✍️ ${nombre} (${ciudad})`;
     const contenidoCompleto = `*Por ${nombre}, desde ${ciudad}*\n\n${textoCorregido}`;
-    const fuenteInfo = link ? `Postulación · ${tipo} · ${link}` : `Postulación · ${tipo}`;
+    const fuentePartes = [`Postulación`, tipo];
+    if (tieneArchivo && req.file) fuentePartes.push(`📎 ${req.file.originalname}`);
+    if (link) fuentePartes.push(link);
+    const fuenteInfo = fuentePartes.join(" · ");
 
     const [postulacion] = await db
       .insert(noticiasTable)
@@ -73,7 +124,7 @@ router.post("/postular-redactor", async (req, res) => {
         titulo,
         contenido: contenidoCompleto,
         tags: `#Postulacion #${tipo.replace(/\s+/g, "")} #RiverIsrael`,
-        textoOriginal: texto,
+        textoOriginal: textoRaw,
         fuente: fuenteInfo,
         publicada: false,
         pendiente: true,
@@ -81,7 +132,7 @@ router.post("/postular-redactor", async (req, res) => {
       })
       .returning();
 
-    // Armo el mensaje de Telegram
+    // Mensaje Telegram
     const tipoEmoji = tipo === "Periodista" ? "🎙️" : tipo === "Creador" ? "🎬" : "❤️";
     const textoTg = textoCorregido.slice(0, 900) + (textoCorregido.length > 900 ? "..." : "");
 
@@ -91,6 +142,9 @@ router.post("/postular-redactor", async (req, res) => {
       `👤 *Autor:* ${nombre}\n` +
       `📍 *Ciudad:* ${ciudad}\n`;
 
+    if (tieneArchivo && req.file) {
+      mensajeTg += `📎 *Archivo:* ${req.file.originalname}\n`;
+    }
     if (link) {
       mensajeTg += `🔗 *Link:* ${link}\n`;
     }
