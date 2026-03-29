@@ -168,7 +168,7 @@ export default function Home() {
             </p>
             <div className="flex flex-row flex-wrap gap-2">
               <a
-                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+                href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all hover:scale-105"
@@ -468,7 +468,7 @@ export default function Home() {
               </ul>
 
               <a
-                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+                href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
                 target="_blank"
                 rel="noreferrer"
                 className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"

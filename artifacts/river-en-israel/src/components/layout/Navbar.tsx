@@ -99,7 +99,7 @@ export function Navbar() {
               )
             )}
             <a
-              href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+              href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-river-red hover:bg-river-red-hover text-white px-5 py-2 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)] hover:-translate-y-0.5"
@@ -155,7 +155,7 @@ export function Navbar() {
                 )
               )}
               <a
-                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+                href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-river-red text-white px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center mt-4"

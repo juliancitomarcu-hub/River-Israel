@@ -235,7 +235,7 @@ export default function Noticia() {
               <p className="text-2xl font-display font-bold mb-2">¡Sumate a la Filial!</p>
               <p className="text-white/70 mb-6">Viví River desde Israel con la comunidad de Ramat Gan. Partidos, eventos y más.</p>
               <a
-                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+                href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block bg-river-red hover:bg-river-red/90 text-white font-bold px-8 py-3 rounded-full transition-colors"
