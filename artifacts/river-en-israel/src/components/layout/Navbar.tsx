@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { name: "Filial Ramat Gan", href: "#filial" },
   { name: "Galería", href: "#galeria" },
   { name: "Videos", href: "#videos" },
+  { name: "Reacciones Post Partido", href: "#videos" },
 ];
 
 export function Navbar() {
