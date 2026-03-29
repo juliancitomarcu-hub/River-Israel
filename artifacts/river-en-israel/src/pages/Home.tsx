@@ -47,25 +47,31 @@ const TEAM_LOGOS: Record<string, string> = {
 
 function TeamLogo({ name, size = 20 }: { name: string; size?: number }) {
   const src = TEAM_LOGOS[name];
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={name}
-        width={size}
-        height={size}
-        className="rounded-full object-contain bg-white p-px"
-        style={{ width: size, height: size, minWidth: size }}
-        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-      />
-    );
-  }
+  const isRiver = name.toLowerCase().includes("river");
+  const fallbackBg = isRiver ? "#cc0000" : "#374151";
+
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full bg-gray-600 text-white font-bold"
-      style={{ width: size, height: size, minWidth: size, fontSize: size * 0.45 }}
+      className="inline-flex items-center justify-center rounded-full font-bold shrink-0 overflow-hidden border border-white/10"
+      style={{ width: size, height: size, minWidth: size, background: fallbackBg, fontSize: size * 0.44 }}
     >
-      {name.charAt(0)}
+      {src ? (
+        <img
+          src={src}
+          alt={name}
+          width={size}
+          height={size}
+          className="w-full h-full object-contain"
+          onError={(e) => {
+            const el = e.currentTarget;
+            el.style.display = "none";
+            const parent = el.parentElement;
+            if (parent) parent.textContent = name.charAt(0).toUpperCase();
+          }}
+        />
+      ) : (
+        <span className="text-white leading-none">{name.charAt(0).toUpperCase()}</span>
+      )}
     </span>
   );
 }
