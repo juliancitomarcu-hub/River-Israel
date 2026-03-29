@@ -1,9 +1,35 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { MapPin, Mail, Phone, Facebook, Instagram, Youtube, Twitter } from "lucide-react";
+import { MapPin, Phone, Facebook, Instagram, Youtube, Twitter, MessageCircle, Send, X } from "lucide-react";
 
 export function Footer() {
   const [clicks, setClicks] = useState(0);
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [nombre, setNombre] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
+
+  const handleEnviar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nombre.trim() || !mensaje.trim()) return;
+    setEstado("enviando");
+    try {
+      const r = await fetch("/api/contacto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nombre.trim(), mensaje: mensaje.trim() }),
+      });
+      if (r.ok) {
+        setEstado("ok");
+        setNombre("");
+        setMensaje("");
+      } else {
+        setEstado("error");
+      }
+    } catch {
+      setEstado("error");
+    }
+  };
 
   const handleLogoClick = () => {
     const next = clicks + 1;
@@ -42,20 +68,71 @@ export function Footer() {
           {/* Contact */}
           <div>
             <h4 className="font-display text-xl mb-6 text-river-red">Contacto Filial</h4>
-            <ul className="space-y-4 text-gray-300">
+            <ul className="space-y-4 text-gray-300 mb-5">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-river-red shrink-0 mt-0.5" />
                 <span>Ramat Gan, Distrito de Tel Aviv, Israel</span>
               </li>
               <li className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-river-red shrink-0" />
-                <a href="mailto:info@riverenisrael.com" className="hover:text-white transition-colors">info@riverenisrael.com</a>
-              </li>
-              <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-river-red shrink-0" />
-                <a href="tel:+972501234567" className="hover:text-white transition-colors">+972 50-123-4567</a>
+                <a href="https://wa.me/972501234567" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">+972 50-123-4567</a>
+              </li>
+              <li>
+                <button
+                  onClick={() => { setFormAbierto(f => !f); setEstado("idle"); }}
+                  className="flex items-center gap-2 bg-river-red hover:bg-river-red/80 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Escribinos
+                </button>
               </li>
             </ul>
+
+            {/* Mini formulario inline */}
+            {formAbierto && (
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+                {estado === "ok" ? (
+                  <div className="text-center py-2">
+                    <p className="text-green-400 font-bold text-sm">✅ ¡Mensaje enviado!</p>
+                    <p className="text-gray-400 text-xs mt-1">Te respondemos pronto.</p>
+                    <button onClick={() => { setFormAbierto(false); setEstado("idle"); }} className="mt-3 text-xs text-gray-500 hover:text-white underline">Cerrar</button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleEnviar} className="space-y-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider">Mensaje rápido</p>
+                      <button type="button" onClick={() => setFormAbierto(false)} className="text-white/30 hover:text-white transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <input
+                      value={nombre}
+                      onChange={e => setNombre(e.target.value)}
+                      placeholder="Tu nombre"
+                      required
+                      className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-river-red"
+                    />
+                    <textarea
+                      value={mensaje}
+                      onChange={e => setMensaje(e.target.value)}
+                      placeholder="Tu consulta..."
+                      required
+                      rows={3}
+                      className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-river-red resize-none"
+                    />
+                    {estado === "error" && <p className="text-red-400 text-xs">Error al enviar. Intentá de nuevo.</p>}
+                    <button
+                      type="submit"
+                      disabled={estado === "enviando"}
+                      className="w-full flex items-center justify-center gap-2 bg-river-red hover:bg-river-red/80 disabled:opacity-50 text-white text-sm font-bold py-2 rounded-lg transition-colors"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      {estado === "enviando" ? "Enviando..." : "Enviar consulta"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Social */}

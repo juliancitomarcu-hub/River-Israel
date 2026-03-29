@@ -11,6 +11,7 @@ import historiaRouter from "./historia";
 import postulacionRouter from "./postulacion";
 import galeriaRouter from "./galeria";
 import videosRouter from "./videos";
+import contactoRouter from "./contacto";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(partidosRouter);
 router.use(postulacionRouter);
 router.use(galeriaRouter);
 router.use(videosRouter);
+router.use(contactoRouter);
 
 export default router;

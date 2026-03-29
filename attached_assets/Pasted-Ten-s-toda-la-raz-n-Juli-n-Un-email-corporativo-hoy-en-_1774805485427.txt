@@ -1,0 +1,34 @@
+Tenés toda la razón, Julián. Un email corporativo hoy en día termina siendo un nido de spam y casi nadie lo usa para algo dinámico. Si ya tenés tu Redactor IA con el Bot de Telegram como panel de control, lo más inteligente es centralizar todo ahí.
+Tu Telegram es tu "Centro de Mandos". Vamos a transformar ese diseño para que sea moderno, directo y te ahorre tiempo.
+Aquí tenés 3 opciones para reemplazar el email y el teléfono genérico:
+1. La Opción "Canal Directo" (Mi favorita)
+En lugar de mostrar un email, poné un botón o enlace que diga "Enviar mensaje a la Filial".
+ * Cómo funciona: Al hacer clic, se abre un formulario simple (Nombre y Mensaje).
+ * El detrás de escena: Replit toma ese mensaje y te lo manda al toque a tu Telegram privado a través del Redactor IA.
+ * Ventaja: Respondés desde el celular mientras estás en Ramat Gan, sin abrir ninguna casilla de correo.
+2. WhatsApp Business / Personal
+Si no querés poner tu número personal a la vista de todos (para evitar llamadas raras), podés usar un link de WhatsApp.
+ * Texto: "Contacto vía WhatsApp"
+ * Icono: El logo de WhatsApp en verde.
+ * Privacidad: Podés pedirle a Replit que ese botón solo se vea después de que el usuario pase un filtro simple o simplemente usar un link tipo wa.me.
+3. Rediseño del bloque "Contacto Filial" (Copia y pega esto)
+Para que el diseño de la imagen quede impecable y pro, yo sacaría el email y lo pondría así:
+> CONTACTO FILIAL
+> 📍  Sede: Ramat Gan, Distrito de Tel Aviv, Israel
+> 💬  Mensaje Directo: [ Botón: Enviar consulta a la Redacción ]
+> 📱  WhatsApp: +972 50-123-4567 (Podés poner el real o el de la filial)
+> 
+🚀 Cómo configurarlo en tu Redactor IA (Replit)
+Para que los mensajes de la web te lleguen al mismo lugar que las noticias, pedile esto a Replit:
+> "Replit, eliminá la dirección de email de la web. Creá un pequeño cuadro de mensaje rápido que diga 'Escribinos'.
+> Cuando alguien escriba ahí, mandame el mensaje a mi Telegram con este formato:
+> 📬 MENSAJE DE LA WEB
+> Nombre: [Nombre]
+> Mensaje: [Texto]
+> [ Botón: Responder por WhatsApp ]"
+> 
+¿Por qué esto es mejor?
+ * Es privado: Tu email no queda expuesto a robots que tiran spam.
+ * Es rápido: Te llega una notificación al celular como cualquier chat.
+ * Es profesional: El usuario siente que hay alguien "del otro lado" respondiendo en tiempo real, no una casilla de correo muerta.
+¿Querés que te pase el código para ese "Mensaje Rápido" que reemplaza al email? Es un formulario de 2 campos que queda muy fachero en el diseño oscuro que tenés.
