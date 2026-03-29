@@ -2,9 +2,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type PosicionFiltro = "TODOS" | "ARQUEROS" | "DEFENSORES" | "MEDIOCAMPISTAS" | "DELANTEROS";
-type PosicionJugador = "ARQUEROS" | "DEFENSORES" | "MEDIOCAMPISTAS" | "DELANTEROS";
+export type PosicionJugador = "ARQUEROS" | "DEFENSORES" | "MEDIOCAMPISTAS" | "DELANTEROS";
 
-interface Jugador {
+export interface Jugador {
   numero: number;
   nombre: string;
   apellido: string;
@@ -18,7 +18,7 @@ interface Jugador {
 
 const B = "https://www.cariverplate.com.ar/imagenes/jugadores";
 
-const JUGADORES: Jugador[] = [
+export const JUGADORES: Jugador[] = [
   // ── ARQUEROS ──
   { numero: 1,  nombre: "Franco",       apellido: "Armani",           posicion: "ARQUEROS",       posicionDetalle: "Arquero",              nacionalidad: "Argentina", bandera: "🇦🇷", edad: 39, foto: `${B}/2025-07/1638-270x360.png` },
   { numero: 33, nombre: "Ezequiel",     apellido: "Centurión",        posicion: "ARQUEROS",       posicionDetalle: "Arquero",              nacionalidad: "Argentina", bandera: "🇦🇷", edad: 22, foto: `${B}/2026-01/310-270x360.png` },
@@ -69,7 +69,7 @@ const FILTROS: { label: string; value: PosicionFiltro }[] = [
   { label: "Delanteros", value: "DELANTEROS" },
 ];
 
-function PlayerCard({ jugador, index }: { jugador: Jugador; index: number }) {
+export function PlayerCard({ jugador, index }: { jugador: Jugador; index: number }) {
   const [flipped, setFlipped] = useState(false);
   const [imgError, setImgError] = useState(false);
 
