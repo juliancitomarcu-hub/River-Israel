@@ -407,7 +407,7 @@ export default function Home() {
               <ul className="space-y-4 mb-10">
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Encuentros para ver todos los partidos</span>
+                  <span>Encuentros para partidos especiales</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
