@@ -127,7 +127,12 @@ router.get("/noticias-publicadas", async (req, res) => {
       .orderBy(desc(noticiasTable.createdAt))
       .limit(20);
 
-    res.set("Cache-Control", "no-store, no-cache");
+    // Eliminar cabeceras condicionales para evitar respuestas 304 en caché
+    delete req.headers["if-none-match"];
+    delete req.headers["if-modified-since"];
+    res.removeHeader("ETag");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.set("Pragma", "no-cache");
     res.json({ noticias });
   } catch (err) {
     req.log.error({ err }, "Error obteniendo noticias");

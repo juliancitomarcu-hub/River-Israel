@@ -24,10 +24,11 @@ async function registrarWebhookTelegram() {
   }
 
   const token = process.env.TELEGRAM_TOKEN;
-  const domain = process.env.REPLIT_DEV_DOMAIN;
+  // TELEGRAM_WEBHOOK_DOMAIN tiene prioridad (dominio de producción real: riverplatisrael.replit.app)
+  const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
 
   if (!token || !domain) {
-    logger.warn("No se puede registrar webhook: falta TELEGRAM_TOKEN o REPLIT_DEV_DOMAIN");
+    logger.warn("No se puede registrar webhook: falta TELEGRAM_TOKEN o dominio");
     return;
   }
 
