@@ -193,18 +193,18 @@ export default function Home() {
               whileInView="show"
               viewport={{ once: true }}
               variants={fadeIn}
-              className="bg-river-black rounded-2xl p-6 shadow-2xl text-white relative overflow-hidden"
+              className="bg-river-black rounded-2xl p-4 shadow-2xl text-white relative overflow-hidden"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-river-red blur-[80px] rounded-full opacity-50"></div>
+              <div className="absolute top-0 right-0 w-24 h-24 bg-river-red blur-[60px] rounded-full opacity-40"></div>
 
-              <h3 className="font-display text-2xl font-bold mb-6 flex items-center gap-3 relative z-10">
-                <Trophy className="text-river-red" /> Fixture y Resultados
+              <h3 className="font-display text-lg font-bold mb-3 flex items-center gap-2 relative z-10">
+                <Trophy className="w-4 h-4 text-river-red" /> Fixture y Resultados
               </h3>
 
-              <div className="space-y-3 relative z-10 max-h-[520px] overflow-y-auto pr-1 scrollbar-thin">
+              <div className="space-y-2 relative z-10">
                 {!matches && (
-                  <div className="flex justify-center py-8">
-                    <div className="w-8 h-8 border-2 border-river-red border-t-transparent rounded-full animate-spin" />
+                  <div className="flex justify-center py-6">
+                    <div className="w-6 h-6 border-2 border-river-red border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
                 {matches && (() => {
@@ -220,18 +220,18 @@ export default function Home() {
                   const empate = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver === golesRival;
 
                   return (
-                    <div key={match.id} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
-                      <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
-                        <span className="font-semibold text-gray-300">{match.competition}</span>
-                        <div className="flex items-center gap-1.5">
+                    <div key={match.id} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 hover:bg-white/10 transition-colors">
+                      <div className="flex justify-between items-center text-[10px] text-gray-400 mb-1">
+                        <span className="font-semibold text-gray-300 truncate max-w-[120px]">{match.competition}</span>
+                        <div className="flex items-center gap-1 shrink-0">
                           {match.status === 'LIVE' && (
-                            <span className="flex items-center gap-1 bg-green-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold animate-pulse">
+                            <span className="flex items-center gap-0.5 bg-green-500 text-white px-1 py-0.5 rounded text-[9px] font-bold animate-pulse">
                               🔴 EN VIVO
                             </span>
                           )}
                           {match.status === 'FINISHED' && (
                             <span className={cn(
-                              "px-1.5 py-0.5 rounded text-[10px] font-bold",
+                              "px-1 py-0.5 rounded text-[9px] font-bold",
                               ganamos ? "bg-green-600 text-white" : perdimos ? "bg-red-700 text-white" : "bg-gray-600 text-white"
                             )}>
                               {ganamos ? "✓ Ganamos" : perdimos ? "✗ Perdimos" : "= Empate"}
@@ -241,30 +241,29 @@ export default function Home() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className={cn("flex-1 font-bold text-sm truncate", match.isRiverHome ? "text-white" : "text-gray-300")}>
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn("flex-1 font-bold text-xs truncate", match.isRiverHome ? "text-white" : "text-gray-400")}>
                           {match.homeTeam}
                         </span>
-                        <div className="font-display text-lg bg-black/40 px-2.5 py-0.5 rounded tabular-nums flex-shrink-0">
+                        <div className="font-display text-sm bg-black/40 px-2 py-0.5 rounded tabular-nums flex-shrink-0">
                           {match.status === 'FINISHED' || match.status === 'LIVE'
                             ? <span>{match.homeScore} <span className="text-river-red/70">-</span> {match.awayScore}</span>
-                            : <span className="text-gray-400 text-sm">vs</span>
+                            : <span className="text-gray-400 text-xs">vs</span>
                           }
                         </div>
-                        <span className={cn("flex-1 font-bold text-sm text-right truncate", !match.isRiverHome ? "text-white" : "text-gray-300")}>
+                        <span className={cn("flex-1 font-bold text-xs text-right truncate", !match.isRiverHome ? "text-white" : "text-gray-400")}>
                           {match.awayTeam}
                         </span>
                       </div>
 
                       {match.status === 'UPCOMING' && match.horaIsrael && (
-                        <p className="text-xs text-river-red font-semibold mt-1.5 text-center">
+                        <p className="text-[10px] text-river-red font-semibold mt-1 text-center">
                           ⏰ {match.horaIsrael}
                         </p>
                       )}
                       {match.estadio && (
-                        <p className="text-[10px] text-gray-500 mt-1 text-center flex items-center justify-center gap-1">
-                          <span>🏟</span>
-                          <span>{match.estadio}</span>
+                        <p className="text-[9px] text-gray-500 mt-0.5 text-center">
+                          🏟 {match.estadio}
                         </p>
                       )}
                     </div>
@@ -272,7 +271,7 @@ export default function Home() {
                 })}
               </div>
 
-              <Link href="/fixture" className="w-full mt-4 flex items-center justify-center bg-white text-river-black hover:bg-gray-100 font-bold py-2.5 rounded-xl transition-colors relative z-10 text-sm">
+              <Link href="/fixture" className="w-full mt-3 flex items-center justify-center bg-white text-river-black hover:bg-gray-100 font-bold py-2 rounded-lg transition-colors relative z-10 text-xs">
                 Fixture Completo
               </Link>
             </motion.div>
