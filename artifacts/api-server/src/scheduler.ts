@@ -1,7 +1,7 @@
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql as sqlRaw } from "drizzle-orm";
 import * as cheerio from "cheerio";
 import { logger } from "./lib/logger";
 import * as fs from "fs";
@@ -10,15 +10,12 @@ import * as path from "path";
 const FUENTES = ["tyc", "ole", "infobae", "clarin", "lanacion", "bolavip", "as", "superdeportivo"] as const;
 
 // ─── ESTADO PERSISTENTE ──────────────────────────────────────────────────────
-// Sobrevive reinicios del servidor. Guarda el índice de fuente y las URLs ya
-// procesadas (para evitar repetir noticias aunque el servidor se reinicie).
+// Solo guarda el índice de fuente. La deduplicación se hace contra la DB.
 
 const STATE_FILE = path.resolve("./scheduler_state.json");
-const MAX_URLS_GUARDADAS = 500;
 
 interface SchedulerState {
   fuenteIndex: number;
-  urlsProcesadas: string[];
 }
 
 function leerEstado(): SchedulerState {
@@ -26,20 +23,54 @@ function leerEstado(): SchedulerState {
     const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf-8")) as Partial<SchedulerState>;
     return {
       fuenteIndex: typeof raw.fuenteIndex === "number" ? raw.fuenteIndex : 0,
-      urlsProcesadas: Array.isArray(raw.urlsProcesadas) ? raw.urlsProcesadas : [],
     };
   } catch {
-    return { fuenteIndex: 0, urlsProcesadas: [] };
+    return { fuenteIndex: 0 };
   }
 }
 
 function guardarEstado(estado: SchedulerState): void {
   try {
-    // Mantener solo las últimas MAX_URLS_GUARDADAS para no crecer indefinidamente
-    const urlsLimitadas = estado.urlsProcesadas.slice(-MAX_URLS_GUARDADAS);
-    fs.writeFileSync(STATE_FILE, JSON.stringify({ ...estado, urlsProcesadas: urlsLimitadas }), "utf-8");
+    fs.writeFileSync(STATE_FILE, JSON.stringify(estado), "utf-8");
   } catch (err) {
     logger.warn({ err }, "Scheduler: no se pudo guardar el estado");
+  }
+}
+
+// ─── DEDUPLICACIÓN POR DB ─────────────────────────────────────────────────────
+// Compara el título candidato con las noticias de los últimos 7 días.
+// Si 3 o más palabras significativas (≥4 chars) coinciden → mismo tema → saltar.
+// Esto funciona aunque el servidor se reinicie o se redeploy (usa la DB, no archivos).
+
+async function tituloYaProcesado(titulo: string): Promise<boolean> {
+  try {
+    const res = await db.execute(sqlRaw`
+      SELECT titulo FROM noticias
+      WHERE created_at > NOW() - INTERVAL '7 days'
+    `);
+
+    const palabras = titulo
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")   // quitar tildes
+      .replace(/[^a-z\s]/g, "")
+      .split(/\s+/)
+      .filter(p => p.length >= 4);
+
+    for (const row of res.rows as { titulo: string }[]) {
+      const existente = row.titulo
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z\s]/g, "");
+      const coincidencias = palabras.filter(p => existente.includes(p));
+      if (coincidencias.length >= 3) {
+        logger.info({ candidato: titulo, existente: row.titulo, coincidencias }, "Scheduler: tema repetido, saltando");
+        return true;
+      }
+    }
+    return false;
+  } catch (err) {
+    logger.warn({ err }, "Scheduler: error en deduplicación por DB, procesando igual");
+    return false;
   }
 }
 
@@ -148,30 +179,23 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       return;
     }
 
-    // ── DEDUPLICACIÓN: saltear URLs ya procesadas ────────────────────────────
-    // Leemos estado fresco (puede haber cambiado si fuenteOverride lo actualizó)
-    const estadoFresco = leerEstado();
+    // ── DEDUPLICACIÓN POR DB: saltear temas ya cubiertos ────────────────────
     let noticiaElegida: typeof noticias[0] | null = null;
 
     for (const candidata of noticias) {
-      const urlKey = candidata.url || candidata.titulo;
-      if (!estadoFresco.urlsProcesadas.includes(urlKey)) {
+      const yaExiste = await tituloYaProcesado(candidata.titulo);
+      if (!yaExiste) {
         noticiaElegida = candidata;
         break;
       }
-      logger.info({ url: urlKey }, "Scheduler: noticia ya procesada, saltando");
     }
 
     if (!noticiaElegida) {
-      logger.warn({ fuente }, "Scheduler: todas las noticias disponibles ya fueron procesadas, esperando próximo ciclo");
+      logger.warn({ fuente }, "Scheduler: todos los temas disponibles ya fueron cubiertos esta semana, esperando próximo ciclo");
       return;
     }
 
     logger.info({ titulo: noticiaElegida.titulo, url: noticiaElegida.url }, "Scheduler: noticia seleccionada");
-
-    // Marcar URL como procesada ANTES de generar (evita reintento doble si la IA falla)
-    estadoFresco.urlsProcesadas.push(noticiaElegida.url || noticiaElegida.titulo);
-    guardarEstado(estadoFresco);
 
     // ── EXTRAER TEXTO DEL ARTÍCULO ───────────────────────────────────────────
     let textoParaIA = noticiaElegida.titulo;
