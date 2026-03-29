@@ -393,6 +393,7 @@ export default function Redactor() {
 
   function resolverUrlGaleria(url: string) {
     if (url.startsWith("/objects/")) return `/api/storage/objects${url.slice(8)}`;
+    if (url.startsWith("/images/")) return `${import.meta.env.BASE_URL}${url.slice(1)}`;
     return url;
   }
 
@@ -672,6 +673,13 @@ export default function Redactor() {
       if (!isNaN(id)) cargarParaEditar(id);
     }
   }, []);
+
+  // Auto-cargar galería cuando el tab está activo
+  useEffect(() => {
+    if (tab === "galeria" && galeriaFotos.length === 0 && !cargandoGaleria) {
+      cargarGaleria();
+    }
+  }, [tab]);
 
   const buscarNoticias = async () => {
     setBuscando(true);

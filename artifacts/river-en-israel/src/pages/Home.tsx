@@ -77,6 +77,7 @@ export default function Home() {
 
   function resolverUrl(url: string) {
     if (url.startsWith("/objects/")) return `/api/storage/objects${url.slice(8)}`;
+    if (url.startsWith("/images/")) return `${import.meta.env.BASE_URL}${url.slice(1)}`;
     return url;
   }
 
