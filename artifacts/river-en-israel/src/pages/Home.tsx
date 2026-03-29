@@ -428,7 +428,7 @@ export default function Home() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold">Videos & <span className="text-river-red">Goles</span></h2>
+              <h2 className="text-3xl md:text-4xl font-display font-bold">La <span className="text-river-red">Pasión</span> en Imágenes</h2>
               <p className="text-gray-400 mt-1 text-sm">Tocá un video para reproducirlo.</p>
             </div>
           </div>
@@ -718,7 +718,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="inline-block text-river-red font-bold text-xs uppercase tracking-[0.3em] mb-3">Filial Ramat Gan · Israel</span>
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">La <span className="text-river-red">Pasión</span> en Imágenes</h2>
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">Videos & <span className="text-river-red">Goles</span></h2>
             <p className="text-gray-400 max-w-lg mx-auto">Hacé clic en cualquier foto para verla completa y descargarla.</p>
           </div>
 
