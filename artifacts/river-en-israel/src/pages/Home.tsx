@@ -589,7 +589,7 @@ export default function Home() {
 
               {/* Formulario: Escribí en el sitio */}
               <>
-                  <h3 className="font-display text-3xl font-bold text-river-black mb-1">¡Escribí en River en Israel!</h3>
+                  <h3 className="font-display text-3xl font-bold text-river-black mb-1">¡Escribí en River Israel!</h3>
                   <p className="text-gray-500 mb-6 text-sm">Periodista, creador o fanático — tu voz merece llegar a toda la comunidad.</p>
 
                   {postulEstado === "ok" ? (
