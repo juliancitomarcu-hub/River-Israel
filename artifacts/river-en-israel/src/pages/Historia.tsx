@@ -177,52 +177,34 @@ const TITULOS = [
 ];
 
 function HitosList({ hitos }: { hitos: Hito[] }) {
-  const seen = new Set<string>();
   return (
-    <>
-      {hitos.map((hito, index) => {
-        const firstOccurrence = !seen.has(hito.year);
-        if (firstOccurrence) seen.add(hito.year);
-        return (
+    <div className="relative">
+      <div className="absolute top-[44px] left-0 right-0 h-px bg-river-red/15 z-0 pointer-events-none" />
+      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: "thin" }}>
+        {hitos.map((hito, index) => (
           <motion.div
-            id={firstOccurrence ? `era-${hito.year}` : undefined}
             key={`${hito.year}-${index}`}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={fadeUp}
-            className="relative"
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: Math.min(index * 0.04, 0.4) }}
+            className="flex-none w-52 snap-start flex flex-col items-center"
           >
-            <div className={`absolute top-4 left-[-43px] w-6 h-6 rounded-full border-4 border-white shadow-md z-10 ${hito.destacado ? "bg-river-red" : "bg-gray-400"}`} />
-            <div className={`rounded-2xl border overflow-hidden transition-shadow hover:shadow-lg ${hito.destacado ? "border-river-red/20 shadow-md" : "border-gray-100 shadow-sm"}`}>
-              {hito.imagen && (
-                <div className="h-40 overflow-hidden">
-                  <img src={hito.imagen} alt={hito.title} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className={`p-5 ${hito.destacado ? "bg-red-50/50" : "bg-gray-50"}`}>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div>
-                    <span className={`font-display text-3xl font-bold block leading-none mb-1 ${hito.destacado ? "text-river-red" : "text-river-red/25"}`}>
-                      {hito.year}
-                    </span>
-                    <h3 className="text-lg font-bold text-river-black flex items-center gap-2">
-                      {hito.destacado && <Trophy className="w-4 h-4 text-river-red shrink-0" />}
-                      {hito.title}
-                    </h3>
-                  </div>
-                  {hito.destacado && <Star className="w-5 h-5 text-river-red/60 shrink-0 mt-1" fill="currentColor" />}
-                </div>
-                <p className="text-gray-600 text-sm mb-2">{hito.description}</p>
-                {hito.detail && (
-                  <p className="text-gray-500 text-sm leading-relaxed border-t border-gray-200/70 pt-3 mt-3">{hito.detail}</p>
-                )}
-              </div>
+            <div className={`w-4 h-4 rounded-full border-4 border-white shadow z-10 relative mb-3 shrink-0 ${hito.destacado ? "bg-river-red" : "bg-gray-300"}`} />
+            <div className={`w-full rounded-xl border p-3 transition-shadow hover:shadow-md ${hito.destacado ? "border-river-red/30 bg-red-50/40 shadow-sm" : "border-gray-100 bg-gray-50"}`}>
+              <span className={`font-display text-2xl font-bold block leading-none mb-1 ${hito.destacado ? "text-river-red" : "text-gray-300"}`}>
+                {hito.year}
+              </span>
+              <h3 className="text-sm font-bold text-river-black leading-snug flex items-start gap-1.5 mb-1.5">
+                {hito.destacado && <Trophy className="w-3 h-3 text-river-red shrink-0 mt-0.5" />}
+                {hito.title}
+              </h3>
+              <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{hito.description}</p>
             </div>
           </motion.div>
-        );
-      })}
-    </>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -292,18 +274,20 @@ export default function Historia() {
       </section>
 
 
-      {/* ── TIMELINE COMPLETO ── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ── TIMELINE DESLIZABLE ── */}
+      <section className="py-12 bg-white">
+        <div className="max-w-7xl mx-auto">
 
-          <div className="text-center mb-14">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">
-              Cronología <span className="text-river-red">Completa</span>
+          <div className="px-4 sm:px-6 lg:px-8 mb-8">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-river-black leading-tight">
+              El Más Grande <span className="text-river-red">·</span>{" "}
+              <span className="text-gray-400 font-normal text-2xl md:text-3xl">
+                Un repaso por los momentos que forjaron nuestra gloriosa historia
+              </span>
             </h2>
-            <p className="text-gray-500 text-lg">Los hitos que escribieron la leyenda del Millonario</p>
           </div>
 
-          <div className="relative border-l-4 border-river-red/20 ml-4 space-y-8 pl-8">
+          <div className="px-4 sm:px-6 lg:px-8">
             <HitosList hitos={hitos} />
           </div>
 
