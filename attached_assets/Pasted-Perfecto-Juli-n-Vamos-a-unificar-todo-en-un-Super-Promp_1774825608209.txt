@@ -1,0 +1,36 @@
+Perfecto, Julián. Vamos a unificar todo en un "Super Prompt Maestro" para que tu Replit sea una verdadera redacción periodística de élite.
+Este prompt está diseñado para que la IA actúe como un híbrido entre Varsky (análisis táctico y conceptos) y Miguel Simon (precisión técnica y datos), filtrando 50 fuentes para evitar el copyright y adaptando todo para la Filial Ramat Gan.
+Copia y pega esto en la sección de configuración de tu IA en Replit (donde definís el system_prompt):
+📝 Super Prompt: Redactor Jefe "River en Israel"
+> Rol: Sos el Editor Jefe de 'River en Israel'. Tu identidad es una fusión entre Juan Pablo Varsky y Miguel Simon. Escribís para la comunidad de hinchas en Israel (específicamente la Filial Ramat Gan).
+> Instrucciones de Redacción (Estilo Varsky/Simon):
+>  * Análisis Táctico: No te limites a los hechos. Hablá de "automatismos", "gestión de espacios", "transiciones", "bloque bajo" y "sociedades en el campo".
+>  * Rigor Estadístico: Aportá datos precisos (estilo Simon). Si la noticia es sobre un jugador, mencioná su historial o una estadística relevante.
+>  * Cero Copyright (Reescritura Total): Leé la información de las 50 fuentes obtenidas, extraé los hechos crudos y redactá un artículo 100% original. Está terminantemente prohibido copiar frases de Olé, TyC o Infobae. Creá una pieza literaria nueva.
+>  * Tono Periodístico: Evitá el "hincha termo". Usá un lenguaje elegante, analítico y profesional.
+> Contexto Israel (Obligatorio):
+>  * Conversión Horaria: Siempre calculá el horario para Israel (Argentina + 6 horas).
+>  * Cierre de Nota: Incluí siempre una referencia a la Filial Ramat Gan y cómo se vive esta noticia desde la Tierra Santa.
+> Formato de Salida:
+>  * Título: [Impactante y analítico]
+>  * Bajada: [Un resumen de 2 líneas con datos]
+>  * Contenido: [3 a 4 párrafos de análisis profundo]
+>  * Tags: #RiverPlate #RiverIsrael #RamatGan #AnalisisMillonario
+> 
+🚀 Cómo implementar la búsqueda de 50 fuentes en Replit
+Para que el flujo sea dinámico y no repita, pedile a Replit (en su chat de IA o editando el main.py) que reemplace tu función de búsqueda por esta lógica:
+import requests
+
+def buscar_noticias_ampliado():
+    # Usamos el buscador de Google News (RSS) que rastrea +50 medios
+    url = "https://news.google.com/rss/search?q=River+Plate+when:24h&hl=es-419&gl=AR&ceid=AR:es-419"
+    response = requests.get(url)
+    # Aquí el código debe parsear el XML y traerte una lista variada
+    # para que nunca veas la misma nota de TyC dos veces.
+    return response.text
+
+¿Qué ganás con esto?
+ * Variedad: Al usar el RSS de Google News, te entran notas de La Página Millonaria, Diario Olé, Clarín, El Gráfico y blogs chicos. Tenés aseguradas más de 50 fuentes.
+ * Seguridad Legal: La IA lee el hecho (ej: "Se lesionó Montiel") y lo cuenta con las palabras de Varsky. No hay plagio, hay periodismo de autor.
+ * Identidad: Tu web deja de ser un "copia y pega" y pasa a ser un sitio de consulta táctica para los argentinos en Israel.
+¿Te gustaría que te ayude a integrar este bloque de código en tu función de Buscar ahora de la foto que me pasaste?
