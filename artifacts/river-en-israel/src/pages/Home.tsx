@@ -51,6 +51,7 @@ export default function Home() {
 
   // Videos
   const [videos, setVideos] = useState<VideoGaleria[]>([]);
+  const [videoAbierto, setVideoAbierto] = useState<VideoGaleria | null>(null);
   useEffect(() => {
     fetch("/api/videos", { cache: "no-store" })
       .then(r => r.json())
@@ -418,55 +419,100 @@ export default function Home() {
       {/* ================= VIDEOS SECTION ================= */}
       {videos.length > 0 && (
       <section id="videos" className="py-10 bg-river-black text-white relative">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-3xl md:text-4xl font-display font-bold">Videos & <span className="text-river-red">Goles</span></h2>
-              <p className="text-gray-400 mt-1 text-sm">Reviví las emociones más grandes.</p>
+              <p className="text-gray-400 mt-1 text-sm">Tocá un video para reproducirlo.</p>
             </div>
           </div>
 
-          {videos.length === 1 ? (
-            <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black max-w-3xl mx-auto aspect-video">
-              <video
-                src={videos[0].url.startsWith("/objects/") ? `/api/storage${videos[0].url}` : `${import.meta.env.BASE_URL}${videos[0].url.replace(/^\//, "")}`}
-                controls
-                className="w-full h-full object-cover bg-black"
-                title={videos[0].titulo}
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Video principal */}
-              <div className="lg:col-span-2 rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black aspect-video">
-                <video
-                  src={videos[0].url.startsWith("/objects/") ? `/api/storage${videos[0].url}` : `${import.meta.env.BASE_URL}${videos[0].url.replace(/^\//, "")}`}
-                  controls
-                  className="w-full h-full object-cover bg-black"
-                  title={videos[0].titulo}
-                />
-              </div>
-              {/* Videos secundarios */}
-              <div className="flex flex-col gap-3">
-                {videos.slice(1).map(vid => (
-                  <div key={vid.id} className="rounded-xl overflow-hidden border border-white/10 shadow-md bg-white/5">
+          {/* Columna scrollable de videos */}
+          <div className="flex flex-col gap-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20">
+            {videos.map((vid, i) => {
+              const src = vid.url.startsWith("/objects/")
+                ? `/api/storage${vid.url}`
+                : `${import.meta.env.BASE_URL}${vid.url.replace(/^\//, "")}`;
+              return (
+                <button
+                  key={vid.id}
+                  onClick={() => setVideoAbierto(vid)}
+                  className="w-full flex items-center gap-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-river-red/50 rounded-2xl p-3 transition-all text-left group"
+                >
+                  {/* Miniatura */}
+                  <div className="relative w-36 shrink-0 aspect-video rounded-xl overflow-hidden bg-black">
                     <video
-                      src={vid.url.startsWith("/objects/") ? `/api/storage${vid.url}` : `${import.meta.env.BASE_URL}${vid.url.replace(/^\//, "")}`}
-                      controls
-                      className="w-full aspect-video object-cover bg-black"
-                      title={vid.titulo}
+                      src={src}
+                      preload="metadata"
+                      className="w-full h-full object-cover"
+                      muted
                     />
-                    {vid.titulo && (
-                      <p className="text-xs text-gray-300 px-3 py-2 font-semibold truncate">{vid.titulo}</p>
-                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-river-red flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Play className="w-5 h-5 text-white" fill="currentColor" />
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-white group-hover:text-river-red transition-colors truncate">
+                      {vid.titulo || `Video ${i + 1}`}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">Tap para reproducir</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-river-red shrink-0 transition-colors" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
       )}
+
+      {/* ── LIGHTBOX DE VIDEO ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {videoAbierto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+            onClick={() => setVideoAbierto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-4xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setVideoAbierto(null)}
+                className="absolute -top-10 right-0 flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
+              >
+                <X className="w-5 h-5" /> Cerrar
+              </button>
+              <div className="rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video">
+                <video
+                  key={videoAbierto.id}
+                  src={videoAbierto.url.startsWith("/objects/")
+                    ? `/api/storage${videoAbierto.url}`
+                    : `${import.meta.env.BASE_URL}${videoAbierto.url.replace(/^\//, "")}`}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain bg-black"
+                  title={videoAbierto.titulo}
+                />
+              </div>
+              {videoAbierto.titulo && (
+                <p className="text-white font-bold text-lg mt-3 text-center">{videoAbierto.titulo}</p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ================= FILIAL RAMAT GAN SECTION ================= */}
       <section id="filial" className="py-24 bg-gray-50 relative overflow-hidden">
