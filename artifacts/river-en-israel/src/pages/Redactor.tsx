@@ -69,7 +69,7 @@ interface HitoEdit {
 type Estado = "idle" | "procesando" | "listo" | "error";
 type EstadoTelegram = "idle" | "enviando" | "enviado" | "error";
 type EstadoPublicar = "idle" | "publicando" | "publicado" | "error";
-type FuenteNoticias = "tyc" | "ole" | "infobae" | "clarin" | "lanacion" | "bolavip" | "as" | "superdeportivo";
+type FuenteNoticias = "google" | "tyc" | "ole" | "infobae" | "clarin" | "lanacion" | "bolavip" | "as" | "superdeportivo";
 
 interface NoticiaRaw {
   titulo: string;
@@ -1717,6 +1717,7 @@ export default function Redactor() {
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><Globe className="w-3 h-3" /> Elegí el medio</p>
             <div className="flex flex-wrap gap-2">
               {([
+                { id: "google", label: "Google News (50+)" },
                 { id: "tyc", label: "TyC Sports" },
                 { id: "ole", label: "Olé" },
                 { id: "infobae", label: "Infobae" },

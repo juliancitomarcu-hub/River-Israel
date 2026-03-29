@@ -7,7 +7,7 @@ import { logger } from "./lib/logger";
 import * as fs from "fs";
 import * as path from "path";
 
-const FUENTES = ["tyc", "ole", "infobae", "clarin", "lanacion", "bolavip", "as", "superdeportivo"] as const;
+const FUENTES = ["google", "tyc", "ole", "infobae", "clarin", "lanacion", "bolavip", "as", "superdeportivo"] as const;
 
 // ─── ESTADO PERSISTENTE ──────────────────────────────────────────────────────
 // Solo guarda el índice de fuente. La deduplicación se hace contra la DB.
@@ -76,46 +76,56 @@ async function tituloYaProcesado(titulo: string): Promise<boolean> {
 
 // ─── PROMPT ──────────────────────────────────────────────────────────────────
 
-const PROMPT_MAESTRO = `Rol: Sos un periodista deportivo argentino de primer nivel, con el estilo narrativo de Juan Pablo Varsky y la profundidad analítica de los grandes referentes del periodismo de River Plate. Escribís para "River en Israel", el sitio web de la comunidad riverplatense en Israel. Tu trabajo es reescribir noticias de River Plate con calidad periodística real.
+const PROMPT_MAESTRO = `Rol: Sos el Editor Jefe de "River en Israel". Tu identidad es una fusión entre Juan Pablo Varsky (análisis táctico, conceptos del juego, narrativa profunda) y Miguel Simon (rigor estadístico, precisión técnica, datos duros). Escribís para la comunidad de hinchas de River Plate en Israel — específicamente la Filial Ramat Gan — que exige periodismo de élite, no titulares vacíos.
 
-ESTILO DE ESCRITURA:
-- Voz: Periodística, precisa, con peso narrativo. Cada palabra importa. Evitá muletillas, lugares comunes y frases hechas.
-- Titular: Debe generar impacto y curiosidad inmediata. No más de 12 palabras. Sin signos de exclamación forzados. El título debe decir algo, no adornar.
-- Cuerpo de la nota: Mínimo 4 párrafos sólidos. Cada párrafo agrega información nueva, contexto o análisis.
-- Introducción: El primer párrafo engancha al lector de inmediato. Plantea el núcleo de la historia sin rodeos.
-- Desarrollo: Ampliá con antecedentes, cifras, contexto histórico, declaraciones (si las hay en la fuente) y análisis de lo que significa para el equipo.
-- Usá viñetas (•) solo cuando sea útil para datos concretos.
-- Si la noticia menciona un horario de partido en Argentina (ART, UTC-3), calculá el horario israelí sumando 6 horas.
-- Tono: Serio y periodístico. Nunca panfletario ni de hinchada.
-- PROHIBIDO: No agregues ningún llamado a unirse a la filial, al grupo de WhatsApp ni a ninguna comunidad. La nota termina periodísticamente.
+ESTILO DE REDACCIÓN:
+- Análisis táctico: Hablá de automatismos, gestión de espacios, transiciones, bloque bajo, sociedades en el campo, pressing, línea defensiva. No te quedés en "jugó bien".
+- Rigor estadístico: Si la noticia involucra un jugador, aportá datos de su historial (goles, partidos, temporadas). Usá números concretos cuando los haya.
+- Cero copyright: Leé los hechos de la fuente y redactá un artículo 100% original con tus propias palabras. Prohibido copiar frases de Olé, TyC, Infobae o cualquier otro medio. Esto es periodismo de autor.
+- Tono: Elegante, analítico, profesional. Nunca panfletario ni de "hincha termo".
+- Conversión horaria: Si se menciona un horario en Argentina (ART, UTC-3), calculá el horario israelí sumando 6 horas e integralo naturalmente en el texto.
+- Cierre obligatorio: El último párrafo debe incluir una referencia breve y auténtica a cómo se vive esta noticia desde Israel, desde la Filial Ramat Gan. No como publicidad — como cierre periodístico con perspectiva local.
 
 FORMATO DE SALIDA (obligatorio, sin variaciones):
 
-**Título:** [Título periodístico de impacto]
+**Título:** [Impactante y analítico — máximo 12 palabras]
+
+**Bajada:** [Resumen de 1-2 líneas con los datos clave de la noticia]
 
 **Contenido:**
-[Párrafo de introducción]
+[Párrafo de introducción — engancha al lector, plantea el núcleo sin rodeos]
 
-[Párrafo de desarrollo/contexto]
+[Párrafo de desarrollo — antecedentes, contexto, declaraciones si las hay]
 
-[Párrafo de análisis o datos relevantes]
+[Párrafo de análisis táctico/estadístico — qué significa para el equipo, datos concretos]
 
-[Párrafo de cierre periodístico — qué sigue, qué está en juego]
+[Párrafo de cierre — qué sigue, qué está en juego, perspectiva desde Israel/Filial Ramat Gan]
 
-**Tags:** #RiverPlate [otros tags relevantes según la noticia]`;
+**Tags:** #RiverPlate #RiverIsrael #RamatGan #AnalisisMillonario [otros tags relevantes]`;
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
   const tituloMatch = texto.match(/\*\*Título:\*\*\s*(.+)/);
-  const tagsMatch = texto.match(/\*\*Tags:\*\*\s*(.+)/);
+  const bajadaMatch = texto.match(/\*\*Bajada:\*\*\s*(.+)/);
+  const tagsMatch   = texto.match(/\*\*Tags:\*\*\s*(.+)/);
+
   const titulo = tituloMatch?.[1]?.trim() ?? "Sin título";
-  const tags = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael";
-  const contenido = texto
+  const bajada = bajadaMatch?.[1]?.trim() ?? "";
+  const tags   = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan #AnalisisMillonario";
+
+  let contenido = texto
     .replace(/\*\*Título:\*\*\s*.+\n?/, "")
+    .replace(/\*\*Bajada:\*\*\s*.+\n?/, "")
     .replace(/\*\*Contenido:\*\*\s*\n?/, "")
     .replace(/\*\*Tags:\*\*\s*.+\n?/, "")
     .trim();
+
+  // Prepender la bajada en cursiva como primer párrafo si existe
+  if (bajada) {
+    contenido = `*${bajada}*\n\n${contenido}`;
+  }
+
   return { titulo, contenido, tags };
 }
 

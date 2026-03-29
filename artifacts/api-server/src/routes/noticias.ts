@@ -144,6 +144,41 @@ async function scrapearSuperDeportivo(): Promise<NoticiaRaw[]> {
   return scrapearSitio("https://www.superdeportivo.com.ar/river-plate", "https://www.superdeportivo.com.ar", "SuperDeportivo");
 }
 
+// ─── GOOGLE NEWS RSS ─────────────────────────────────────────────────────────
+// Rastrea +50 medios simultáneamente (Olé, Clarín, La Nación, El Gráfico, etc.)
+// Usa el RSS público de Google News — sin autenticación, sin límite.
+
+async function scrapearGoogleNews(): Promise<NoticiaRaw[]> {
+  const url = "https://news.google.com/rss/search?q=River+Plate+when:24h&hl=es-419&gl=AR&ceid=AR:es-419";
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, "Accept": "application/rss+xml, text/xml, */*" },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) throw new Error(`Google News respondió ${res.status}`);
+
+    const xml = await res.text();
+    const $ = cheerio.load(xml, { xmlMode: true });
+    const noticias: NoticiaRaw[] = [];
+
+    $("item").each((_, el) => {
+      const titulo = $(el).find("title").text().trim();
+      const link   = $(el).find("link").text().trim() || $(el).find("guid").text().trim();
+      const fuente = $(el).find("source").text().trim() || "Google News";
+
+      if (titulo && titulo.length > 20 && titulo.length < 250 && esNoticiaDeRiver(titulo, link)) {
+        if (!noticias.find((n) => n.titulo === titulo)) {
+          noticias.push({ titulo, url: link, fuente });
+        }
+      }
+    });
+
+    return noticias.slice(0, 12);
+  } catch (err) {
+    throw new Error(`Google News falló: ${err}`);
+  }
+}
+
 // ─── MAP fuente ──────────────────────────────────────────────────────────────
 
 const FUENTES: Record<string, () => Promise<NoticiaRaw[]>> = {
@@ -155,6 +190,7 @@ const FUENTES: Record<string, () => Promise<NoticiaRaw[]>> = {
   bolavip: scrapearBolavip,
   as: scrapearAS,
   superdeportivo: scrapearSuperDeportivo,
+  google: scrapearGoogleNews,
 };
 
 // ─── ENDPOINT ────────────────────────────────────────────────────────────────
