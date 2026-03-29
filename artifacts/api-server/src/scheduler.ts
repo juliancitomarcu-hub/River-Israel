@@ -9,25 +9,41 @@ import * as path from "path";
 
 const FUENTES = ["tyc", "ole", "infobae", "clarin", "lanacion", "bolavip", "as", "superdeportivo"] as const;
 
-// Persistencia del índice de fuente — sobrevive reinicios
+// ─── ESTADO PERSISTENTE ──────────────────────────────────────────────────────
+// Sobrevive reinicios del servidor. Guarda el índice de fuente y las URLs ya
+// procesadas (para evitar repetir noticias aunque el servidor se reinicie).
+
 const STATE_FILE = path.resolve("./scheduler_state.json");
+const MAX_URLS_GUARDADAS = 500;
 
-function leerIndice(): number {
+interface SchedulerState {
+  fuenteIndex: number;
+  urlsProcesadas: string[];
+}
+
+function leerEstado(): SchedulerState {
   try {
-    const data = JSON.parse(fs.readFileSync(STATE_FILE, "utf-8")) as { fuenteIndex?: number };
-    return typeof data.fuenteIndex === "number" ? data.fuenteIndex : 0;
+    const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf-8")) as Partial<SchedulerState>;
+    return {
+      fuenteIndex: typeof raw.fuenteIndex === "number" ? raw.fuenteIndex : 0,
+      urlsProcesadas: Array.isArray(raw.urlsProcesadas) ? raw.urlsProcesadas : [],
+    };
   } catch {
-    return 0;
+    return { fuenteIndex: 0, urlsProcesadas: [] };
   }
 }
 
-function guardarIndice(idx: number): void {
+function guardarEstado(estado: SchedulerState): void {
   try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify({ fuenteIndex: idx }), "utf-8");
+    // Mantener solo las últimas MAX_URLS_GUARDADAS para no crecer indefinidamente
+    const urlsLimitadas = estado.urlsProcesadas.slice(-MAX_URLS_GUARDADAS);
+    fs.writeFileSync(STATE_FILE, JSON.stringify({ ...estado, urlsProcesadas: urlsLimitadas }), "utf-8");
   } catch (err) {
-    logger.warn({ err }, "Scheduler: no se pudo guardar el índice de fuente");
+    logger.warn({ err }, "Scheduler: no se pudo guardar el estado");
   }
 }
+
+// ─── PROMPT ──────────────────────────────────────────────────────────────────
 
 const PROMPT_MAESTRO = `Rol: Sos un periodista deportivo argentino de primer nivel, con el estilo narrativo de Juan Pablo Varsky y la profundidad analítica de los grandes referentes del periodismo de River Plate. Escribís para "River en Israel", el sitio web de la comunidad riverplatense en Israel. Tu trabajo es reescribir noticias de River Plate con calidad periodística real.
 
@@ -79,15 +95,12 @@ async function obtenerTextoArticulo(url: string): Promise<string> {
       signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) return "";
-
     const html = await res.text();
     const $ = cheerio.load(html);
-
     const parrafos = $("article p, .article-body p, .nota-body p, .article__content p, .post-content p, .detail-body p")
       .map((_: number, el: cheerio.Element) => $(el).text().trim())
       .get()
       .filter((t: string) => t.length > 50);
-
     const texto = parrafos.slice(0, 20).join("\n\n");
     return texto.length > 200 ? texto : "";
   } catch {
@@ -95,17 +108,28 @@ async function obtenerTextoArticulo(url: string): Promise<string> {
   }
 }
 
+// ─── FLAG ANTI-CONCURRENCIA ───────────────────────────────────────────────────
+// Evita que dos ciclos corran al mismo tiempo si el anterior tardó demasiado.
+let enEjecucion = false;
+
 async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
-  const idx = fuenteOverride ? leerIndice() : leerIndice();
-  const fuente = fuenteOverride ?? FUENTES[idx % FUENTES.length];
-
-  if (!fuenteOverride) {
-    guardarIndice(idx + 1);
+  if (enEjecucion) {
+    logger.warn("Scheduler: ciclo anterior aún en ejecución, saltando este turno");
+    return;
   }
-
-  logger.info({ fuente, siguiente: FUENTES[(idx + 1) % FUENTES.length] }, "Scheduler: iniciando ciclo automático");
+  enEjecucion = true;
 
   try {
+    const estado = leerEstado();
+    const fuente = fuenteOverride ?? FUENTES[estado.fuenteIndex % FUENTES.length];
+
+    if (!fuenteOverride) {
+      estado.fuenteIndex += 1;
+      guardarEstado(estado);
+    }
+
+    logger.info({ fuente, siguiente: FUENTES[estado.fuenteIndex % FUENTES.length] }, "Scheduler: iniciando ciclo automático");
+
     const port = process.env.PORT;
     const noticiasRes = await fetch(`http://localhost:${port}/api/noticias-river?fuente=${fuente}`, {
       signal: AbortSignal.timeout(35000),
@@ -124,21 +148,44 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       return;
     }
 
-    const noticia = noticias[0];
-    logger.info({ titulo: noticia.titulo, url: noticia.url }, "Scheduler: noticia seleccionada");
+    // ── DEDUPLICACIÓN: saltear URLs ya procesadas ────────────────────────────
+    // Leemos estado fresco (puede haber cambiado si fuenteOverride lo actualizó)
+    const estadoFresco = leerEstado();
+    let noticiaElegida: typeof noticias[0] | null = null;
 
-    // Extraer texto completo del artículo para mejor calidad de IA
-    let textoParaIA = noticia.titulo;
-    if (noticia.url) {
-      const textoArticulo = await obtenerTextoArticulo(noticia.url);
+    for (const candidata of noticias) {
+      const urlKey = candidata.url || candidata.titulo;
+      if (!estadoFresco.urlsProcesadas.includes(urlKey)) {
+        noticiaElegida = candidata;
+        break;
+      }
+      logger.info({ url: urlKey }, "Scheduler: noticia ya procesada, saltando");
+    }
+
+    if (!noticiaElegida) {
+      logger.warn({ fuente }, "Scheduler: todas las noticias disponibles ya fueron procesadas, esperando próximo ciclo");
+      return;
+    }
+
+    logger.info({ titulo: noticiaElegida.titulo, url: noticiaElegida.url }, "Scheduler: noticia seleccionada");
+
+    // Marcar URL como procesada ANTES de generar (evita reintento doble si la IA falla)
+    estadoFresco.urlsProcesadas.push(noticiaElegida.url || noticiaElegida.titulo);
+    guardarEstado(estadoFresco);
+
+    // ── EXTRAER TEXTO DEL ARTÍCULO ───────────────────────────────────────────
+    let textoParaIA = noticiaElegida.titulo;
+    if (noticiaElegida.url) {
+      const textoArticulo = await obtenerTextoArticulo(noticiaElegida.url);
       if (textoArticulo) {
-        textoParaIA = `${noticia.titulo}\n\n${textoArticulo}`;
+        textoParaIA = `${noticiaElegida.titulo}\n\n${textoArticulo}`;
       }
     }
 
+    // ── GENERAR CON IA (gpt-4o-mini: más rápido, mismo resultado) ────────────
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 2000,
+      model: "gpt-4o-mini",
+      max_tokens: 1800,
       messages: [
         { role: "system", content: PROMPT_MAESTRO },
         { role: "user", content: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` },
@@ -153,7 +200,6 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
     const { titulo, contenido, tags } = parsearResultado(resultado);
 
-    // Guardamos la nota SIN imagen — el redactor la agrega manualmente al editar
     const [savedNoticia] = await db
       .insert(noticiasTable)
       .values({
@@ -161,13 +207,14 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
         contenido,
         tags,
         textoOriginal: textoParaIA.slice(0, 3000),
-        fuente: noticia.fuente ?? fuente,
+        fuente: noticiaElegida.fuente ?? fuente,
         publicada: false,
         pendiente: true,
         imagenPortada: "",
       })
       .returning();
 
+    // ── ENVIAR A TELEGRAM ────────────────────────────────────────────────────
     const token = process.env.TELEGRAM_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -216,19 +263,30 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
   } catch (err) {
     logger.error({ err }, "Scheduler: error inesperado en ciclo automático");
+  } finally {
+    enEjecucion = false;
   }
 }
 
 export { ejecutarCiclo };
 
-const INTERVALO_MS = 2 * 60 * 60 * 1000; // 2 horas
-const PRIMER_CICLO_MS = 30 * 60 * 1000;  // 30 minutos tras arrancar el servidor
+// ─── INTERVALO: cada 2 horas exactas ─────────────────────────────────────────
+// Usamos setInterval (más preciso que setTimeout recursivo) con un primer ciclo
+// retrasado 5 minutos para darle tiempo al servidor de arrancar correctamente.
+
+const INTERVALO_MS  = 2 * 60 * 60 * 1000; // 2 horas
+const PRIMER_CICLO_MS = 5 * 60 * 1000;    // 5 minutos tras arrancar
 
 export function iniciarScheduler(): void {
-  logger.info({ primerCicloMinutos: 30, intervalHoras: 2 }, "Scheduler automático iniciado — primer ciclo en 30 min");
+  logger.info({ primerCicloMinutos: 5, intervalHoras: 2 }, "Scheduler automático iniciado — primer ciclo en 5 min, luego cada 2 horas");
 
-  setTimeout(function ciclo() {
-    ejecutarCiclo().catch((err) => logger.error({ err }, "Scheduler: error no capturado"));
-    setTimeout(ciclo, INTERVALO_MS);
+  // Primer ciclo: espera 5 minutos y luego dispara el intervalo regular
+  setTimeout(() => {
+    ejecutarCiclo().catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));
+
+    // A partir del primer ciclo, corre exactamente cada 2 horas
+    setInterval(() => {
+      ejecutarCiclo().catch((err) => logger.error({ err }, "Scheduler: error no capturado"));
+    }, INTERVALO_MS);
   }, PRIMER_CICLO_MS);
 }
