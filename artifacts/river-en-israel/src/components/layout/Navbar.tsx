@@ -32,7 +32,10 @@ export function Navbar() {
     if (href.startsWith('#')) {
       const element = document.querySelector(href);
       if (element) {
-        setTimeout(() => element.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+        setTimeout(() => {
+          const top = element.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }, 80);
       } else {
         window.location.href = '/' + href;
       }
