@@ -797,7 +797,6 @@ export default function Home() {
 
 
       {/* ================= VIDEOS SECTION ================= */}
-      {videos.length > 0 && (
       <section id="videos" className="py-10 bg-river-black text-white relative">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between mb-5">
@@ -808,6 +807,12 @@ export default function Home() {
           </div>
 
           {/* Columna scrollable de videos */}
+          {videos.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-600">
+              <Play className="w-10 h-10 mb-3 opacity-30" />
+              <p className="text-sm">Los videos se cargan desde el Redactor.</p>
+            </div>
+          )}
           <div className="flex flex-col gap-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20">
             {videos.map((vid, i) => {
               const src = vid.url.startsWith("/objects/")
@@ -855,7 +860,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      )}
 
       {/* ── LIGHTBOX DE VIDEO ─────────────────────────────────────────── */}
       <AnimatePresence>

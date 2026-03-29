@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { name: "Plantel Profesional Masculino", href: "/equipo" },
   { name: "Filial Ramat Gan", href: "#filial" },
   { name: "Galería", href: "#galeria" },
+  { name: "Videos", href: "#videos" },
 ];
 
 export function Navbar() {
