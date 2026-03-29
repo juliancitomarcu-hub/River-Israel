@@ -81,11 +81,6 @@ export function Footer() {
                 www.cariverplate.com.ar
               </a>
             </div>
-            <div className="mt-6">
-              <Link href="/postula" className="inline-flex items-center gap-2 text-sm font-bold text-river-red hover:text-red-400 transition-colors">
-                🎙️ Escribí en River en Israel
-              </Link>
-            </div>
           </div>
         </div>
 
