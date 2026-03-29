@@ -178,6 +178,9 @@ export default function Home() {
               <a href="#actualidad" className="px-5 py-2.5 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-sm uppercase tracking-wider hover:bg-white/25 transition-all">
                 Últimas Noticias
               </a>
+              <a href="#escribi" className="px-5 py-2.5 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-sm uppercase tracking-wider hover:bg-white/25 transition-all">
+                Escribí en River Israel
+              </a>
             </div>
           </motion.div>
 
@@ -585,7 +588,7 @@ export default function Home() {
             </div>
 
             {/* Form Side */}
-            <div className="lg:w-7/12 p-10 lg:p-16">
+            <div id="escribi" className="lg:w-7/12 p-10 lg:p-16">
 
               {/* Formulario: Escribí en el sitio */}
               <>
