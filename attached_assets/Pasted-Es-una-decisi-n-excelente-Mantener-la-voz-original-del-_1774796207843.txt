@@ -1,0 +1,34 @@
+Es una decisión excelente. Mantener la voz original del autor le da autenticidad a la Filial; no es lo mismo un texto procesado por una máquina que el sentimiento real de un hincha que se quedó despierto hasta las 4 de la mañana en Ramat Gan para ver al Millo.
+Aquí tenés la propuesta para el texto de invitación y cómo configurar el "filtro respetuoso" en Replit.
+1. Texto para la Web (Sección de Postulación)
+Podés poner este texto con un diseño llamativo, quizás en un banner o arriba del formulario:
+🎙️ ¡Escribí en River en Israel!
+Buscamos voces millonarias en la Tierra Santa.
+¿Sos periodista, creador de contenido o simplemente un fanático con mucho para decir? Queremos que este sea tu espacio. Postulate para publicar tus análisis, crónicas o columnas de opinión en nuestra web oficial.
+ * Periodistas: Un espacio para difundir tu trabajo con alcance local.
+ * Creadores: Compartí tus videos o hilos de análisis.
+ * Fanáticos: Contanos cómo vivís la pasión a miles de kilómetros.
+> Sumate a la redacción de la Filial Ramat Gan y hacé que tu voz llegue a todos los rincones de Israel.
+> 
+2. El Prompt para tu Redactor IA (Modo "Editor Respetuoso")
+Para que Replit procese estos textos sin cambiarles el alma, usaremos este prompt específico para la IA:
+> PROMPT DE SISTEMA (Editor de Colaboradores):
+> "Actúa como corrector de estilo para 'River en Israel'. Tu función es técnica, NO creativa.
+>  * Ortografía y Gramática: Corrige errores de puntuación, tildes y ortografía.
+>  * Formato: Adapta el texto a párrafos limpios para la web, manteniendo los títulos originales si los hay.
+>  * RESPETO TOTAL: No modifiques el vocabulario, las opiniones ni el estilo del autor. Si el autor usa modismos o expresiones pasionales, mantenelos intactos.
+>  * Diferencia Horaria: Si menciona horarios, solo asegúrate de que esté clara la referencia a Israel.
+>  * Resultado: Devuelve el texto corregido listo para publicar, precedido por una breve ficha: 'Autor: [Nombre] | Ciudad: [Ciudad]'."
+> 
+3. ¿Cómo lo manejamos en Replit?
+Para que esto no sea público y vos mantengas el control, pedile esto a Replit:
+ * Formulario: Agregá un campo de texto largo (textarea) que diga: "Escribí acá tu nota o propuesta".
+ * Envío Privado: Cuando el usuario le dé a "Enviar", el sistema debe pasar el texto por la IA con el prompt de arriba.
+ * Tu Telegram: El bot te mandará el mensaje así:
+   * 🔴 NUEVA POSTULACIÓN DE REDACTOR
+   * Autor: Ariel S. (Tel Aviv)
+   * Texto Corregido: [Acá aparece la nota impecable pero con sus palabras]
+   * Botones: [✅ Publicar con su firma] [❌ Rechazar]
+💡 Un toque extra:
+Para los Creadores de Contenido, podés agregar un campo que diga: "Link a tu video o redes". Así, si el autor tiene un canal de YouTube o TikTok de River, podés embeber su video directamente en la nota de tu web. Les das difusión y ellos te dan contenido gratis.
+¿Te gustaría que te ayude a retocar el código de Replit para que el formulario separe a los "Suscriptores" de los "Postulantes a Redactor"? Así te llegan avisos diferentes al Telegram.
