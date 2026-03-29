@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { name: "Inicio", href: "/" },
   { name: "Actualidad", href: "#actualidad" },
   { name: "Historia", href: "/historia" },
-  { name: "Equipo", href: "/equipo" },
+  { name: "Equipo Profesional Masculino", href: "/equipo" },
   { name: "Filial Ramat Gan", href: "#filial" },
   { name: "Galería", href: "#galeria" },
 ];
