@@ -233,13 +233,12 @@ export default function Home() {
                   Ver todas las noticias
                 </Button>
               </div>
-              <div className="flex-shrink-0 flex gap-3 items-start">
+              <div className="flex-shrink-0 flex flex-col gap-3 items-end ml-auto">
                 <ProximoPartidoWidget />
 
-                {/* Widget: tarjetas de jugadores */}
+                {/* Widget: 2 tarjetas de jugadores lado a lado */}
                 <div
-                  className="relative select-none"
-                  style={{ width: "176px", aspectRatio: "3/4" }}
+                  className="relative select-none flex gap-2 pb-6"
                   onMouseDown={e => { sliderDragX.current = e.clientX; }}
                   onMouseUp={e => {
                     if (sliderDragX.current === null) return;
@@ -257,37 +256,41 @@ export default function Home() {
                     sliderDragX.current = null;
                   }}
                 >
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                      key={sliderIdx}
-                      initial={{ opacity: 0, x: 30 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -30 }}
-                      transition={{ duration: 0.25 }}
-                      className="absolute inset-0"
-                    >
-                      <PlayerCard jugador={JUGADORES[sliderIdx]} index={0} />
-                    </motion.div>
-                  </AnimatePresence>
+                  {[sliderIdx, (sliderIdx + 1) % JUGADORES.length].map((idx, pos) => (
+                    <div key={`${idx}-${pos}`} style={{ width: "148px", aspectRatio: "3/4" }} className="relative">
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: pos === 0 ? -20 : 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="absolute inset-0"
+                        >
+                          <PlayerCard jugador={JUGADORES[idx]} index={pos} />
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                  ))}
 
                   {/* Flechas */}
                   <button
                     onClick={e => { e.stopPropagation(); setSliderIdx(i => (i - 1 + JUGADORES.length) % JUGADORES.length); }}
-                    className="absolute left-1.5 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-river-red text-white rounded-full p-1 transition-colors"
+                    className="absolute -left-3 top-1/2 -translate-y-1/2 z-30 bg-black/70 hover:bg-river-red text-white rounded-full p-1.5 transition-colors shadow-lg"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={e => { e.stopPropagation(); setSliderIdx(i => (i + 1) % JUGADORES.length); }}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-river-red text-white rounded-full p-1 transition-colors"
+                    className="absolute -right-3 top-1/2 -translate-y-1/2 z-30 bg-black/70 hover:bg-river-red text-white rounded-full p-1.5 transition-colors shadow-lg"
                   >
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
 
-                  {/* Indicador de jugador */}
-                  <div className="absolute -bottom-6 left-0 right-0 flex justify-center z-30">
+                  {/* Indicador */}
+                  <div className="absolute bottom-0 left-0 right-0 flex justify-center z-30">
                     <span className="text-white/40 text-[10px] font-semibold">
-                      {sliderIdx + 1} / {JUGADORES.length}
+                      {sliderIdx + 1}–{(sliderIdx + 1) % JUGADORES.length + 1} / {JUGADORES.length}
                     </span>
                   </div>
                 </div>
