@@ -213,50 +213,51 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* News Grid */}
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* News List — compact horizontal cards */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
               {news?.map((item, i) => (
                 <motion.div
                   key={item.id}
                   initial="hidden"
                   whileInView="show"
-                  viewport={{ once: true, margin: "-100px" }}
+                  viewport={{ once: true, margin: "-60px" }}
                   variants={fadeIn}
-                  className={cn(i === 0 ? "md:col-span-2" : "")}
                 >
-                  <div className="group bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
-                    <Link href={`/noticia/${item.id}`} className="flex-1 flex flex-col">
-                      <div className={cn("relative overflow-hidden", i === 0 ? "h-64 md:h-80" : "h-48")}>
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10"></div>
+                  <div className="group bg-white rounded-xl overflow-hidden shadow border border-gray-100 hover:shadow-md transition-all duration-300">
+                    <Link href={`/noticia/${item.id}`} className="flex gap-0">
+                      <div className="relative overflow-hidden w-32 md:w-44 flex-shrink-0">
                         <img
                           src={item.imageUrl}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          style={{ minHeight: "100px" }}
                         />
-                        <div className="absolute top-4 left-4 z-20">
-                          <span className="bg-river-red text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+                        <div className="absolute top-2 left-2 z-10">
+                          <span className="bg-river-red text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">
                             {item.category}
                           </span>
                         </div>
                       </div>
-                      <div className="p-6 flex-1 flex flex-col">
-                        <span className="text-sm text-gray-500 flex items-center gap-2 mb-2">
-                          <Calendar className="w-4 h-4" /> {item.date}
-                        </span>
-                        <h3 className={cn("font-display font-bold text-river-black group-hover:text-river-red transition-colors mb-3", i === 0 ? "text-2xl" : "text-xl")}>
-                          {item.title}
-                        </h3>
-                        <p className="text-gray-600 line-clamp-2 flex-1">{item.excerpt}</p>
-                        <span className="inline-flex items-center gap-1 mt-4 text-river-red text-sm font-bold group-hover:gap-2 transition-all">
-                          Leer nota completa <ChevronRight className="w-4 h-4" />
-                        </span>
+                      <div className="p-3 flex-1 flex flex-col justify-between min-w-0">
+                        <div>
+                          <span className="text-xs text-gray-400 flex items-center gap-1 mb-1">
+                            <Calendar className="w-3 h-3" /> {item.date}
+                          </span>
+                          <h3 className="font-display font-bold text-river-black group-hover:text-river-red transition-colors text-sm md:text-base leading-snug line-clamp-2">
+                            {item.title}
+                          </h3>
+                          <p className="text-gray-500 text-xs line-clamp-2 mt-1 hidden md:block">{item.excerpt}</p>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="inline-flex items-center gap-1 text-river-red text-xs font-bold group-hover:gap-2 transition-all">
+                            Leer más <ChevronRight className="w-3 h-3" />
+                          </span>
+                          <ShareButton titulo={item.title} id={item.id} />
+                        </div>
                       </div>
                     </Link>
-                    <div className="px-6 pb-4 border-t border-gray-100 pt-3 flex justify-end">
-                      <ShareButton titulo={item.title} id={item.id} />
-                    </div>
                   </div>
                 </motion.div>
               ))}
