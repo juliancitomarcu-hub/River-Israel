@@ -801,7 +801,7 @@ export default function Home() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold">La <span className="text-river-red">Pasión</span> en Imágenes</h2>
+              <h2 className="text-3xl md:text-4xl font-display font-bold">Videos <span className="text-river-red">& Goles</span></h2>
               <p className="text-gray-400 mt-1 text-sm">Tocá un video para reproducirlo.</p>
             </div>
           </div>
