@@ -76,10 +76,15 @@ export function Footer() {
               </a>
             </div>
             <div className="mt-8">
-              <p className="text-sm text-gray-500">Club Atlético River Plate Oficial</p>
+              <p className="text-sm text-gray-500 mb-1">Club Atlético River Plate Oficial</p>
               <a href="https://www.cariverplate.com.ar" target="_blank" rel="noreferrer" className="text-sm font-bold hover:text-river-red transition-colors">
                 www.cariverplate.com.ar
               </a>
+            </div>
+            <div className="mt-6">
+              <Link href="/postula" className="inline-flex items-center gap-2 text-sm font-bold text-river-red hover:text-red-400 transition-colors">
+                🎙️ Escribí en River en Israel
+              </Link>
             </div>
           </div>
         </div>

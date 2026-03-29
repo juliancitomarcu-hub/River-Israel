@@ -10,6 +10,7 @@ import Noticia from "@/pages/Noticia";
 import Fixture from "@/pages/Fixture";
 import Equipo from "@/pages/Equipo";
 import Historia from "@/pages/Historia";
+import Postulacion from "@/pages/Postulacion";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -33,6 +34,7 @@ function Router() {
           <Route path="/fixture" component={Fixture} />
           <Route path="/equipo" component={Equipo} />
           <Route path="/historia" component={Historia} />
+          <Route path="/postula" component={Postulacion} />
           <Route component={NotFound} />
         </Switch>
       </main>

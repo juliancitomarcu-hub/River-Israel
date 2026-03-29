@@ -8,6 +8,7 @@ import partidosRouter from "./partidos";
 import storageRouter from "./storage";
 import triggerRouter from "./trigger";
 import historiaRouter from "./historia";
+import postulacionRouter from "./postulacion";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(noticiasRouter);
 router.use(publicarRouter);
 router.use(telegramWebhookRouter);
 router.use(partidosRouter);
+router.use(postulacionRouter);
 
 export default router;
