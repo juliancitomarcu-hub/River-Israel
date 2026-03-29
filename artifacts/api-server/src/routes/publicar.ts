@@ -127,6 +127,7 @@ router.get("/noticias-publicadas", async (req, res) => {
       .orderBy(desc(noticiasTable.createdAt))
       .limit(20);
 
+    res.set("Cache-Control", "no-store, no-cache");
     res.json({ noticias });
   } catch (err) {
     req.log.error({ err }, "Error obteniendo noticias");
