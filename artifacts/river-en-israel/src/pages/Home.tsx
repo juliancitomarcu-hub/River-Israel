@@ -415,7 +415,7 @@ export default function Home() {
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Contacto directo con el Club en Bs As</span>
+                  <span>Vivir la vida roja y blanca</span>
                 </li>
               </ul>
 
