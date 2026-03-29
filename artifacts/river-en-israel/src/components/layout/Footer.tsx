@@ -65,7 +65,7 @@ export function Footer() {
               <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-river-red transition-all hover:-translate-y-1">
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-river-red transition-all hover:-translate-y-1">
+              <a href="https://www.instagram.com/riverplateisrael?igsh=N2RlM2Y3Y25vdjMy&utm_source=qr" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-river-red transition-all hover:-translate-y-1">
                 <Instagram className="w-5 h-5" />
               </a>
               <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-river-red transition-all hover:-translate-y-1">
