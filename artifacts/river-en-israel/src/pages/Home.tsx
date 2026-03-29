@@ -439,7 +439,7 @@ export default function Home() {
               <div className="absolute -top-20 -right-20 w-64 h-64 bg-river-red rounded-full blur-[100px] opacity-40"></div>
 
               <div className="mb-8">
-                <span className="bg-white/10 px-4 py-1.5 rounded-full text-sm font-semibold tracking-wider uppercase text-river-red border border-river-red/30 whitespace-nowrap">
+                <span className="bg-white/10 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 whitespace-nowrap inline-block">
                   Objetivo de ser sede oficial en Israel
                 </span>
               </div>
