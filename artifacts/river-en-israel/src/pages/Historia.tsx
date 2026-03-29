@@ -157,13 +157,13 @@ const HITOS: Hito[] = [
 ];
 
 const ERAS = [
-  { nombre: "Los Orígenes", yearRange: "1901 – 1937", color: "bg-gray-100 text-gray-700" },
-  { nombre: "La Edad Dorada", yearRange: "1938 – 1985", color: "bg-amber-50 text-amber-700" },
-  { nombre: "Campeones del Mundo", yearRange: "1986 – 2013", color: "bg-red-50 text-red-700" },
-  { nombre: "Era Gallardo I", yearRange: "2014 – 2022", color: "bg-river-red text-white" },
-  { nombre: "Era Demichelis", yearRange: "2023 – 2024", color: "bg-river-red/80 text-white" },
-  { nombre: "Era Gallardo II", yearRange: "2024 – 2026", color: "bg-river-red text-white" },
-  { nombre: "Era Coudet", yearRange: "2026 – Presente", color: "bg-river-red/60 text-white" },
+  { nombre: "Los Orígenes",      yearRange: "1901 – 1937", color: "bg-gray-100 text-gray-700 hover:bg-gray-200",           scrollTo: "1901" },
+  { nombre: "La Edad Dorada",    yearRange: "1938 – 1985", color: "bg-amber-50 text-amber-700 hover:bg-amber-100",          scrollTo: "1938" },
+  { nombre: "Campeones del Mundo", yearRange: "1986 – 2013", color: "bg-red-50 text-red-700 hover:bg-red-100",             scrollTo: "1986" },
+  { nombre: "Era Gallardo I",    yearRange: "2014 – 2022", color: "bg-river-red text-white hover:bg-river-red/80",          scrollTo: "2014" },
+  { nombre: "Era Demichelis",    yearRange: "2023 – 2024", color: "bg-river-red/80 text-white hover:bg-river-red/70",       scrollTo: "2023" },
+  { nombre: "Era Gallardo II",   yearRange: "2024 – 2026", color: "bg-river-red text-white hover:bg-river-red/80",          scrollTo: "2024" },
+  { nombre: "Era Coudet",        yearRange: "2026 – Presente", color: "bg-river-red/60 text-white hover:bg-river-red/50",   scrollTo: "2026" },
 ];
 
 const TITULOS = [
@@ -176,6 +176,56 @@ const TITULOS = [
   { cantidad: "2", nombre: "Trofeo de Campeones" },
 ];
 
+function HitosList({ hitos }: { hitos: Hito[] }) {
+  const seen = new Set<string>();
+  return (
+    <>
+      {hitos.map((hito, index) => {
+        const firstOccurrence = !seen.has(hito.year);
+        if (firstOccurrence) seen.add(hito.year);
+        return (
+          <motion.div
+            id={firstOccurrence ? `era-${hito.year}` : undefined}
+            key={`${hito.year}-${index}`}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={fadeUp}
+            className="relative"
+          >
+            <div className={`absolute top-4 left-[-43px] w-6 h-6 rounded-full border-4 border-white shadow-md z-10 ${hito.destacado ? "bg-river-red" : "bg-gray-400"}`} />
+            <div className={`rounded-2xl border overflow-hidden transition-shadow hover:shadow-lg ${hito.destacado ? "border-river-red/20 shadow-md" : "border-gray-100 shadow-sm"}`}>
+              {hito.imagen && (
+                <div className="h-40 overflow-hidden">
+                  <img src={hito.imagen} alt={hito.title} className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className={`p-5 ${hito.destacado ? "bg-red-50/50" : "bg-gray-50"}`}>
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <span className={`font-display text-3xl font-bold block leading-none mb-1 ${hito.destacado ? "text-river-red" : "text-river-red/25"}`}>
+                      {hito.year}
+                    </span>
+                    <h3 className="text-lg font-bold text-river-black flex items-center gap-2">
+                      {hito.destacado && <Trophy className="w-4 h-4 text-river-red shrink-0" />}
+                      {hito.title}
+                    </h3>
+                  </div>
+                  {hito.destacado && <Star className="w-5 h-5 text-river-red/60 shrink-0 mt-1" fill="currentColor" />}
+                </div>
+                <p className="text-gray-600 text-sm mb-2">{hito.description}</p>
+                {hito.detail && (
+                  <p className="text-gray-500 text-sm leading-relaxed border-t border-gray-200/70 pt-3 mt-3">{hito.detail}</p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        );
+      })}
+    </>
+  );
+}
+
 export default function Historia() {
   const { data: apiData } = useQuery<{ hitos: Hito[] }>({
     queryKey: ["historia"],
@@ -186,6 +236,15 @@ export default function Historia() {
     },
   });
   const hitos = apiData?.hitos ?? HITOS;
+
+  const scrollToEra = (year: string) => {
+    const el = document.getElementById(`era-${year}`);
+    if (el) {
+      const offset = 100;
+      const top = el.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
 
   return (
     <div className="w-full bg-white">
@@ -233,13 +292,18 @@ export default function Historia() {
       </section>
 
       {/* ── ERAS ── */}
-      <section className="py-12 bg-gray-50 border-b border-gray-100">
+      <section className="py-10 bg-gray-50 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-xs text-gray-400 uppercase tracking-widest font-semibold mb-4">Ir directamente a cada era</p>
           <div className="flex flex-wrap gap-3 justify-center">
             {ERAS.map((era) => (
-              <div key={era.nombre} className={`px-5 py-2 rounded-full text-sm font-bold ${era.color}`}>
+              <button
+                key={era.nombre}
+                onClick={() => scrollToEra(era.scrollTo)}
+                className={`px-5 py-2 rounded-full text-sm font-bold cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm ${era.color}`}
+              >
                 {era.nombre} · <span className="font-normal opacity-80">{era.yearRange}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -257,53 +321,7 @@ export default function Historia() {
           </div>
 
           <div className="relative border-l-4 border-river-red/20 ml-4 space-y-8 pl-8">
-            {hitos.map((hito, index) => (
-              <motion.div
-                key={`${hito.year}-${index}`}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: "-80px" }}
-                variants={fadeUp}
-                className="relative"
-              >
-                {/* Dot */}
-                <div className={`absolute top-4 left-[-43px] w-6 h-6 rounded-full border-4 border-white shadow-md z-10 ${hito.destacado ? "bg-river-red" : "bg-gray-400"}`} />
-
-                <div className={`rounded-2xl border overflow-hidden transition-shadow hover:shadow-lg ${hito.destacado ? "border-river-red/20 shadow-md" : "border-gray-100 shadow-sm"}`}>
-                  {/* Imagen opcional */}
-                  {hito.imagen && (
-                    <div className="h-40 overflow-hidden">
-                      <img src={hito.imagen} alt={hito.title} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-
-                  <div className={`p-5 ${hito.destacado ? "bg-red-50/50" : "bg-gray-50"}`}>
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div>
-                        <span className={`font-display text-3xl font-bold block leading-none mb-1 ${hito.destacado ? "text-river-red" : "text-river-red/25"}`}>
-                          {hito.year}
-                        </span>
-                        <h3 className="text-lg font-bold text-river-black flex items-center gap-2">
-                          {hito.destacado && <Trophy className="w-4 h-4 text-river-red shrink-0" />}
-                          {hito.title}
-                        </h3>
-                      </div>
-                      {hito.destacado && (
-                        <Star className="w-5 h-5 text-river-red/60 shrink-0 mt-1" fill="currentColor" />
-                      )}
-                    </div>
-
-                    <p className="text-gray-600 text-sm mb-2">{hito.description}</p>
-
-                    {hito.detail && (
-                      <p className="text-gray-500 text-sm leading-relaxed border-t border-gray-200/70 pt-3 mt-3">
-                        {hito.detail}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+            <HitosList hitos={hitos} />
           </div>
 
         </div>
