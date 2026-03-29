@@ -12,6 +12,7 @@ import postulacionRouter from "./postulacion";
 import galeriaRouter from "./galeria";
 import videosRouter from "./videos";
 import contactoRouter from "./contacto";
+import analyticsRouter from "./analytics";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(postulacionRouter);
 router.use(galeriaRouter);
 router.use(videosRouter);
 router.use(contactoRouter);
+router.use(analyticsRouter);
 
 export default router;

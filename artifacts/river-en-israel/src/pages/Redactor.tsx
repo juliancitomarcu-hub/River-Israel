@@ -8,7 +8,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "historia" | "postulantes" | "galeria" | "videos";
+type Tab = "redactor" | "publicaciones" | "historia" | "postulantes" | "galeria" | "videos" | "analytics";
+
+interface AnalyticsData {
+  noticias: { total: number; publicadas: number; pendientes: number; rechazadas: number };
+  fuentes: { fuente: string; cantidad: number }[];
+  galeria: { fotos: number };
+  videos: { total: number };
+  ultimas: { titulo: string; fuente: string; fecha: string }[];
+  porMes: { mes: string; cantidad: number }[];
+  fromCache: boolean;
+  fetchedAt: number;
+}
 
 interface GaleriaFoto {
   id: number;
@@ -739,6 +750,25 @@ export default function Redactor() {
   const [postulSel, setPostulSel] = useState<PostulacionDB | null>(null);
   const [accionPostul, setAccionPostul] = useState<Record<number, "publicando" | "rechazando" | "ok" | "rechazado">>({});
 
+  // Analytics
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [cargandoAnalytics, setCargandoAnalytics] = useState(false);
+  const [errorAnalytics, setErrorAnalytics] = useState("");
+
+  const cargarAnalytics = async (force = false) => {
+    setCargandoAnalytics(true);
+    setErrorAnalytics("");
+    try {
+      const res = await fetch(`/api/analytics${force ? "?force=1" : ""}`);
+      const data = await res.json() as AnalyticsData;
+      setAnalytics(data);
+    } catch {
+      setErrorAnalytics("Error al cargar las estadísticas");
+    } finally {
+      setCargandoAnalytics(false);
+    }
+  };
+
   const cargarPostulaciones = async () => {
     setCargandoPostul(true);
     setErrorPostul("");
@@ -1244,6 +1274,17 @@ export default function Redactor() {
               }`}
             >
               <Trophy className="w-4 h-4" /> Historia
+            </button>
+            <button
+              onClick={() => { setTab("analytics"); if (!analytics) cargarAnalytics(); }}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "analytics"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              Analytics
             </button>
             <button
               onClick={() => { setTab("postulantes"); cargarPostulaciones(); }}
@@ -2373,6 +2414,156 @@ export default function Redactor() {
         </div>
 
         </>}
+
+        {/* ── ANALYTICS ────────────────────────────────────────────────── */}
+        {tab === "analytics" && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-display font-bold text-gray-900">Estadísticas del sitio</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {analytics
+                    ? `Actualizado el ${new Date(analytics.fetchedAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} · ${analytics.fromCache ? "desde caché" : "datos frescos"}`
+                    : "Se actualizan automáticamente cada 12 horas"}
+                </p>
+              </div>
+              <button
+                onClick={() => cargarAnalytics(true)}
+                disabled={cargandoAnalytics}
+                className="flex items-center gap-2 px-4 py-2 bg-river-red text-white rounded-lg text-sm font-semibold hover:bg-river-red/90 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${cargandoAnalytics ? "animate-spin" : ""}`} />
+                {cargandoAnalytics ? "Cargando..." : "Actualizar ahora"}
+              </button>
+            </div>
+
+            {errorAnalytics && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">{errorAnalytics}</div>
+            )}
+
+            {cargandoAnalytics && !analytics && (
+              <div className="text-center py-16 text-gray-400">
+                <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />
+                <p>Cargando estadísticas...</p>
+              </div>
+            )}
+
+            {analytics && (
+              <>
+                {/* Tarjetas principales */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: "Noticias publicadas", value: analytics.noticias.publicadas, color: "bg-green-50 border-green-200 text-green-700", icon: "✅" },
+                    { label: "En revisión (Telegram)", value: analytics.noticias.pendientes, color: "bg-yellow-50 border-yellow-200 text-yellow-700", icon: "⏳" },
+                    { label: "Rechazadas", value: analytics.noticias.rechazadas, color: "bg-red-50 border-red-200 text-red-700", icon: "❌" },
+                    { label: "Total generadas", value: analytics.noticias.total, color: "bg-blue-50 border-blue-200 text-blue-700", icon: "🤖" },
+                  ].map(card => (
+                    <div key={card.label} className={`border rounded-2xl p-5 ${card.color}`}>
+                      <div className="text-2xl mb-1">{card.icon}</div>
+                      <div className="text-3xl font-bold font-display">{card.value}</div>
+                      <div className="text-xs font-medium mt-1 opacity-80">{card.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Contenido */}
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Fotos en galería", value: analytics.galeria.fotos, icon: "🖼️", color: "bg-purple-50 border-purple-200 text-purple-700" },
+                    { label: "Videos en galería", value: analytics.videos.total, icon: "🎬", color: "bg-indigo-50 border-indigo-200 text-indigo-700" },
+                  ].map(card => (
+                    <div key={card.label} className={`border rounded-2xl p-5 ${card.color}`}>
+                      <div className="text-2xl mb-1">{card.icon}</div>
+                      <div className="text-3xl font-bold font-display">{card.value}</div>
+                      <div className="text-xs font-medium mt-1 opacity-80">{card.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Fuentes */}
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6">
+                    <h3 className="font-display font-bold text-gray-900 mb-4">Noticias publicadas por fuente</h3>
+                    {analytics.fuentes.length === 0 ? (
+                      <p className="text-sm text-gray-400">Sin datos aún</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {(() => {
+                          const max = Math.max(...analytics.fuentes.map(f => f.cantidad));
+                          return analytics.fuentes.map(f => (
+                            <div key={f.fuente}>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="font-medium text-gray-700">{f.fuente}</span>
+                                <span className="text-gray-500">{f.cantidad}</span>
+                              </div>
+                              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-river-red rounded-full transition-all"
+                                  style={{ width: `${(f.cantidad / max) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Por mes */}
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6">
+                    <h3 className="font-display font-bold text-gray-900 mb-4">Publicaciones por mes</h3>
+                    {analytics.porMes.length === 0 ? (
+                      <p className="text-sm text-gray-400">Sin datos aún</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {(() => {
+                          const max = Math.max(...analytics.porMes.map(m => m.cantidad));
+                          return analytics.porMes.map(m => {
+                            const [anio, mes] = m.mes.split("-");
+                            const nombre = new Date(Number(anio), Number(mes) - 1).toLocaleString("es-AR", { month: "long", year: "numeric" });
+                            return (
+                              <div key={m.mes}>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span className="font-medium text-gray-700 capitalize">{nombre}</span>
+                                  <span className="text-gray-500">{m.cantidad}</span>
+                                </div>
+                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-blue-500 rounded-full transition-all"
+                                    style={{ width: `${(m.cantidad / max) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Últimas noticias */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-6">
+                  <h3 className="font-display font-bold text-gray-900 mb-4">Últimas 10 noticias publicadas</h3>
+                  <div className="divide-y divide-gray-100">
+                    {analytics.ultimas.map((n, i) => (
+                      <div key={i} className="py-3 flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{n.titulo}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{n.fuente}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                          {new Date(n.fecha).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* ── FOTOS DE GALERÍA ─────────────────────────────────────────── */}
         {tab === "galeria" && <GaleriaTab />}
