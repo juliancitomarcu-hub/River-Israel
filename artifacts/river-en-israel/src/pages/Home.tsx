@@ -419,12 +419,14 @@ export default function Home() {
                 </li>
               </ul>
 
-              <button
-                onClick={() => setMostrarCredencial(true)}
-                className="bg-river-red hover:bg-river-red/85 text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1 w-full"
+              <a
+                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+                target="_blank"
+                rel="noreferrer"
+                className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"
               >
-                🪪 Generá tu primera credencial
-              </button>
+                Unite al Grupo de WhatsApp
+              </a>
             </div>
 
             {/* Form Side */}
