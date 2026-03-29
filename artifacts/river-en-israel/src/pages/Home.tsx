@@ -21,6 +21,13 @@ interface GaleriaFoto {
   orden: number;
 }
 
+interface VideoGaleria {
+  id: number;
+  url: string;
+  titulo: string;
+  orden: number;
+}
+
 const postulSchema = z.object({
   nombre: z.string().min(2, "Ingresá tu nombre"),
   ciudad: z.string().min(2, "Ingresá tu ciudad"),
@@ -41,6 +48,15 @@ export default function Home() {
   const [postulEstado, setPostulEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [postulError, setPostulError] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
+
+  // Videos
+  const [videos, setVideos] = useState<VideoGaleria[]>([]);
+  useEffect(() => {
+    fetch("/api/videos", { cache: "no-store" })
+      .then(r => r.json())
+      .then((d: { videos?: VideoGaleria[] }) => setVideos(d.videos ?? []))
+      .catch(() => {/* silencioso */});
+  }, []);
 
   // Galería
   const [galeriaFotos, setGaleriaFotos] = useState<GaleriaFoto[]>([]);
@@ -400,64 +416,57 @@ export default function Home() {
       </section>
 
       {/* ================= VIDEOS SECTION ================= */}
-      <section id="videos" className="py-24 bg-river-black text-white relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-12">
+      {videos.length > 0 && (
+      <section id="videos" className="py-10 bg-river-black text-white relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-4xl md:text-5xl font-display font-bold">Videos & <span className="text-river-red">Goles</span></h2>
-              <p className="text-gray-400 mt-2 text-lg">Reviví las emociones más grandes.</p>
-            </div>
-            <a href="https://www.youtube.com/@RiverPlate" target="_blank" rel="noreferrer" className="mt-4 md:mt-0 flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
-              Canal Oficial <ChevronRight className="w-4 h-4" />
-            </a>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Featured Video */}
-            <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-2xl shadow-black border border-white/10 aspect-video">
-              <iframe
-                width="100%"
-                height="100%"
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&controls=1&showinfo=1"
-                title="River Plate Video"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full object-cover"
-              ></iframe>
-            </div>
-
-            {/* Video Playlist links */}
-            <div className="flex flex-col gap-4">
-              {[
-                { title: "La Final de Madrid Completa", image: "https://images.unsplash.com/photo-1574629810360-7efbc5ea002c?q=80&w=2000&auto=format&fit=crop", query: "River Boca Madrid 2018 final completa" },
-                { title: "Mejores goles Era Gallardo", image: "https://images.unsplash.com/photo-1508344928928-7165b67de128?q=80&w=2070&auto=format&fit=crop", query: "Mejores goles Marcelo Gallardo River Plate" },
-                { title: "Cantitos de la Hinchada", image: "https://images.unsplash.com/photo-1614632537190-23e4146777db?q=80&w=2000&auto=format&fit=crop", query: "River Plate hinchada canciones Monumental" },
-                { title: "Resumen Último Partido", image: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=2070&auto=format&fit=crop", query: "River Plate resumen goles ultimo partido" },
-              ].map((vid, i) => (
-                <a
-                  key={i}
-                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(vid.query)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-4 bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors border border-transparent hover:border-white/20 group"
-                >
-                  <div className="relative w-24 h-16 rounded-md overflow-hidden shrink-0">
-                    <img src={vid.image} alt={vid.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <Play className="w-6 h-6 text-white opacity-80 group-hover:opacity-100 group-hover:text-river-red transition-colors" fill="currentColor" />
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm line-clamp-2 group-hover:text-river-red transition-colors">{vid.title}</h4>
-                    <span className="text-xs text-gray-400 mt-1 block">Ver en YouTube</span>
-                  </div>
-                </a>
-              ))}
+              <h2 className="text-3xl md:text-4xl font-display font-bold">Videos & <span className="text-river-red">Goles</span></h2>
+              <p className="text-gray-400 mt-1 text-sm">Reviví las emociones más grandes.</p>
             </div>
           </div>
+
+          {videos.length === 1 ? (
+            <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black max-w-3xl mx-auto aspect-video">
+              <video
+                src={videos[0].url.startsWith("/objects/") ? `/api/storage${videos[0].url}` : `${import.meta.env.BASE_URL}${videos[0].url.replace(/^\//, "")}`}
+                controls
+                className="w-full h-full object-cover bg-black"
+                title={videos[0].titulo}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Video principal */}
+              <div className="lg:col-span-2 rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black aspect-video">
+                <video
+                  src={videos[0].url.startsWith("/objects/") ? `/api/storage${videos[0].url}` : `${import.meta.env.BASE_URL}${videos[0].url.replace(/^\//, "")}`}
+                  controls
+                  className="w-full h-full object-cover bg-black"
+                  title={videos[0].titulo}
+                />
+              </div>
+              {/* Videos secundarios */}
+              <div className="flex flex-col gap-3">
+                {videos.slice(1).map(vid => (
+                  <div key={vid.id} className="rounded-xl overflow-hidden border border-white/10 shadow-md bg-white/5">
+                    <video
+                      src={vid.url.startsWith("/objects/") ? `/api/storage${vid.url}` : `${import.meta.env.BASE_URL}${vid.url.replace(/^\//, "")}`}
+                      controls
+                      className="w-full aspect-video object-cover bg-black"
+                      title={vid.titulo}
+                    />
+                    {vid.titulo && (
+                      <p className="text-xs text-gray-300 px-3 py-2 font-semibold truncate">{vid.titulo}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
+      )}
 
       {/* ================= FILIAL RAMAT GAN SECTION ================= */}
       <section id="filial" className="py-24 bg-gray-50 relative overflow-hidden">

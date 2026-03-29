@@ -8,12 +8,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "historia" | "postulantes" | "galeria";
+type Tab = "redactor" | "publicaciones" | "historia" | "postulantes" | "galeria" | "videos";
 
 interface GaleriaFoto {
   id: number;
   url: string;
   caption: string;
+  orden: number;
+}
+
+interface VideoGaleria {
+  id: number;
+  url: string;
+  titulo: string;
   orden: number;
 }
 
@@ -310,6 +317,221 @@ function GaleriaTab() {
                     <span className="truncate">{foto.caption || "Agregar pie de foto..."}</span>
                   </button>
                 )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function resolverUrlVideo(url: string) {
+  if (url.startsWith("/objects/")) return `/api/storage/objects${url.slice(8)}`;
+  if (url.startsWith("/videos/")) return `${import.meta.env.BASE_URL}${url.slice(1)}`;
+  return url;
+}
+
+function VideosTab() {
+  const [videosList, setVideosList] = useState<VideoGaleria[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [eliminandoId, setEliminandoId] = useState<number | null>(null);
+  const [confirmEliminar, setConfirmEliminar] = useState<number | null>(null);
+  const [subiendoVideo, setSubiendoVideo] = useState(false);
+  const [errorSubida, setErrorSubida] = useState("");
+  const [nuevoTitulo, setNuevoTitulo] = useState("");
+  const [nuevoFile, setNuevoFile] = useState<File | null>(null);
+  const [progreso, setProgreso] = useState(0);
+
+  const cargar = async () => {
+    setCargando(true);
+    setError("");
+    try {
+      const res = await fetch("/api/videos", { cache: "no-store" });
+      const data = await res.json() as { videos?: VideoGaleria[] };
+      setVideosList(data.videos ?? []);
+    } catch {
+      setError("No se pudo cargar los videos");
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const eliminar = async (id: number) => {
+    setEliminandoId(id);
+    try {
+      await fetch(`/api/videos/${id}`, { method: "DELETE" });
+      setVideosList(prev => prev.filter(v => v.id !== id));
+    } finally {
+      setEliminandoId(null);
+      setConfirmEliminar(null);
+    }
+  };
+
+  const subir = async () => {
+    if (!nuevoFile) return;
+    setSubiendoVideo(true);
+    setErrorSubida("");
+    setProgreso(0);
+    try {
+      const fd = new FormData();
+      fd.append("video", nuevoFile);
+      fd.append("titulo", nuevoTitulo);
+      const res = await fetch("/api/videos", { method: "POST", body: fd });
+      const data = await res.json() as { ok?: boolean; video?: VideoGaleria; error?: string };
+      if (data.ok && data.video) {
+        setVideosList(prev => [...prev, data.video!]);
+        setNuevoFile(null);
+        setNuevoTitulo("");
+        setProgreso(100);
+      } else {
+        setErrorSubida(data.error ?? "Error al subir");
+      }
+    } catch {
+      setErrorSubida("Error al subir el video");
+    } finally {
+      setSubiendoVideo(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-xl font-bold text-river-black flex items-center gap-2">
+            <Video className="w-5 h-5 text-river-red" /> Videos de Galería
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">{videosList.length} videos · Subí, reproducí o eliminá videos de la galería</p>
+        </div>
+        <button onClick={cargar} disabled={cargando}
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors">
+          <RefreshCw className={`w-3.5 h-3.5 ${cargando ? "animate-spin" : ""}`} /> Actualizar
+        </button>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+          <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
+        </div>
+      )}
+
+      {/* Subir nuevo video */}
+      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+        <p className="font-semibold text-sm text-river-black mb-3 flex items-center gap-2">
+          <Upload className="w-4 h-4 text-river-red" /> Subir nuevo video
+        </p>
+        <div className="space-y-3">
+          <label className="cursor-pointer flex items-center gap-3 border-2 border-dashed border-gray-300 hover:border-river-red rounded-xl px-4 py-4 transition-colors bg-white">
+            <Video className="w-5 h-5 text-gray-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              {nuevoFile ? (
+                <div>
+                  <p className="text-sm font-semibold text-river-black truncate">{nuevoFile.name}</p>
+                  <p className="text-xs text-gray-400">{(nuevoFile.size / (1024 * 1024)).toFixed(1)} MB</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-gray-500 font-medium">Elegir video (MP4, MOV)</p>
+                  <p className="text-xs text-gray-400">Máx. 200 MB</p>
+                </div>
+              )}
+            </div>
+            <input type="file" accept="video/*" className="hidden" onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) { setNuevoFile(file); setProgreso(0); }
+            }} />
+          </label>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Título del video (opcional)</label>
+            <input
+              value={nuevoTitulo}
+              onChange={e => setNuevoTitulo(e.target.value)}
+              placeholder="Ej: Gol de Borja vs Boca"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-river-red bg-white"
+            />
+          </div>
+          {errorSubida && <p className="text-red-500 text-xs">{errorSubida}</p>}
+          {subiendoVideo && (
+            <div className="bg-gray-200 rounded-full h-2">
+              <div className="bg-river-red h-2 rounded-full transition-all" style={{ width: `${progreso || 50}%` }} />
+            </div>
+          )}
+          <Button
+            onClick={subir}
+            disabled={!nuevoFile || subiendoVideo}
+            className="bg-river-red hover:bg-river-red/90 text-white text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+          >
+            {subiendoVideo ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
+            {subiendoVideo ? "Subiendo..." : "Subir video"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Lista de videos */}
+      {cargando ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-32 bg-gray-100 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : videosList.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <Video className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="font-semibold">Sin videos aún</p>
+          <p className="text-xs mt-1">Subí tu primer video arriba</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {videosList.map(vid => (
+            <div key={vid.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+                <div className="md:col-span-2 bg-black aspect-video">
+                  <video
+                    src={resolverUrlVideo(vid.url)}
+                    controls
+                    className="w-full h-full object-contain"
+                    title={vid.titulo}
+                    preload="metadata"
+                  />
+                </div>
+                <div className="p-4 flex flex-col justify-between">
+                  <div>
+                    <p className="font-bold text-river-black text-sm mb-1">{vid.titulo || "Sin título"}</p>
+                    <p className="text-xs text-gray-400">Video #{vid.orden}</p>
+                  </div>
+                  <div className="mt-4">
+                    {confirmEliminar === vid.id ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-red-600 font-semibold">¿Eliminar este video?</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => eliminar(vid.id)}
+                            disabled={eliminandoId === vid.id}
+                            className="flex-1 text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 rounded-lg transition-colors"
+                          >
+                            {eliminandoId === vid.id ? "Eliminando..." : "Confirmar"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmEliminar(null)}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold transition-colors"
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmEliminar(vid.id)}
+                        className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 font-semibold transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Eliminar video
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -900,6 +1122,16 @@ export default function Redactor() {
               }`}
             >
               <ImageIcon className="w-4 h-4" /> Fotos de Galería
+            </button>
+            <button
+              onClick={() => setTab("videos")}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "videos"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <Video className="w-4 h-4" /> Videos de Galería
             </button>
           </div>
         </div>
@@ -1997,6 +2229,9 @@ export default function Redactor() {
 
         {/* ── FOTOS DE GALERÍA ─────────────────────────────────────────── */}
         {tab === "galeria" && <GaleriaTab />}
+
+        {/* ── VIDEOS DE GALERÍA ────────────────────────────────────────── */}
+        {tab === "videos" && <VideosTab />}
       </div>
     </div>
   );

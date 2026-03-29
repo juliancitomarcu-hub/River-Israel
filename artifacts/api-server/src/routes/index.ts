@@ -10,6 +10,7 @@ import triggerRouter from "./trigger";
 import historiaRouter from "./historia";
 import postulacionRouter from "./postulacion";
 import galeriaRouter from "./galeria";
+import videosRouter from "./videos";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(telegramWebhookRouter);
 router.use(partidosRouter);
 router.use(postulacionRouter);
 router.use(galeriaRouter);
+router.use(videosRouter);
 
 export default router;

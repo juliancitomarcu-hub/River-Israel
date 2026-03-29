@@ -19,3 +19,4 @@
 
 export * from "./noticias";
 export * from "./galeria";
+export * from "./videos";
