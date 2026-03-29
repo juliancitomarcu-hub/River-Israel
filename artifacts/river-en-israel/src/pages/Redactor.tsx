@@ -3,12 +3,34 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy
+  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "historia";
+type Tab = "redactor" | "publicaciones" | "historia" | "postulantes";
+
+interface PostulacionDB {
+  id: number;
+  titulo: string;
+  contenido: string;
+  textoOriginal: string;
+  fuente: string;
+  publicada: boolean;
+  pendiente: boolean;
+  createdAt: string;
+}
+
+function parsearPostul(p: PostulacionDB) {
+  const m = p.titulo.match(/✍️\s*(.+?)\s*\((.+?)\)/);
+  const nombre = m?.[1]?.trim() ?? p.titulo.replace("✍️", "").trim();
+  const ciudad = m?.[2]?.trim() ?? "";
+  const partes = p.fuente.split(" · ");
+  const tipo = partes[1] ?? "";
+  const link = partes[2] ?? "";
+  const tipoEmoji = tipo === "Periodista" ? <Mic className="w-3 h-3" /> : tipo === "Creador" ? <Video className="w-3 h-3" /> : <Heart className="w-3 h-3" />;
+  return { nombre, ciudad, tipo, link, tipoEmoji };
+}
 
 interface HitoEdit {
   year: string;
@@ -81,6 +103,52 @@ export default function Redactor() {
   const [errorHito, setErrorHito] = useState("");
   const [subiendoFotoHisto, setSubiendoFotoHisto] = useState(false);
   const [previewFotoHisto, setPreviewFotoHisto] = useState("");
+
+  // Postulantes
+  const [postulaciones, setPostulaciones] = useState<PostulacionDB[]>([]);
+  const [cargandoPostul, setCargandoPostul] = useState(false);
+  const [errorPostul, setErrorPostul] = useState("");
+  const [postulSel, setPostulSel] = useState<PostulacionDB | null>(null);
+  const [accionPostul, setAccionPostul] = useState<Record<number, "publicando" | "rechazando" | "ok" | "rechazado">>({});
+
+  const cargarPostulaciones = async () => {
+    setCargandoPostul(true);
+    setErrorPostul("");
+    try {
+      const res = await fetch("/api/postulaciones");
+      const data = await res.json() as { postulaciones?: PostulacionDB[] };
+      setPostulaciones(data.postulaciones ?? []);
+      if (data.postulaciones?.[0] && !postulSel) setPostulSel(data.postulaciones[0]);
+    } catch {
+      setErrorPostul("Error al cargar postulaciones");
+    } finally {
+      setCargandoPostul(false);
+    }
+  };
+
+  const publicarPostulacion = async (p: PostulacionDB) => {
+    setAccionPostul(prev => ({ ...prev, [p.id]: "publicando" }));
+    try {
+      const res = await fetch(`/api/publicar/${p.id}`, { method: "POST" });
+      if (res.ok) {
+        setAccionPostul(prev => ({ ...prev, [p.id]: "ok" }));
+        setPostulaciones(prev => prev.map(x => x.id === p.id ? { ...x, publicada: true, pendiente: false } : x));
+        if (postulSel?.id === p.id) setPostulSel({ ...p, publicada: true, pendiente: false });
+      }
+    } catch { /* ignore */ }
+  };
+
+  const rechazarPostulacion = async (p: PostulacionDB) => {
+    setAccionPostul(prev => ({ ...prev, [p.id]: "rechazando" }));
+    try {
+      const res = await fetch(`/api/postulaciones/${p.id}/rechazar`, { method: "POST" });
+      if (res.ok) {
+        setAccionPostul(prev => ({ ...prev, [p.id]: "rechazado" }));
+        setPostulaciones(prev => prev.map(x => x.id === p.id ? { ...x, pendiente: false } : x));
+        if (postulSel?.id === p.id) setPostulSel({ ...p, pendiente: false });
+      }
+    } catch { /* ignore */ }
+  };
 
   const cargarPublicaciones = async () => {
     setCargandoPublicaciones(true);
@@ -548,6 +616,21 @@ export default function Redactor() {
               }`}
             >
               <Trophy className="w-4 h-4" /> Historia
+            </button>
+            <button
+              onClick={() => { setTab("postulantes"); cargarPostulaciones(); }}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all relative ${
+                tab === "postulantes"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <Inbox className="w-4 h-4" /> Postulantes
+              {postulaciones.filter(p => p.pendiente).length > 0 && tab !== "postulantes" && (
+                <span className="absolute -top-1 -right-1 bg-river-red text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-white">
+                  {postulaciones.filter(p => p.pendiente).length}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -1451,6 +1534,172 @@ export default function Redactor() {
             )}
           </div>
         </div>
+
+        {/* ── POSTULANTES ───────────────────────────────────────────────── */}
+        {tab === "postulantes" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h2 className="font-display text-xl font-bold text-river-black flex items-center gap-2">
+                  <Inbox className="w-5 h-5 text-river-red" /> Bandeja de Postulantes
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {postulaciones.filter(p => p.pendiente).length} pendientes · {postulaciones.filter(p => p.publicada).length} publicadas
+                </p>
+              </div>
+              <button onClick={cargarPostulaciones} disabled={cargandoPostul}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors">
+                <RefreshCw className={`w-3.5 h-3.5 ${cargandoPostul ? "animate-spin" : ""}`} /> Actualizar
+              </button>
+            </div>
+
+            {errorPostul && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {errorPostul}
+              </div>
+            )}
+
+            {cargandoPostul && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 animate-pulse">
+                      <div className="h-4 bg-gray-100 rounded w-2/3 mb-2" />
+                      <div className="h-3 bg-gray-100 rounded w-1/3" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!cargandoPostul && postulaciones.length === 0 && (
+              <div className="text-center py-16 text-gray-400">
+                <Inbox className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">Ninguna postulación todavía</p>
+                <p className="text-sm mt-1">Cuando alguien complete el formulario "Escribí en el sitio", aparecerá aquí.</p>
+              </div>
+            )}
+
+            {!cargandoPostul && postulaciones.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+
+                {/* Lista (columna izquierda) */}
+                <div className="space-y-2 md:max-h-[600px] md:overflow-y-auto pr-1">
+                  {postulaciones.map(p => {
+                    const { nombre, ciudad, tipo } = parsearPostul(p);
+                    const accion = accionPostul[p.id];
+                    const esSel = postulSel?.id === p.id;
+                    return (
+                      <button key={p.id} onClick={() => setPostulSel(p)}
+                        className={`w-full text-left rounded-xl border px-4 py-3 transition-all ${
+                          esSel
+                            ? "bg-river-red/8 border-river-red/40 shadow-sm"
+                            : "bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm text-river-black truncate">{nombre}</p>
+                            <p className="text-xs text-gray-500 truncate">{ciudad} · {tipo}</p>
+                          </div>
+                          <div className="shrink-0 flex flex-col items-end gap-1">
+                            {p.publicada && <span className="text-[9px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded">PUBLICADA</span>}
+                            {!p.publicada && !p.pendiente && <span className="text-[9px] bg-gray-100 text-gray-500 font-bold px-1.5 py-0.5 rounded">RECHAZADA</span>}
+                            {p.pendiente && (accion === "ok" ? <span className="text-[9px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded">PUBLICADA</span> : accion === "rechazado" ? <span className="text-[9px] bg-gray-100 text-gray-500 font-bold px-1.5 py-0.5 rounded">RECHAZADA</span> : <span className="text-[9px] bg-river-red/10 text-river-red font-bold px-1.5 py-0.5 rounded">PENDIENTE</span>)}
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1 truncate">
+                          {p.textoOriginal?.slice(0, 60)}{p.textoOriginal?.length > 60 ? "..." : ""}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Detalle (columna derecha) */}
+                <div className="md:col-span-2">
+                  {!postulSel ? (
+                    <div className="bg-white border border-gray-100 rounded-2xl p-10 text-center text-gray-400">
+                      <Eye className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                      <p>Seleccioná una postulación para ver el detalle</p>
+                    </div>
+                  ) : (() => {
+                    const { nombre, ciudad, tipo, link } = parsearPostul(postulSel);
+                    const accion = accionPostul[postulSel.id];
+                    const isPending = postulSel.pendiente && accion !== "ok" && accion !== "rechazado";
+                    return (
+                      <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-5">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
+                          <div>
+                            <h3 className="font-display font-bold text-xl text-river-black">{nombre}</h3>
+                            <div className="flex items-center gap-3 mt-1 flex-wrap">
+                              <span className="text-sm text-gray-500">{ciudad}</span>
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{tipo}</span>
+                              {link && (
+                                <a href={link} target="_blank" rel="noreferrer"
+                                  className="text-xs text-river-red font-medium flex items-center gap-1 hover:underline">
+                                  <ExternalLink className="w-3 h-3" /> Ver canal / redes
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          {postulSel.publicada || accion === "ok" ? (
+                            <span className="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Publicada
+                            </span>
+                          ) : (!postulSel.pendiente || accion === "rechazado") ? (
+                            <span className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 text-gray-500 text-xs font-bold px-3 py-1.5 rounded-lg">
+                              <XCircle className="w-3.5 h-3.5" /> Rechazada
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {/* Texto original */}
+                        {postulSel.textoOriginal && (
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Texto original del autor</p>
+                            <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto">
+                              {postulSel.textoOriginal}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Texto corregido por IA */}
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Texto corregido por IA (listo para publicar)</p>
+                          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap max-h-64 overflow-y-auto">
+                            {postulSel.contenido}
+                          </div>
+                        </div>
+
+                        {/* Acciones */}
+                        {isPending && (
+                          <div className="flex gap-3 pt-2">
+                            <Button onClick={() => publicarPostulacion(postulSel)}
+                              disabled={accion === "publicando"}
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold flex items-center gap-2">
+                              {accion === "publicando" ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                              Publicar con su firma
+                            </Button>
+                            <Button onClick={() => rechazarPostulacion(postulSel)}
+                              disabled={accion === "rechazando"}
+                              variant="outline"
+                              className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-bold flex items-center gap-2">
+                              {accion === "rechazando" ? <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" /> : <XCircle className="w-4 h-4" />}
+                              Rechazar
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Info */}
         <div className="mt-8 bg-river-black text-white rounded-2xl p-6 md:p-8">

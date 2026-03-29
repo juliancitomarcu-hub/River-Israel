@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -130,6 +130,32 @@ router.post("/postular-redactor", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Error procesando postulación");
     res.status(500).json({ error: "Error al procesar la postulación. Intentá de nuevo más tarde." });
+  }
+});
+
+router.get("/postulaciones", async (req, res) => {
+  try {
+    const all = await db
+      .select()
+      .from(noticiasTable)
+      .orderBy(desc(noticiasTable.id));
+    const postulaciones = all.filter((n) => n.fuente.startsWith("Postulación"));
+    res.json({ postulaciones });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching postulaciones");
+    res.status(500).json({ error: "Error al cargar postulaciones" });
+  }
+});
+
+router.post("/postulaciones/:id/rechazar", async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+  try {
+    await db.update(noticiasTable).set({ pendiente: false, publicada: false }).where(eq(noticiasTable.id, id));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Error rechazando postulación");
+    res.status(500).json({ error: "Error al rechazar" });
   }
 });
 
