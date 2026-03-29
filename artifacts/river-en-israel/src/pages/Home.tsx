@@ -284,39 +284,32 @@ export default function Home() {
       <section id="historia" className="py-16 bg-white relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-diagonal-red opacity-5 -skew-y-3 origin-top-left -z-10"></div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">El Más <span className="text-river-red">Grande</span></h2>
             <p className="text-gray-600">Un repaso por los momentos que forjaron nuestra gloriosa historia.</p>
           </div>
 
-          <div className="relative border-l-4 border-river-red/20 ml-4 space-y-6 pl-8">
-            {timeline?.map((item, index) => (
-              <motion.div
-                key={item.year}
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
-                className="relative"
-              >
-                <div className="absolute top-0 left-[-43px] w-6 h-6 rounded-full bg-river-red border-4 border-white shadow-md z-10"></div>
-
-                <div className="bg-gray-50 p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                  <span className="font-display text-3xl font-bold text-river-red/20 block mb-1">{item.year}</span>
-                  <h3 className="text-lg font-bold text-river-black mb-1.5">{item.title}</h3>
-                  <p className="text-gray-600 text-sm line-clamp-2">{item.description}</p>
-                  <div className="flex justify-end mt-3">
-                    <Link
-                      href="/historia"
-                      className="inline-flex items-center gap-1 bg-river-red hover:bg-river-red/85 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors"
-                    >
-                      Ver más <ChevronRight className="w-3 h-3" />
-                    </Link>
+          {/* Carousel deslizable — 3 tarjetas visibles */}
+          <div className="overflow-x-auto snap-x snap-mandatory -mx-2 px-2" style={{ scrollbarWidth: "none" }}>
+            <div className="flex gap-4" style={{ width: "max-content" }}>
+              {timeline?.map((item, index) => (
+                <motion.div
+                  key={item.year}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.06 }}
+                  className="snap-start w-[300px] sm:w-[320px] flex-none"
+                >
+                  <div className="h-full bg-gray-50 p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-river-red/20 transition-all flex flex-col">
+                    <span className="font-display text-4xl font-bold text-river-red/20 block mb-1">{item.year}</span>
+                    <h3 className="text-base font-bold text-river-black mb-2 leading-snug">{item.title}</h3>
+                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 flex-1">{item.description}</p>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
+            </div>
           </div>
 
           <div className="text-center mt-10">
