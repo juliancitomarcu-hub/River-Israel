@@ -29,13 +29,13 @@ export function Navbar() {
 
   const handleNavClick = (href: string) => {
     setMobileMenuOpen(false);
-    if (href.startsWith('#') && location === '/') {
+    if (href.startsWith('#')) {
       const element = document.querySelector(href);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => element.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+      } else {
+        window.location.href = '/' + href;
       }
-    } else if (href.startsWith('#')) {
-      window.location.href = '/' + href;
     }
   };
 
