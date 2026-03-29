@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Trophy, Star, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -172,6 +173,16 @@ const TITULOS = [
 ];
 
 export default function Historia() {
+  const { data: apiData } = useQuery<{ hitos: Hito[] }>({
+    queryKey: ["historia"],
+    queryFn: async () => {
+      const res = await fetch("/api/historia");
+      if (!res.ok) throw new Error("Error");
+      return res.json() as Promise<{ hitos: Hito[] }>;
+    },
+  });
+  const hitos = apiData?.hitos ?? HITOS;
+
   return (
     <div className="w-full bg-white">
 

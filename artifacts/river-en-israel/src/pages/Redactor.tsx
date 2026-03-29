@@ -3,12 +3,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle, Wand2
+  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones";
+type Tab = "redactor" | "publicaciones" | "historia";
+
+interface HitoEdit {
+  year: string;
+  title: string;
+  description: string;
+  detail?: string;
+  destacado?: boolean;
+  imagenPortada?: string;
+}
 type Estado = "idle" | "procesando" | "listo" | "error";
 type EstadoTelegram = "idle" | "enviando" | "enviado" | "error";
 type EstadoPublicar = "idle" | "publicando" | "publicado" | "error";
@@ -62,6 +71,17 @@ export default function Redactor() {
   const [eliminandoId, setEliminandoId] = useState<number | null>(null);
   const [confirmEliminarId, setConfirmEliminarId] = useState<number | null>(null);
 
+  // Historia
+  const [historiaHitos, setHistoriaHitos] = useState<HitoEdit[]>([]);
+  const [cargandoHistoria, setCargandoHistoria] = useState(false);
+  const [editandoHitoIdx, setEditandoHitoIdx] = useState<number | null>(null);
+  const [hitoEditado, setHitoEditado] = useState<HitoEdit | null>(null);
+  const [guardandoHito, setGuardandoHito] = useState(false);
+  const [guardadoHito, setGuardadoHito] = useState(false);
+  const [errorHito, setErrorHito] = useState("");
+  const [subiendoFotoHisto, setSubiendoFotoHisto] = useState(false);
+  const [previewFotoHisto, setPreviewFotoHisto] = useState("");
+
   const cargarPublicaciones = async () => {
     setCargandoPublicaciones(true);
     setErrorPublicaciones("");
@@ -91,6 +111,71 @@ export default function Redactor() {
 
   const editarPublicacion = (id: number) => {
     window.location.href = `/redactor?editar=${id}`;
+  };
+
+  const cargarHistoria = async () => {
+    setCargandoHistoria(true);
+    try {
+      const res = await fetch("/api/historia");
+      const data = await res.json() as { hitos?: HitoEdit[] };
+      setHistoriaHitos(data.hitos ?? []);
+    } catch { /* silent */ }
+    finally { setCargandoHistoria(false); }
+  };
+
+  const abrirEditorHito = (idx: number) => {
+    setEditandoHitoIdx(idx);
+    setHitoEditado({ ...historiaHitos[idx] });
+    setGuardadoHito(false);
+    setErrorHito("");
+    setPreviewFotoHisto(
+      historiaHitos[idx].imagenPortada
+        ? historiaHitos[idx].imagenPortada!.startsWith("/api/") || historiaHitos[idx].imagenPortada!.startsWith("http")
+          ? historiaHitos[idx].imagenPortada!
+          : `/api/storage${historiaHitos[idx].imagenPortada}`
+        : ""
+    );
+  };
+
+  const subirFotoHistoria = async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    setSubiendoFotoHisto(true);
+    try {
+      const urlRes = await fetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name.replace(/\.[^.]+$/, ".jpg"), size: file.size, contentType: "image/jpeg" }),
+      });
+      const { uploadURL, objectPath } = await urlRes.json() as { uploadURL: string; objectPath: string };
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": "image/jpeg" } });
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewFotoHisto(previewUrl);
+      setHitoEditado((prev) => prev ? { ...prev, imagenPortada: objectPath } : prev);
+    } catch { /* silent */ }
+    finally { setSubiendoFotoHisto(false); }
+  };
+
+  const guardarHito = async () => {
+    if (editandoHitoIdx === null || !hitoEditado) return;
+    setGuardandoHito(true);
+    setErrorHito("");
+    setGuardadoHito(false);
+    try {
+      const res = await fetch(`/api/historia/${editandoHitoIdx}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hitoEditado),
+      });
+      if (!res.ok) throw new Error("Error al guardar");
+      const data = await res.json() as { hito: HitoEdit };
+      setHistoriaHitos((prev) => prev.map((h, i) => i === editandoHitoIdx ? data.hito : h));
+      setGuardadoHito(true);
+      setTimeout(() => { setEditandoHitoIdx(null); setGuardadoHito(false); }, 1500);
+    } catch {
+      setErrorHito("No se pudo guardar. Intentá de nuevo.");
+    } finally {
+      setGuardandoHito(false);
+    }
   };
 
   const procesarImagenCanvas = (file: File): Promise<{ blob: Blob; previewUrl: string }> =>
@@ -454,6 +539,16 @@ export default function Redactor() {
             >
               <BookOpen className="w-4 h-4" /> Mis publicaciones
             </button>
+            <button
+              onClick={() => { setTab("historia"); cargarHistoria(); }}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "historia"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <Trophy className="w-4 h-4" /> Historia
+            </button>
           </div>
         </div>
 
@@ -560,6 +655,161 @@ export default function Redactor() {
                     >
                       <Trash2 className="w-3 h-3" /> Eliminar
                     </button>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* ── HISTORIA ──────────────────────────────────────────────────── */}
+        {tab === "historia" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-display text-xl font-bold text-river-black">Redacciones de Historia</h2>
+              <button
+                onClick={cargarHistoria}
+                disabled={cargandoHistoria}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${cargandoHistoria ? "animate-spin" : ""}`} />
+                Actualizar
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mb-4">Editá el texto y la foto de cada fecha histórica que aparece en la página Historia.</p>
+
+            {cargandoHistoria && (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-1/4 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-3/4" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!cargandoHistoria && historiaHitos.map((hito, idx) => (
+              <motion.div
+                key={idx}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
+              >
+                {/* Card de hito */}
+                {editandoHitoIdx !== idx ? (
+                  <div className="flex gap-4 p-4 items-start">
+                    {hito.imagenPortada && (
+                      <img
+                        src={hito.imagenPortada.startsWith("/api/") || hito.imagenPortada.startsWith("http") ? hito.imagenPortada : `/api/storage${hito.imagenPortada}`}
+                        alt=""
+                        className="w-20 h-14 object-cover rounded-xl shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-river-red font-display font-bold text-lg">{hito.year}</span>
+                        {hito.destacado && <span className="text-[10px] bg-river-red/10 text-river-red font-bold px-2 py-0.5 rounded-full">DESTACADO</span>}
+                      </div>
+                      <p className="font-semibold text-sm text-river-black line-clamp-1">{hito.title}</p>
+                      <p className="text-xs text-gray-400 line-clamp-2 mt-0.5">{hito.description}</p>
+                    </div>
+                    <button
+                      onClick={() => abrirEditorHito(idx)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-river-red hover:text-river-red transition-colors shrink-0"
+                    >
+                      <Pencil className="w-3 h-3" /> Editar
+                    </button>
+                  </div>
+                ) : (
+                  /* Editor inline */
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-river-red font-display font-bold text-xl">{hito.year}</span>
+                      <button onClick={() => setEditandoHitoIdx(null)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Título</label>
+                      <input
+                        value={hitoEditado?.title ?? ""}
+                        onChange={(e) => setHitoEditado((p) => p ? { ...p, title: e.target.value } : p)}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-river-red/30 focus:border-river-red"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Descripción corta</label>
+                      <Textarea
+                        value={hitoEditado?.description ?? ""}
+                        onChange={(e) => setHitoEditado((p) => p ? { ...p, description: e.target.value } : p)}
+                        className="min-h-[80px] resize-none text-sm border-gray-200 focus-visible:ring-river-red/30"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Detalle extendido <span className="font-normal text-gray-400">(opcional)</span></label>
+                      <Textarea
+                        value={hitoEditado?.detail ?? ""}
+                        onChange={(e) => setHitoEditado((p) => p ? { ...p, detail: e.target.value } : p)}
+                        className="min-h-[80px] resize-none text-sm border-gray-200 focus-visible:ring-river-red/30"
+                        placeholder="Información adicional que aparece en la página Historia..."
+                      />
+                    </div>
+
+                    {/* Foto portada */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Foto de portada</label>
+                      {previewFotoHisto ? (
+                        <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                          <img src={previewFotoHisto} alt="portada" className="w-full h-28 object-cover" />
+                          {subiendoFotoHisto && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" /></div>}
+                          <label className="absolute bottom-2 left-2 cursor-pointer">
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirFotoHistoria(f); }} />
+                            <span className="bg-white/90 hover:bg-white text-gray-700 text-xs font-semibold px-2 py-1 rounded-lg flex items-center gap-1 transition-colors"><Upload className="w-3 h-3" /> Cambiar</span>
+                          </label>
+                          <button onClick={() => { setPreviewFotoHisto(""); setHitoEditado((p) => p ? { ...p, imagenPortada: "" } : p); }} className="absolute bottom-2 right-2 bg-white/90 hover:bg-white text-gray-700 text-xs font-semibold px-2 py-1 rounded-lg flex items-center gap-1"><Trash2 className="w-3 h-3" /> Quitar</button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center gap-2 w-full h-16 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-river-red hover:bg-red-50/30 transition-colors group">
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirFotoHistoria(f); }} />
+                          <Upload className="w-4 h-4 text-gray-300 group-hover:text-river-red transition-colors" />
+                          <span className="text-xs text-gray-400">Subir foto de portada</span>
+                        </label>
+                      )}
+                    </div>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hitoEditado?.destacado ?? false}
+                        onChange={(e) => setHitoEditado((p) => p ? { ...p, destacado: e.target.checked } : p)}
+                        className="w-4 h-4 accent-river-red"
+                      />
+                      <span className="text-xs font-semibold text-gray-600">Marcar como hito destacado (punto rojo + estrella)</span>
+                    </label>
+
+                    {errorHito && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-1.5">{errorHito}</p>}
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={guardarHito}
+                        disabled={guardandoHito || guardadoHito}
+                        className="flex-1 gap-2 bg-river-red hover:bg-river-red/90 text-white font-bold h-10"
+                      >
+                        {guardandoHito ? (
+                          <><span className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full inline-block" /> Guardando...</>
+                        ) : guardadoHito ? (
+                          <><Check className="w-3.5 h-3.5" /> ¡Guardado!</>
+                        ) : (
+                          <><Globe className="w-3.5 h-3.5" /> Guardar cambios</>
+                        )}
+                      </Button>
+                      <Button variant="outline" onClick={() => setEditandoHitoIdx(null)} className="gap-1 h-10 px-4">
+                        <X className="w-4 h-4" /> Cancelar
+                      </Button>
+                    </div>
                   </div>
                 )}
               </motion.div>
