@@ -54,24 +54,19 @@ async function procesarCallback(
       const noticiaId = parseInt(data.replace("publicar_", ""));
       if (isNaN(noticiaId)) return;
 
+      // ⚡ Responder al botón PRIMERO — quita el "cargando" instantáneamente
+      await responderCallback(token, callbackId, "✅ Publicando...");
+
       // Idempotencia: verificar estado actual antes de actuar
       const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
-      if (!actual) {
-        await responderCallback(token, callbackId, "⚠️ Nota no encontrada");
-        return;
-      }
-      if (actual.publicada) {
-        await responderCallback(token, callbackId, "ℹ️ Ya estaba publicada");
-        return;
-      }
+      if (!actual) return;
+      if (actual.publicada) return;
 
       const [noticia] = await db
         .update(noticiasTable)
         .set({ publicada: true, pendiente: false })
         .where(eq(noticiasTable.id, noticiaId))
         .returning();
-
-      await responderCallback(token, callbackId, "✅ ¡Nota publicada en el sitio!");
 
       if (messageId) {
         await editarMensajeTelegram(
@@ -84,7 +79,6 @@ async function procesarCallback(
       const noticiaId = parseInt(data.replace("editar_", ""));
       if (isNaN(noticiaId)) return;
 
-      // Usar dominio de producción si está disponible, sino el dev
       const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
       if (!domain) {
         await responderCallback(token, callbackId, "⚠️ No se pudo generar el link");
@@ -93,7 +87,8 @@ async function procesarCallback(
 
       const editUrl = `https://${domain}/redactor?editar=${noticiaId}`;
 
-      await responderCallback(token, callbackId, "✏️ Link de edición enviado");
+      // ⚡ Responder al botón PRIMERO
+      await responderCallback(token, callbackId, "✏️ Link enviado");
 
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
@@ -109,24 +104,19 @@ async function procesarCallback(
       const noticiaId = parseInt(data.replace("rechazar_", ""));
       if (isNaN(noticiaId)) return;
 
+      // ⚡ Responder al botón PRIMERO
+      await responderCallback(token, callbackId, "❌ Rechazando...");
+
       // Idempotencia
       const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
-      if (!actual) {
-        await responderCallback(token, callbackId, "⚠️ Nota no encontrada");
-        return;
-      }
-      if (!actual.pendiente) {
-        await responderCallback(token, callbackId, "ℹ️ La nota ya fue procesada");
-        return;
-      }
+      if (!actual) return;
+      if (!actual.pendiente) return;
 
       const [noticia] = await db
         .update(noticiasTable)
         .set({ publicada: false, pendiente: false })
         .where(eq(noticiasTable.id, noticiaId))
         .returning();
-
-      await responderCallback(token, callbackId, "❌ Nota rechazada");
 
       if (messageId) {
         await editarMensajeTelegram(
