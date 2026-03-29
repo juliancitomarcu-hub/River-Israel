@@ -104,7 +104,7 @@ export function Navbar() {
               rel="noopener noreferrer"
               className="bg-river-red hover:bg-river-red-hover text-white px-5 py-2 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)] hover:-translate-y-0.5"
             >
-              Unite a la Filial
+              Unite al canal de WhatsApp
             </a>
           </div>
 
@@ -160,7 +160,7 @@ export function Navbar() {
                 rel="noopener noreferrer"
                 className="bg-river-red text-white px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center mt-4"
               >
-                Unite a la Filial
+                Unite al canal de WhatsApp
               </a>
             </div>
           </motion.div>

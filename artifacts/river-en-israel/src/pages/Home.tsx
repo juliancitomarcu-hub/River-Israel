@@ -473,7 +473,7 @@ export default function Home() {
                 rel="noreferrer"
                 className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"
               >
-                Unite al Grupo de WhatsApp
+                Unite al canal de WhatsApp
               </a>
             </div>
 

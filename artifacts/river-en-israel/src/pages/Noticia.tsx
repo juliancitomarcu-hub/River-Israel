@@ -240,7 +240,7 @@ export default function Noticia() {
                 rel="noopener noreferrer"
                 className="inline-block bg-river-red hover:bg-river-red/90 text-white font-bold px-8 py-3 rounded-full transition-colors"
               >
-                Unirme al grupo de WhatsApp
+                Unite al canal de WhatsApp
               </a>
             </div>
 
