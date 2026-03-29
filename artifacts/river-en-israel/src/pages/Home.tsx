@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline, useSubmitContact } from "@/hooks/use-river-data";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
 import ShareButton from "@/components/ShareButton";
+import CredencialGenerador from "@/components/CredencialGenerador";
 
 const contactSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
@@ -21,6 +23,7 @@ const contactSchema = z.object({
 type ContactFormValues = z.infer<typeof contactSchema>;
 
 export default function Home() {
+  const [mostrarCredencial, setMostrarCredencial] = useState(false);
   const { data: news } = useNews();
   const { data: matches } = useMatches();
   const { data: timeline } = useHistoryTimeline();
@@ -42,6 +45,7 @@ export default function Home() {
   };
 
   return (
+    <>
     <div className="w-full bg-background overflow-hidden">
 
       {/* ================= HERO / PORTADA ================= */}
@@ -397,7 +401,7 @@ export default function Home() {
               </h2>
 
               <p className="text-gray-300 text-lg mb-8">
-                No importa qué tan lejos estemos del Monumental, la pasión nos une. Sumate a nuestra filial para ver los partidos, participar en eventos y sentirte como en casa.
+                No importa que tan lejos estemos del Monumental, la pasión nos une. Súmate a nuestra filial para participar de futuros eventos, recibir noticias de River y más.
               </p>
 
               <ul className="space-y-4 mb-10">
@@ -415,14 +419,12 @@ export default function Home() {
                 </li>
               </ul>
 
-              <a
-                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
-                target="_blank"
-                rel="noreferrer"
-                className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"
+              <button
+                onClick={() => setMostrarCredencial(true)}
+                className="bg-river-red hover:bg-river-red/85 text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1 w-full"
               >
-                Unite al Grupo de WhatsApp
-              </a>
+                🪪 Generá tu primera credencial
+              </button>
             </div>
 
             {/* Form Side */}
@@ -530,5 +532,10 @@ export default function Home() {
       </section>
 
     </div>
+
+      {mostrarCredencial && (
+        <CredencialGenerador onClose={() => setMostrarCredencial(false)} />
+      )}
+    </>
   );
 }
