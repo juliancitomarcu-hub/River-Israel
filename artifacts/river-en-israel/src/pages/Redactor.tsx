@@ -99,6 +99,11 @@ function GaleriaTab({
   const [nuevoFile, setNuevoFile] = useState<File | null>(null);
   const [confirmEliminar, setConfirmEliminar] = useState<number | null>(null);
 
+  // Carga automática al abrir el tab
+  useEffect(() => {
+    onRecargar();
+  }, []);
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -674,13 +679,6 @@ export default function Redactor() {
     }
   }, []);
 
-  // Auto-cargar galería cuando el tab está activo
-  useEffect(() => {
-    if (tab === "galeria" && galeriaFotos.length === 0 && !cargandoGaleria) {
-      cargarGaleria();
-    }
-  }, [tab]);
-
   const buscarNoticias = async () => {
     setBuscando(true);
     setErrorBusqueda("");
@@ -926,7 +924,7 @@ export default function Redactor() {
               )}
             </button>
             <button
-              onClick={() => { setTab("galeria"); cargarGaleria(); }}
+              onClick={() => setTab("galeria")}
               className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "galeria"
                   ? "bg-river-red text-white shadow-sm"
