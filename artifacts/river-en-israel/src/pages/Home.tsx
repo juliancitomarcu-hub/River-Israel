@@ -573,6 +573,10 @@ export default function Home() {
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
                   <span>Eventos Sociales</span>
                 </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
+                  <span>Reacciones, análisis, y noticias post partido</span>
+                </li>
               </ul>
 
               <a
