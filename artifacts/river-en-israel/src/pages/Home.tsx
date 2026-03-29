@@ -552,7 +552,7 @@ export default function Home() {
 
               <div className="mb-8">
                 <span className="bg-white/10 px-4 py-1.5 rounded-full text-sm font-semibold tracking-wider uppercase text-river-red border border-river-red/30">
-                  Sede Oficial en Israel
+                  Objetivo de ser sede oficial en Israel
                 </span>
               </div>
 
@@ -567,15 +567,11 @@ export default function Home() {
               <ul className="space-y-4 mb-10">
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Encuentros para partidos especiales</span>
+                  <span>Encuentros para partidos especiales.</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Asados y eventos para conocernos</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Vivir la vida roja y blanca</span>
+                  <span>Eventos Sociales</span>
                 </li>
               </ul>
 
