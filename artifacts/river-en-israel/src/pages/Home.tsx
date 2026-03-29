@@ -411,7 +411,7 @@ export default function Home() {
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Asados y eventos para toda la familia</span>
+                  <span>Asados y eventos para conocernos</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
