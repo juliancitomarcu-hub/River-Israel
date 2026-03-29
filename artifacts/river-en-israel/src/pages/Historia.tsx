@@ -27,8 +27,8 @@ const HITOS: Hito[] = [
   },
   {
     year: "1908",
-    title: "Ascenso a Primera División",
-    description: "River Plate asciende a la Primera División de la Asociación Amateur de Football, comenzando su historia en el máximo nivel del fútbol argentino.",
+    title: "Comienzo de la Era Profesional",
+    description: "River Plate inicia su camino en el fútbol profesional argentino, marcando el comienzo de una nueva etapa en la historia del club.",
     detail: "La camiseta con la banda roja diagonal se adopta en 1908, convirtiéndose en el símbolo distintivo que el club llevaría para siempre.",
   },
   {
