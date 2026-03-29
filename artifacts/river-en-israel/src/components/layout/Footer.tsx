@@ -75,7 +75,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-river-red shrink-0" />
-                <a href="https://wa.me/972501234567" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">+972 50-123-4567</a>
+                <a href="https://wa.me/9720559421610" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">+972 055-942-1610</a>
               </li>
               <li>
                 <button

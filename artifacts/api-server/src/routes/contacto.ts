@@ -23,7 +23,7 @@ router.post("/contacto", async (req, res) => {
     `*Nombre:* ${nombre.trim()}\n` +
     `*Mensaje:* ${mensaje.trim()}`;
 
-  const waUrl = `https://wa.me/972501234567?text=${encodeURIComponent(`Hola ${nombre.trim()}, vi tu mensaje en la web de River en Israel.`)}`;
+  const waUrl = `https://wa.me/9720559421610?text=${encodeURIComponent(`Hola ${nombre.trim()}, vi tu mensaje en la web de River en Israel.`)}`;
 
   try {
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
