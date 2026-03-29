@@ -664,9 +664,14 @@ export default function Redactor() {
 
         {/* ── HISTORIA ──────────────────────────────────────────────────── */}
         {tab === "historia" && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-display text-xl font-bold text-river-black">Redacciones de Historia</h2>
+          <div className="relative">
+
+            {/* ─ Cabecera de sección ─ */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-display text-xl font-bold text-river-black">Página Historia</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Vista previa real · hacé clic en ✏️ sobre cualquier hito para editar</p>
+              </div>
               <button
                 onClick={cargarHistoria}
                 disabled={cargandoHistoria}
@@ -676,144 +681,243 @@ export default function Redactor() {
                 Actualizar
               </button>
             </div>
-            <p className="text-xs text-gray-400 mb-4">Editá el texto y la foto de cada fecha histórica que aparece en la página Historia.</p>
 
+            {/* ─ Skeleton ─ */}
             {cargandoHistoria && (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 animate-pulse">
-                    <div className="h-4 bg-gray-100 rounded w-1/4 mb-2" />
-                    <div className="h-3 bg-gray-100 rounded w-3/4" />
+                    <div className="h-5 bg-gray-100 rounded w-1/5 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-3/4 mb-1.5" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2" />
                   </div>
                 ))}
               </div>
             )}
 
-            {!cargandoHistoria && historiaHitos.map((hito, idx) => (
-              <motion.div
-                key={idx}
-                layout
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
-              >
-                {/* Card de hito */}
-                {editandoHitoIdx !== idx ? (
-                  <div className="flex gap-4 p-4 items-start">
-                    {hito.imagenPortada && (
-                      <img
-                        src={hito.imagenPortada.startsWith("/api/") || hito.imagenPortada.startsWith("http") ? hito.imagenPortada : `/api/storage${hito.imagenPortada}`}
-                        alt=""
-                        className="w-20 h-14 object-cover rounded-xl shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-river-red font-display font-bold text-lg">{hito.year}</span>
-                        {hito.destacado && <span className="text-[10px] bg-river-red/10 text-river-red font-bold px-2 py-0.5 rounded-full">DESTACADO</span>}
+            {/* ─ Palmarés (réplica visual) ─ */}
+            {!cargandoHistoria && (
+              <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 mb-5">
+                <div className="bg-river-red text-white py-5 px-5">
+                  <div className="grid grid-cols-4 md:grid-cols-7 gap-3 text-center">
+                    {[
+                      { n: "38", l: "Primera División" },
+                      { n: "4",  l: "Copa Libertadores" },
+                      { n: "1",  l: "Copa Intercontinental" },
+                      { n: "1",  l: "Copa Sudamericana" },
+                      { n: "3",  l: "Copa Argentina" },
+                      { n: "3",  l: "Súper Copa" },
+                      { n: "2",  l: "Trofeo Campeones" },
+                    ].map(t => (
+                      <div key={t.l} className="space-y-0.5">
+                        <div className="text-2xl font-display font-bold">{t.n}</div>
+                        <div className="text-[10px] text-white/70 uppercase tracking-wide leading-tight">{t.l}</div>
                       </div>
-                      <p className="font-semibold text-sm text-river-black line-clamp-1">{hito.title}</p>
-                      <p className="text-xs text-gray-400 line-clamp-2 mt-0.5">{hito.description}</p>
-                    </div>
-                    <button
-                      onClick={() => abrirEditorHito(idx)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-river-red hover:text-river-red transition-colors shrink-0"
-                    >
-                      <Pencil className="w-3 h-3" /> Editar
-                    </button>
+                    ))}
                   </div>
-                ) : (
-                  /* Editor inline */
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-river-red font-display font-bold text-xl">{hito.year}</span>
-                      <button onClick={() => setEditandoHitoIdx(null)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
-                    </div>
+                </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Título</label>
-                      <input
-                        value={hitoEditado?.title ?? ""}
-                        onChange={(e) => setHitoEditado((p) => p ? { ...p, title: e.target.value } : p)}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-river-red/30 focus:border-river-red"
-                      />
-                    </div>
+                {/* Eras */}
+                <div className="bg-gray-50 border-t border-gray-100 px-5 py-3 flex flex-wrap gap-2">
+                  {[
+                    { n: "Los Orígenes", y: "1901–1937", c: "bg-gray-100 text-gray-600" },
+                    { n: "La Edad Dorada", y: "1938–1985", c: "bg-amber-50 text-amber-700" },
+                    { n: "Campeones del Mundo", y: "1986–2013", c: "bg-red-50 text-red-700" },
+                    { n: "Era Gallardo I", y: "2014–2022", c: "bg-river-red text-white" },
+                    { n: "Era Demichelis", y: "2023–2024", c: "bg-river-red/80 text-white" },
+                    { n: "Era Coudet", y: "2024–Pres.", c: "bg-river-red/60 text-white" },
+                  ].map(e => (
+                    <span key={e.n} className={`text-xs font-bold px-3 py-1 rounded-full ${e.c}`}>
+                      {e.n} · <span className="font-normal opacity-80">{e.y}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Descripción corta</label>
-                      <Textarea
-                        value={hitoEditado?.description ?? ""}
-                        onChange={(e) => setHitoEditado((p) => p ? { ...p, description: e.target.value } : p)}
-                        className="min-h-[80px] resize-none text-sm border-gray-200 focus-visible:ring-river-red/30"
-                      />
-                    </div>
+            {/* ─ Timeline réplica con botones de edición ─ */}
+            {!cargandoHistoria && (
+              <div className="relative border-l-4 border-river-red/20 ml-4 space-y-5 pl-8">
+                {historiaHitos.map((hito, idx) => {
+                  const imgSrc = hito.imagenPortada
+                    ? (hito.imagenPortada.startsWith("/api/") || hito.imagenPortada.startsWith("http")
+                      ? hito.imagenPortada
+                      : `/api/storage${hito.imagenPortada}`)
+                    : null;
+                  return (
+                    <div key={idx} className="relative group">
+                      {/* Dot */}
+                      <div className={`absolute top-4 left-[-43px] w-6 h-6 rounded-full border-4 border-white shadow-md z-10 ${hito.destacado ? "bg-river-red" : "bg-gray-400"}`} />
 
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Detalle extendido <span className="font-normal text-gray-400">(opcional)</span></label>
-                      <Textarea
-                        value={hitoEditado?.detail ?? ""}
-                        onChange={(e) => setHitoEditado((p) => p ? { ...p, detail: e.target.value } : p)}
-                        className="min-h-[80px] resize-none text-sm border-gray-200 focus-visible:ring-river-red/30"
-                        placeholder="Información adicional que aparece en la página Historia..."
-                      />
-                    </div>
-
-                    {/* Foto portada */}
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Foto de portada</label>
-                      {previewFotoHisto ? (
-                        <div className="relative rounded-xl overflow-hidden border border-gray-200">
-                          <img src={previewFotoHisto} alt="portada" className="w-full h-28 object-cover" />
-                          {subiendoFotoHisto && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" /></div>}
-                          <label className="absolute bottom-2 left-2 cursor-pointer">
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirFotoHistoria(f); }} />
-                            <span className="bg-white/90 hover:bg-white text-gray-700 text-xs font-semibold px-2 py-1 rounded-lg flex items-center gap-1 transition-colors"><Upload className="w-3 h-3" /> Cambiar</span>
-                          </label>
-                          <button onClick={() => { setPreviewFotoHisto(""); setHitoEditado((p) => p ? { ...p, imagenPortada: "" } : p); }} className="absolute bottom-2 right-2 bg-white/90 hover:bg-white text-gray-700 text-xs font-semibold px-2 py-1 rounded-lg flex items-center gap-1"><Trash2 className="w-3 h-3" /> Quitar</button>
+                      <div className={`rounded-2xl border overflow-hidden transition-shadow ${hito.destacado ? "border-river-red/20 shadow-md" : "border-gray-100 shadow-sm"}`}>
+                        {imgSrc && (
+                          <div className="h-36 overflow-hidden">
+                            <img src={imgSrc} alt={hito.title} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className={`p-4 ${hito.destacado ? "bg-red-50/40" : "bg-gray-50"}`}>
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <div className="flex-1 min-w-0">
+                              <span className={`font-display text-2xl font-bold block leading-none mb-0.5 ${hito.destacado ? "text-river-red" : "text-river-red/30"}`}>{hito.year}</span>
+                              <h3 className="text-base font-bold text-river-black flex items-center gap-1.5">
+                                {hito.destacado && <Trophy className="w-3.5 h-3.5 text-river-red shrink-0" />}
+                                {hito.title}
+                              </h3>
+                            </div>
+                            {/* Botón editar — sólo visible para el redactor */}
+                            <button
+                              onClick={() => abrirEditorHito(idx)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white border border-gray-200 rounded-lg text-gray-600 hover:border-river-red hover:text-river-red shadow-sm"
+                            >
+                              <Pencil className="w-3 h-3" /> ✏️
+                            </button>
+                          </div>
+                          <p className="text-gray-600 text-sm">{hito.description}</p>
+                          {hito.detail && (
+                            <p className="text-gray-400 text-xs leading-relaxed border-t border-gray-200/60 pt-2 mt-2">{hito.detail}</p>
+                          )}
                         </div>
-                      ) : (
-                        <label className="flex flex-col items-center justify-center gap-2 w-full h-16 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-river-red hover:bg-red-50/30 transition-colors group">
-                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirFotoHistoria(f); }} />
-                          <Upload className="w-4 h-4 text-gray-300 group-hover:text-river-red transition-colors" />
-                          <span className="text-xs text-gray-400">Subir foto de portada</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ─ Panel lateral de edición (slide-over) ─ */}
+            <AnimatePresence>
+              {editandoHitoIdx !== null && hitoEditado && (
+                <>
+                  {/* Overlay */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setEditandoHitoIdx(null)}
+                    className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm"
+                  />
+                  {/* Panel */}
+                  <motion.div
+                    initial={{ x: "100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "100%" }}
+                    transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                    className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col"
+                  >
+                    {/* Cabecera panel */}
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Editando hito</p>
+                        <p className="font-display text-2xl font-bold text-river-red">{historiaHitos[editandoHitoIdx]?.year}</p>
+                      </div>
+                      <button onClick={() => setEditandoHitoIdx(null)} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400"><X className="w-5 h-5" /></button>
+                    </div>
+
+                    {/* Cuerpo scrollable */}
+                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1">Título</label>
+                        <input
+                          value={hitoEditado.title}
+                          onChange={(e) => setHitoEditado((p) => p ? { ...p, title: e.target.value } : p)}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-river-red/30 focus:border-river-red"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1">Descripción corta</label>
+                        <Textarea
+                          value={hitoEditado.description}
+                          onChange={(e) => setHitoEditado((p) => p ? { ...p, description: e.target.value } : p)}
+                          className="min-h-[90px] resize-none text-sm border-gray-200 focus-visible:ring-river-red/30"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1">
+                          Detalle extendido <span className="font-normal text-gray-400">(aparece debajo)</span>
                         </label>
+                        <Textarea
+                          value={hitoEditado.detail ?? ""}
+                          onChange={(e) => setHitoEditado((p) => p ? { ...p, detail: e.target.value } : p)}
+                          className="min-h-[90px] resize-none text-sm border-gray-200 focus-visible:ring-river-red/30"
+                          placeholder="Texto adicional..."
+                        />
+                      </div>
+
+                      {/* Foto portada */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1">
+                          <ImageIcon className="w-3 h-3" /> Foto de portada
+                        </label>
+                        {previewFotoHisto ? (
+                          <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                            <img src={previewFotoHisto} alt="portada" className="w-full h-32 object-cover" />
+                            {subiendoFotoHisto && (
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" />
+                              </div>
+                            )}
+                            <label className="absolute bottom-2 left-2 cursor-pointer">
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirFotoHistoria(f); }} />
+                              <span className="bg-white/90 hover:bg-white text-gray-700 text-xs font-semibold px-2 py-1 rounded-lg flex items-center gap-1">
+                                <Upload className="w-3 h-3" /> Cambiar
+                              </span>
+                            </label>
+                            <button
+                              onClick={() => { setPreviewFotoHisto(""); setHitoEditado((p) => p ? { ...p, imagenPortada: "" } : p); }}
+                              className="absolute bottom-2 right-2 bg-white/90 hover:bg-white text-gray-700 text-xs font-semibold px-2 py-1 rounded-lg flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Quitar
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center gap-2 w-full h-20 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-river-red hover:bg-red-50/30 transition-colors group">
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirFotoHistoria(f); }} />
+                            <Upload className="w-4 h-4 text-gray-300 group-hover:text-river-red" />
+                            <span className="text-xs text-gray-400">Subir foto</span>
+                          </label>
+                        )}
+                      </div>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={hitoEditado.destacado ?? false}
+                          onChange={(e) => setHitoEditado((p) => p ? { ...p, destacado: e.target.checked } : p)}
+                          className="w-4 h-4 accent-river-red"
+                        />
+                        <span className="text-xs font-semibold text-gray-600">Hito destacado (punto rojo + estrella)</span>
+                      </label>
+
+                      {errorHito && (
+                        <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">{errorHito}</p>
                       )}
                     </div>
 
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hitoEditado?.destacado ?? false}
-                        onChange={(e) => setHitoEditado((p) => p ? { ...p, destacado: e.target.checked } : p)}
-                        className="w-4 h-4 accent-river-red"
-                      />
-                      <span className="text-xs font-semibold text-gray-600">Marcar como hito destacado (punto rojo + estrella)</span>
-                    </label>
-
-                    {errorHito && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-1.5">{errorHito}</p>}
-
-                    <div className="flex gap-2">
+                    {/* Footer panel */}
+                    <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
                       <Button
                         onClick={guardarHito}
                         disabled={guardandoHito || guardadoHito}
-                        className="flex-1 gap-2 bg-river-red hover:bg-river-red/90 text-white font-bold h-10"
+                        className="flex-1 gap-2 bg-river-red hover:bg-river-red/90 text-white font-bold h-11 rounded-xl"
                       >
                         {guardandoHito ? (
                           <><span className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full inline-block" /> Guardando...</>
                         ) : guardadoHito ? (
                           <><Check className="w-3.5 h-3.5" /> ¡Guardado!</>
                         ) : (
-                          <><Globe className="w-3.5 h-3.5" /> Guardar cambios</>
+                          <><Globe className="w-3.5 h-3.5" /> Guardar</>
                         )}
                       </Button>
-                      <Button variant="outline" onClick={() => setEditandoHitoIdx(null)} className="gap-1 h-10 px-4">
-                        <X className="w-4 h-4" /> Cancelar
+                      <Button variant="outline" onClick={() => setEditandoHitoIdx(null)} className="h-11 px-4 rounded-xl">
+                        <X className="w-4 h-4" />
                       </Button>
                     </div>
-                  </div>
-                )}
-              </motion.div>
-            ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         )}
 

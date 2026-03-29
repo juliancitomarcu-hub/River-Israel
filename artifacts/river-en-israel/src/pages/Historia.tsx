@@ -160,16 +160,19 @@ const ERAS = [
   { nombre: "Los Orígenes", yearRange: "1901 – 1937", color: "bg-gray-100 text-gray-700" },
   { nombre: "La Edad Dorada", yearRange: "1938 – 1985", color: "bg-amber-50 text-amber-700" },
   { nombre: "Campeones del Mundo", yearRange: "1986 – 2013", color: "bg-red-50 text-red-700" },
-  { nombre: "La Era Gallardo", yearRange: "2014 – Presente", color: "bg-river-red text-white" },
+  { nombre: "Era Gallardo I", yearRange: "2014 – 2022", color: "bg-river-red text-white" },
+  { nombre: "Era Demichelis", yearRange: "2023 – 2024", color: "bg-river-red/80 text-white" },
+  { nombre: "Era Coudet", yearRange: "2024 – Presente", color: "bg-river-red/60 text-white" },
 ];
 
 const TITULOS = [
-  { cantidad: "37", nombre: "Campeonatos Locales" },
+  { cantidad: "38", nombre: "Campeonatos Primera División" },
   { cantidad: "4", nombre: "Copas Libertadores" },
-  { cantidad: "2", nombre: "Copas Intercontinentales" },
+  { cantidad: "1", nombre: "Copa Intercontinental" },
   { cantidad: "1", nombre: "Copa Sudamericana" },
-  { cantidad: "3", nombre: "Recopas" },
-  { cantidad: "1", nombre: "Copa de Honor" },
+  { cantidad: "3", nombre: "Copa Argentina" },
+  { cantidad: "3", nombre: "Súper Copa Argentina" },
+  { cantidad: "2", nombre: "Trofeo de Campeones" },
 ];
 
 export default function Historia() {
@@ -208,7 +211,7 @@ export default function Historia() {
               <span className="text-river-red">del Más Grande</span>
             </h1>
             <p className="text-gray-300 text-xl max-w-2xl leading-relaxed">
-              Más de 120 años de gloria, pasión y grandeza. Un club que nació en La Boca, creció en Núñez y conquistó el mundo.
+              Vivir y jugar con grandeza.
             </p>
           </motion.div>
         </div>
@@ -217,7 +220,7 @@ export default function Historia() {
       {/* ── PALMARÉS ── */}
       <section className="bg-river-red text-white py-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
+          <div className="grid grid-cols-4 md:grid-cols-7 gap-4 text-center">
             {TITULOS.map((t) => (
               <div key={t.nombre} className="space-y-1">
                 <div className="text-3xl md:text-4xl font-display font-bold">{t.cantidad}</div>
@@ -253,7 +256,7 @@ export default function Historia() {
           </div>
 
           <div className="relative border-l-4 border-river-red/20 ml-4 space-y-8 pl-8">
-            {HITOS.map((hito, index) => (
+            {hitos.map((hito, index) => (
               <motion.div
                 key={`${hito.year}-${index}`}
                 initial="hidden"
