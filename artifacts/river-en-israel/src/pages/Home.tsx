@@ -175,12 +175,14 @@ export default function Home() {
               >
                 Unite a la Filial
               </a>
-              <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-xs uppercase tracking-wide hover:bg-white/25 transition-all">
-                Últimas Noticias
-              </a>
-              <a href="#escribi" className="whitespace-nowrap px-4 py-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-xs uppercase tracking-wide hover:bg-white/25 transition-all">
-                Escribí en River Israel
-              </a>
+              <div className="flex gap-2">
+                <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-xs uppercase tracking-wide hover:bg-white/25 transition-all">
+                  Últimas Noticias
+                </a>
+                <a href="#escribi" className="whitespace-nowrap px-4 py-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-xs uppercase tracking-wide hover:bg-white/25 transition-all">
+                  Escribí en River Israel
+                </a>
+              </div>
             </div>
           </motion.div>
 
