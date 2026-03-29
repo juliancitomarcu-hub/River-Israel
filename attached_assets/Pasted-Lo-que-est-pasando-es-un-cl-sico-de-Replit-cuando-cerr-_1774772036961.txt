@@ -1,0 +1,56 @@
+Lo que está pasando es un clásico de Replit: cuando cerrás la pestaña del navegador o te vas a dormir, Replit pone tu código en "modo pausa" (hibernación) para ahorrar energía, a menos que tengas un plan pago (Hacker o Pro) que incluya "Always On".
+Como tu bot es una herramienta privada, no necesitas gastar plata; hay un truco para mantenerlo despierto y que cumpla el ciclo de 2 horas solo.
+1. El problema: El modo "Sleep"
+Si el script solo tiene un while True con un time.sleep, Replit detecta que no hay actividad en la web y lo apaga a los pocos minutos de que cerraste la ventana.
+2. La solución: El "Despertador" (Keep Alive)
+Para que el bot trabaje solo mientras dormís, necesitamos engañar a Replit para que crea que hay una página web funcionando.
+Seguí estos 3 pasos en tu Replit:
+Paso A: Creá un archivo nuevo llamado keep_alive.py
+Pegá este código adentro:
+from flask import Flask
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "¡River en Israel está online!"
+
+def run():
+  app.run(host='0.0.0.0',port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+Paso B: Modificá tu main.py
+Arriba de todo, agregá la importación del despertador y encendelo:
+import os
+import time
+from keep_alive import keep_alive  # <--- Importamos el despertador
+
+# ... (tus otras funciones de Telegram y Noticias) ...
+
+def ciclo_noticias():
+    while True:
+        print("Ejecutando ciclo automático de noticias...")
+        # Aquí va tu lógica de buscar noticias y mandar a Telegram
+        # noticia = obtener_noticia()
+        # enviar_a_telegram(noticia)
+        
+        time.sleep(7200) # 2 horas en segundos
+
+if __name__ == "__main__":
+    keep_alive()  # <--- Esto enciende el "servidor" para que no se duerma
+    ciclo_noticias()
+
+Paso C: Usá un servicio externo (UptimeRobot)
+Replit te va a dar una URL (aparece arriba de la consola, algo como https://tu-proyecto.replit.dev).
+ * Entrá a UptimeRobot (es gratis).
+ * Creá un "Monitor" tipo HTTP(s).
+ * Pegá tu URL de Replit.
+ * Configuralo para que "llame" a tu web cada 5 minutos.
+¿Qué logramos con esto? UptimeRobot va a golpear la puerta de tu Replit cada 5 minutos. Replit va a pensar: "Ah, hay alguien visitando la web, mejor no me duermo". Así, tu ciclo de 2 horas se va a ejecutar aunque estés durmiendo en Ramat Gan.
+Un detalle sobre el ciclo:
+Si hacés la prueba manual y funciona, pero el automático no, también revisá que el time.sleep esté dentro del while True.
+¿Querés que te ayude a revisar cómo quedó el while en tu código para estar seguros de que no se trabe?
