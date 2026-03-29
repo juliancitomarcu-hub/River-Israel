@@ -201,13 +201,13 @@ const ERAS = [
 ];
 
 const TITULOS = [
-  { cantidad: "38", nombre: "Primera División", emoji: "🏆" },
-  { cantidad: "4",  nombre: "Copas Libertadores", emoji: "🌎" },
-  { cantidad: "2",  nombre: "Copas Intercontinentales", emoji: "🌍" },
-  { cantidad: "1",  nombre: "Copa Sudamericana", emoji: "🏅" },
-  { cantidad: "3",  nombre: "Copas Argentina", emoji: "🇦🇷" },
-  { cantidad: "3",  nombre: "Súper Copa Argentina", emoji: "⭐" },
-  { cantidad: "2",  nombre: "Trofeo de Campeones", emoji: "🎖️" },
+  { cantidad: "38", nombre: "Primera División" },
+  { cantidad: "4",  nombre: "Copas Libertadores" },
+  { cantidad: "2",  nombre: "Copas Intercontinentales" },
+  { cantidad: "1",  nombre: "Copa Sudamericana" },
+  { cantidad: "3",  nombre: "Copas Argentina" },
+  { cantidad: "3",  nombre: "Súper Copa Argentina" },
+  { cantidad: "2",  nombre: "Trofeo de Campeones" },
 ];
 
 function getEraStyle(year: string): { border: string; bg: string; yearColor: string; dotColor: string; badgeBg: string } {
@@ -335,7 +335,6 @@ export default function Historia() {
           <div className="grid grid-cols-4 md:grid-cols-7 gap-4 text-center">
             {TITULOS.map((t) => (
               <div key={t.nombre} className="space-y-1">
-                <div className="text-2xl mb-0.5">{t.emoji}</div>
                 <div className="text-3xl md:text-4xl font-display font-bold">{t.cantidad}</div>
                 <div className="text-[10px] text-white/70 uppercase tracking-wider leading-tight">{t.nombre}</div>
               </div>
