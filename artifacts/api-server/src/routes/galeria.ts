@@ -39,7 +39,7 @@ router.get("/galeria", async (req, res) => {
   try {
     await seedGaleriaIfEmpty();
     const fotos = await db.select().from(galeriaTable).orderBy(asc(galeriaTable.orden));
-    res.json({ fotos });
+    res.set("Cache-Control", "no-store, no-cache").json({ fotos });
   } catch (err) {
     req.log.error({ err }, "Error listando galería");
     res.status(500).json({ error: "Error al cargar la galería" });

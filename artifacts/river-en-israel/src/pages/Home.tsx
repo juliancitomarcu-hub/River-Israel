@@ -53,7 +53,7 @@ export default function Home() {
   const dragStartX = useRef<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/galeria")
+    fetch("/api/galeria", { cache: "no-store" })
       .then(r => r.json())
       .then((d: { fotos?: GaleriaFoto[] }) => setGaleriaFotos(d.fotos ?? []))
       .catch(() => {/* silencioso */});
