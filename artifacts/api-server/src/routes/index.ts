@@ -6,11 +6,13 @@ import publicarRouter from "./publicar";
 import telegramWebhookRouter from "./telegram-webhook";
 import partidosRouter from "./partidos";
 import storageRouter from "./storage";
+import triggerRouter from "./trigger";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(storageRouter);
+router.use(triggerRouter);
 router.use(redactorRouter);
 router.use(noticiasRouter);
 router.use(publicarRouter);
