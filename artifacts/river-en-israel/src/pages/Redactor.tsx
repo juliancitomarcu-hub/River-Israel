@@ -725,7 +725,8 @@ export default function Redactor() {
                     { n: "Campeones del Mundo", y: "1986–2013", c: "bg-red-50 text-red-700" },
                     { n: "Era Gallardo I", y: "2014–2022", c: "bg-river-red text-white" },
                     { n: "Era Demichelis", y: "2023–2024", c: "bg-river-red/80 text-white" },
-                    { n: "Era Coudet", y: "2024–Pres.", c: "bg-river-red/60 text-white" },
+                    { n: "Era Gallardo II", y: "2024–2026", c: "bg-river-red text-white" },
+                    { n: "Era Coudet", y: "2026–Pres.", c: "bg-river-red/60 text-white" },
                   ].map(e => (
                     <span key={e.n} className={`text-xs font-bold px-3 py-1 rounded-full ${e.c}`}>
                       {e.n} · <span className="font-normal opacity-80">{e.y}</span>
@@ -764,12 +765,12 @@ export default function Redactor() {
                                 {hito.title}
                               </h3>
                             </div>
-                            {/* Botón editar — sólo visible para el redactor */}
+                            {/* Botón editar — siempre visible para el redactor */}
                             <button
                               onClick={() => abrirEditorHito(idx)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white border border-gray-200 rounded-lg text-gray-600 hover:border-river-red hover:text-river-red shadow-sm"
+                              className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-white border border-gray-200 rounded-lg text-gray-500 hover:border-river-red hover:text-river-red shadow-sm transition-colors"
                             >
-                              <Pencil className="w-3 h-3" /> ✏️
+                              <Pencil className="w-3 h-3" /> Editar
                             </button>
                           </div>
                           <p className="text-gray-600 text-sm">{hito.description}</p>

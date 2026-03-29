@@ -148,7 +148,7 @@ const HITOS: Hito[] = [
     destacado: true,
   },
   {
-    year: "2025",
+    year: "2026",
     title: "Eduardo Coudet, el nuevo ciclo",
     description: "Eduardo 'Chacho' Coudet asume como Director Técnico de River Plate, con la misión de continuar la grandeza del club y volver a pelear los máximos torneos internacionales.",
     detail: "Con amplia experiencia en el fútbol europeo y sudamericano, Coudet inició una nueva etapa para River. Desde Israel, la Filial Ramat Gan sigue cada partido con la misma pasión de siempre.",
@@ -162,7 +162,8 @@ const ERAS = [
   { nombre: "Campeones del Mundo", yearRange: "1986 – 2013", color: "bg-red-50 text-red-700" },
   { nombre: "Era Gallardo I", yearRange: "2014 – 2022", color: "bg-river-red text-white" },
   { nombre: "Era Demichelis", yearRange: "2023 – 2024", color: "bg-river-red/80 text-white" },
-  { nombre: "Era Coudet", yearRange: "2024 – Presente", color: "bg-river-red/60 text-white" },
+  { nombre: "Era Gallardo II", yearRange: "2024 – 2026", color: "bg-river-red text-white" },
+  { nombre: "Era Coudet", yearRange: "2026 – Presente", color: "bg-river-red/60 text-white" },
 ];
 
 const TITULOS = [
