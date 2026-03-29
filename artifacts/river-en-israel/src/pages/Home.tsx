@@ -171,15 +171,15 @@ export default function Home() {
                 href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="whitespace-nowrap px-4 py-2 bg-river-red text-white font-bold rounded-full text-xs uppercase tracking-wide hover:bg-river-red-hover transition-all hover:scale-105 shadow-[0_0_16px_rgba(204,0,0,0.5)]"
+                className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all hover:scale-105"
               >
                 Unite a la Filial
               </a>
               <div className="flex gap-2">
-                <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-xs uppercase tracking-wide hover:bg-white/25 transition-all">
+                <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-river-red text-white font-bold rounded-full text-xs uppercase tracking-wide hover:bg-river-red-hover transition-all shadow-[0_0_12px_rgba(204,0,0,0.5)]">
                   Últimas Noticias
                 </a>
-                <a href="#escribi" className="whitespace-nowrap px-4 py-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 font-bold rounded-full text-xs uppercase tracking-wide hover:bg-white/25 transition-all">
+                <a href="#escribi" className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all">
                   Escribí en River Israel
                 </a>
               </div>
