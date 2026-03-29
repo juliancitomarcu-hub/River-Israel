@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Mic, Video, Heart, Send, AlertCircle } from "lucide-react";
-import { useNews, useMatches, useHistoryTimeline, useSubmitContact } from "@/hooks/use-river-data";
+import { useNews, useMatches, useHistoryTimeline } from "@/hooks/use-river-data";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,14 +13,6 @@ import { Link } from "wouter";
 import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
 import ShareButton from "@/components/ShareButton";
 import CredencialGenerador from "@/components/CredencialGenerador";
-
-const contactSchema = z.object({
-  name: z.string().min(2, "El nombre es muy corto"),
-  email: z.string().email("Email inválido"),
-  phone: z.string().min(6, "Teléfono muy corto"),
-  message: z.string().min(10, "El mensaje debe tener al menos 10 caracteres"),
-});
-type ContactFormValues = z.infer<typeof contactSchema>;
 
 const postulSchema = z.object({
   nombre: z.string().min(2, "Ingresá tu nombre"),
@@ -39,17 +31,11 @@ const TIPOS_PERFIL = [
 
 export default function Home() {
   const [mostrarCredencial, setMostrarCredencial] = useState(false);
-  const [tabForm, setTabForm] = useState<"filial" | "redactor">("filial");
   const [postulEstado, setPostulEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [postulError, setPostulError] = useState("");
   const { data: news } = useNews();
   const { data: matches } = useMatches();
   const { data: timeline } = useHistoryTimeline();
-  const submitContact = useSubmitContact();
-
-  const { register, handleSubmit, formState: { errors, isSubmitSuccessful }, reset } = useForm<ContactFormValues>({
-    resolver: zodResolver(contactSchema)
-  });
 
   const { register: regP, handleSubmit: handleP, setValue: setValP, watch: watchP, formState: { errors: errP } } = useForm<PostulValues>({
     resolver: zodResolver(postulSchema),
@@ -70,12 +56,6 @@ export default function Home() {
       else setPostulEstado("ok");
     } catch { setPostulError("Error de conexión"); setPostulEstado("error"); }
   }
-
-  const onSubmit = (data: ContactFormValues) => {
-    submitContact.mutate(data, {
-      onSuccess: () => reset()
-    });
-  };
 
   const fadeIn = {
     hidden: { opacity: 0, y: 30 },
@@ -479,83 +459,8 @@ export default function Home() {
             {/* Form Side */}
             <div className="lg:w-7/12 p-10 lg:p-16">
 
-              {/* Tabs */}
-              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-8 w-fit">
-                <button
-                  onClick={() => setTabForm("filial")}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-bold transition-all",
-                    tabForm === "filial" ? "bg-white text-river-black shadow-sm" : "text-gray-500 hover:text-gray-700"
-                  )}
-                >
-                  Únite a la Filial
-                </button>
-                <button
-                  onClick={() => setTabForm("redactor")}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
-                    tabForm === "redactor" ? "bg-white text-river-black shadow-sm" : "text-gray-500 hover:text-gray-700"
-                  )}
-                >
-                  <Mic className="w-3.5 h-3.5" />
-                  Escribí en el sitio
-                </button>
-              </div>
-
-              {/* TAB: Únite a la Filial */}
-              {tabForm === "filial" && (
-                <>
-                  <h3 className="font-display text-3xl font-bold text-river-black mb-2">Dejanos tus datos</h3>
-                  <p className="text-gray-500 mb-8">Completá el formulario y nos pondremos en contacto para sumarte oficialmente.</p>
-
-                  {isSubmitSuccessful ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-green-50 border border-green-200 text-green-800 p-8 rounded-2xl text-center"
-                    >
-                      <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                      <h4 className="text-2xl font-bold mb-2">¡Gracias por sumarte!</h4>
-                      <p>Hemos recibido tus datos. Pronto te contactaremos.</p>
-                      <Button onClick={() => reset()} variant="outline" className="mt-6 border-green-500 text-green-700 hover:bg-green-100">
-                        Enviar otro mensaje
-                      </Button>
-                    </motion.div>
-                  ) : (
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-gray-700">Nombre Completo</label>
-                          <Input {...register("name")} placeholder="Ej: Enzo Francescoli" className={errors.name ? "border-red-500" : ""} />
-                          {errors.name && <span className="text-xs text-red-500">{errors.name.message}</span>}
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-gray-700">Teléfono (WhatsApp)</label>
-                          <Input {...register("phone")} placeholder="+972 50-XXX-XXXX" className={errors.phone ? "border-red-500" : ""} />
-                          {errors.phone && <span className="text-xs text-red-500">{errors.phone.message}</span>}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">Correo Electrónico</label>
-                        <Input type="email" {...register("email")} placeholder="tuemail@ejemplo.com" className={errors.email ? "border-red-500" : ""} />
-                        {errors.email && <span className="text-xs text-red-500">{errors.email.message}</span>}
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">Mensaje o Ciudad de Residencia</label>
-                        <Textarea {...register("message")} placeholder="Contanos desde dónde alentás..." className={errors.message ? "border-red-500" : ""} />
-                        {errors.message && <span className="text-xs text-red-500">{errors.message.message}</span>}
-                      </div>
-                      <Button type="submit" className="w-full h-14 text-lg bg-river-red hover:bg-river-red-hover" disabled={submitContact.isPending}>
-                        {submitContact.isPending ? "Enviando..." : "Quiero unirme"}
-                      </Button>
-                    </form>
-                  )}
-                </>
-              )}
-
-              {/* TAB: Escribí en el sitio */}
-              {tabForm === "redactor" && (
-                <>
+              {/* Formulario: Escribí en el sitio */}
+              <>
                   <h3 className="font-display text-3xl font-bold text-river-black mb-1">¡Escribí en River en Israel!</h3>
                   <p className="text-gray-500 mb-6 text-sm">Periodista, creador o fanático — tu voz merece llegar a toda la comunidad.</p>
 
@@ -636,7 +541,6 @@ export default function Home() {
                     </form>
                   )}
                 </>
-              )}
             </div>
           </div>
         </div>
