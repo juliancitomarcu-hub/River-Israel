@@ -421,298 +421,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* ================= VIDEOS SECTION ================= */}
-      {videos.length > 0 && (
-      <section id="videos" className="py-10 bg-river-black text-white relative">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold">La <span className="text-river-red">Pasión</span> en Imágenes</h2>
-              <p className="text-gray-400 mt-1 text-sm">Tocá un video para reproducirlo.</p>
-            </div>
-          </div>
-
-          {/* Columna scrollable de videos */}
-          <div className="flex flex-col gap-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20">
-            {videos.map((vid, i) => {
-              const src = vid.url.startsWith("/objects/")
-                ? `/api/storage${vid.url}`
-                : `${import.meta.env.BASE_URL}${vid.url.replace(/^\//, "")}`;
-              return (
-                <button
-                  key={vid.id}
-                  onClick={() => setVideoAbierto(vid)}
-                  className="w-full flex items-center gap-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-river-red/50 rounded-2xl p-3 transition-all text-left group"
-                >
-                  {/* Miniatura */}
-                  <div className="relative w-36 shrink-0 aspect-video rounded-xl overflow-hidden bg-black">
-                    {vid.thumbnail ? (
-                      <img
-                        src={vid.thumbnail.startsWith("/objects/") ? `/api/storage${vid.thumbnail}` : `${import.meta.env.BASE_URL}${vid.thumbnail.replace(/^\//, "")}`}
-                        alt={vid.titulo}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <video
-                        src={src}
-                        preload="metadata"
-                        className="w-full h-full object-cover"
-                        muted
-                      />
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
-                      <div className="w-10 h-10 rounded-full bg-river-red flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <Play className="w-5 h-5 text-white" fill="currentColor" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-white group-hover:text-river-red transition-colors truncate">
-                      {vid.titulo || `Video ${i + 1}`}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">Tap para reproducir</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-river-red shrink-0 transition-colors" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* ── LIGHTBOX DE VIDEO ─────────────────────────────────────────── */}
-      <AnimatePresence>
-        {videoAbierto && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
-            onClick={() => setVideoAbierto(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="relative w-full max-w-4xl"
-              onClick={e => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setVideoAbierto(null)}
-                className="absolute -top-10 right-0 flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
-              >
-                <X className="w-5 h-5" /> Cerrar
-              </button>
-              <div className="rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video">
-                <video
-                  key={videoAbierto.id}
-                  src={videoAbierto.url.startsWith("/objects/")
-                    ? `/api/storage${videoAbierto.url}`
-                    : `${import.meta.env.BASE_URL}${videoAbierto.url.replace(/^\//, "")}`}
-                  poster={videoAbierto.thumbnail
-                    ? (videoAbierto.thumbnail.startsWith("/objects/")
-                      ? `/api/storage${videoAbierto.thumbnail}`
-                      : `${import.meta.env.BASE_URL}${videoAbierto.thumbnail.replace(/^\//, "")}`)
-                    : undefined}
-                  controls
-                  autoPlay
-                  className="w-full h-full object-contain bg-black"
-                  title={videoAbierto.titulo}
-                />
-              </div>
-              {videoAbierto.titulo && (
-                <p className="text-white font-bold text-lg mt-3 text-center">{videoAbierto.titulo}</p>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ================= FILIAL RAMAT GAN SECTION ================= */}
-      <section id="filial" className="py-24 bg-gray-50 relative overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-[0.03]">
-          <img
-            src={`${import.meta.env.BASE_URL}images/ramat-gan-bg.png`}
-            alt="Ramat Gan Background"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col lg:flex-row">
-
-            {/* Info Side */}
-            <div className="lg:w-5/12 bg-river-black text-white p-10 lg:p-16 flex flex-col justify-center relative overflow-hidden">
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-river-red rounded-full blur-[100px] opacity-40"></div>
-
-              <div className="mb-8">
-                <span className="bg-white/10 px-4 py-1.5 rounded-full text-sm font-semibold tracking-wider uppercase text-river-red border border-river-red/30">
-                  Objetivo de ser sede oficial en Israel
-                </span>
-              </div>
-
-              <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
-                Unite a la <br /> <span className="text-river-red">Familia Riverplatense</span>
-              </h2>
-
-              <p className="text-gray-300 text-lg mb-8">
-                No importa que tan lejos estemos del Monumental, la pasión nos une. Súmate a nuestra filial para participar de futuros eventos, recibir noticias de River y más.
-              </p>
-
-              <ul className="space-y-4 mb-10">
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Encuentros para partidos especiales.</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Eventos Sociales</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Reacciones, análisis, y noticias post partido</span>
-                </li>
-              </ul>
-
-              <a
-                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
-                target="_blank"
-                rel="noreferrer"
-                className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"
-              >
-                Unite al Grupo de WhatsApp
-              </a>
-            </div>
-
-            {/* Form Side */}
-            <div id="escribi" className="lg:w-7/12 p-10 lg:p-16">
-
-              {/* Formulario: Escribí en el sitio */}
-              <>
-                  <h3 className="font-display text-3xl font-bold text-river-black mb-1">¡Escribí en River Israel!</h3>
-                  <p className="text-gray-500 mb-6 text-sm">Periodista, creador o fanático — tu voz merece llegar a toda la comunidad.</p>
-
-                  {postulEstado === "ok" ? (
-                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                      className="bg-green-50 border border-green-200 text-green-800 p-8 rounded-2xl text-center"
-                    >
-                      <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                      <h4 className="text-2xl font-bold mb-2">¡Postulación enviada!</h4>
-                      <p>La revisamos y te contactamos. ¡Gracias por querer ser parte!</p>
-                    </motion.div>
-                  ) : (
-                    <form onSubmit={handleP(onSubmitPostul)} className="space-y-5">
-                      {/* Tipo de perfil */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">Soy...</label>
-                        <div className="flex gap-2">
-                          {TIPOS_PERFIL.map(({ value, icon: Icon, label }) => (
-                            <button key={value} type="button"
-                              onClick={() => setValP("tipo", value, { shouldValidate: true })}
-                              className={cn(
-                                "flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border text-xs font-bold transition-all",
-                                tipoSel === value
-                                  ? "bg-river-red/10 border-river-red text-river-red"
-                                  : "border-gray-200 text-gray-500 hover:border-gray-300"
-                              )}
-                            >
-                              <Icon className="w-4 h-4" />
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                        {errP.tipo && <span className="text-xs text-red-500">{errP.tipo.message}</span>}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-sm font-semibold text-gray-700">Nombre</label>
-                          <Input {...regP("nombre")} placeholder="Tu nombre" className={errP.nombre ? "border-red-500" : ""} />
-                          {errP.nombre && <span className="text-xs text-red-500">{errP.nombre.message}</span>}
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-sm font-semibold text-gray-700">Ciudad</label>
-                          <Input {...regP("ciudad")} placeholder="Tu ciudad" className={errP.ciudad ? "border-red-500" : ""} />
-                          {errP.ciudad && <span className="text-xs text-red-500">{errP.ciudad.message}</span>}
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-gray-700">Tu nota o propuesta</label>
-                        <p className="text-xs text-gray-400">Solo corregimos ortografía, nunca cambiamos tu voz.</p>
-                        <Textarea {...regP("texto")} placeholder="Escribí tu análisis, crónica o lo que quieras compartir..." rows={5} className={cn("text-sm resize-none", errP.texto ? "border-red-500" : "")} />
-                      </div>
-
-                      {/* Separador O */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-px bg-gray-200" />
-                        <span className="text-xs text-gray-400 font-semibold">O adjuntá un archivo</span>
-                        <div className="flex-1 h-px bg-gray-200" />
-                      </div>
-
-                      {/* Upload de archivo */}
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Adjuntar nota <span className="text-gray-400 font-normal">(PDF o Word — opcional)</span>
-                        </label>
-                        {archivo ? (
-                          <div className="flex items-center gap-2 bg-river-red/5 border border-river-red/20 rounded-lg px-3 py-2.5">
-                            <Paperclip className="w-4 h-4 text-river-red shrink-0" />
-                            <span className="text-sm text-river-black font-medium flex-1 truncate">{archivo.name}</span>
-                            <button type="button" onClick={() => setArchivo(null)} className="text-gray-400 hover:text-gray-600">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="flex items-center gap-2 border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 cursor-pointer hover:border-river-red/40 hover:bg-river-red/5 transition-colors">
-                            <Paperclip className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Seleccionar PDF o Word (.docx)</span>
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                              className="hidden"
-                              onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
-                            />
-                          </label>
-                        )}
-                        <p className="text-xs text-gray-400">Máximo 10 MB. La IA extrae el texto y corrige solo la ortografía.</p>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Link a tu canal / redes <span className="text-gray-400 font-normal">(opcional)</span>
-                        </label>
-                        <Input {...regP("link")} placeholder="https://youtube.com/@tucanal" className={errP.link ? "border-red-500" : ""} />
-                        {errP.link && <span className="text-xs text-red-500">{errP.link.message}</span>}
-                      </div>
-
-                      {postulEstado === "error" && (
-                        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                          <AlertCircle className="w-4 h-4 shrink-0" />
-                          {postulError}
-                        </div>
-                      )}
-
-                      <Button type="submit" className="w-full h-12 text-base bg-river-red hover:bg-river-red-hover flex items-center gap-2" disabled={postulEstado === "enviando"}>
-                        {postulEstado === "enviando" ? (
-                          <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Enviando...</>
-                        ) : (
-                          <><Send className="w-4 h-4" /> Enviar postulación</>
-                        )}
-                      </Button>
-                    </form>
-                  )}
-                </>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ================= GALERIA SECTION ================= */}
       <section id="galeria" className="py-24 bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -902,6 +610,298 @@ export default function Home() {
                   Descargar
                 </a>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ================= FILIAL RAMAT GAN SECTION ================= */}
+      <section id="filial" className="py-24 bg-gray-50 relative overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-[0.03]">
+          <img
+            src={`${import.meta.env.BASE_URL}images/ramat-gan-bg.png`}
+            alt="Ramat Gan Background"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col lg:flex-row">
+
+            {/* Info Side */}
+            <div className="lg:w-5/12 bg-river-black text-white p-10 lg:p-16 flex flex-col justify-center relative overflow-hidden">
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-river-red rounded-full blur-[100px] opacity-40"></div>
+
+              <div className="mb-8">
+                <span className="bg-white/10 px-4 py-1.5 rounded-full text-sm font-semibold tracking-wider uppercase text-river-red border border-river-red/30">
+                  Objetivo de ser sede oficial en Israel
+                </span>
+              </div>
+
+              <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
+                Unite a la <br /> <span className="text-river-red">Familia Riverplatense</span>
+              </h2>
+
+              <p className="text-gray-300 text-lg mb-8">
+                No importa que tan lejos estemos del Monumental, la pasión nos une. Súmate a nuestra filial para participar de futuros eventos, recibir noticias de River y más.
+              </p>
+
+              <ul className="space-y-4 mb-10">
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
+                  <span>Encuentros para partidos especiales.</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
+                  <span>Eventos Sociales</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
+                  <span>Reacciones, análisis, y noticias post partido</span>
+                </li>
+              </ul>
+
+              <a
+                href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
+                target="_blank"
+                rel="noreferrer"
+                className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"
+              >
+                Unite al Grupo de WhatsApp
+              </a>
+            </div>
+
+            {/* Form Side */}
+            <div id="escribi" className="lg:w-7/12 p-10 lg:p-16">
+
+              {/* Formulario: Escribí en el sitio */}
+              <>
+                  <h3 className="font-display text-3xl font-bold text-river-black mb-1">¡Escribí en River Israel!</h3>
+                  <p className="text-gray-500 mb-6 text-sm">Periodista, creador o fanático — tu voz merece llegar a toda la comunidad.</p>
+
+                  {postulEstado === "ok" ? (
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                      className="bg-green-50 border border-green-200 text-green-800 p-8 rounded-2xl text-center"
+                    >
+                      <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                      <h4 className="text-2xl font-bold mb-2">¡Postulación enviada!</h4>
+                      <p>La revisamos y te contactamos. ¡Gracias por querer ser parte!</p>
+                    </motion.div>
+                  ) : (
+                    <form onSubmit={handleP(onSubmitPostul)} className="space-y-5">
+                      {/* Tipo de perfil */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">Soy...</label>
+                        <div className="flex gap-2">
+                          {TIPOS_PERFIL.map(({ value, icon: Icon, label }) => (
+                            <button key={value} type="button"
+                              onClick={() => setValP("tipo", value, { shouldValidate: true })}
+                              className={cn(
+                                "flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border text-xs font-bold transition-all",
+                                tipoSel === value
+                                  ? "bg-river-red/10 border-river-red text-river-red"
+                                  : "border-gray-200 text-gray-500 hover:border-gray-300"
+                              )}
+                            >
+                              <Icon className="w-4 h-4" />
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                        {errP.tipo && <span className="text-xs text-red-500">{errP.tipo.message}</span>}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-semibold text-gray-700">Nombre</label>
+                          <Input {...regP("nombre")} placeholder="Tu nombre" className={errP.nombre ? "border-red-500" : ""} />
+                          {errP.nombre && <span className="text-xs text-red-500">{errP.nombre.message}</span>}
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-semibold text-gray-700">Ciudad</label>
+                          <Input {...regP("ciudad")} placeholder="Tu ciudad" className={errP.ciudad ? "border-red-500" : ""} />
+                          {errP.ciudad && <span className="text-xs text-red-500">{errP.ciudad.message}</span>}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-gray-700">Tu nota o propuesta</label>
+                        <p className="text-xs text-gray-400">Solo corregimos ortografía, nunca cambiamos tu voz.</p>
+                        <Textarea {...regP("texto")} placeholder="Escribí tu análisis, crónica o lo que quieras compartir..." rows={5} className={cn("text-sm resize-none", errP.texto ? "border-red-500" : "")} />
+                      </div>
+
+                      {/* Separador O */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-xs text-gray-400 font-semibold">O adjuntá un archivo</span>
+                        <div className="flex-1 h-px bg-gray-200" />
+                      </div>
+
+                      {/* Upload de archivo */}
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-gray-700">
+                          Adjuntar nota <span className="text-gray-400 font-normal">(PDF o Word — opcional)</span>
+                        </label>
+                        {archivo ? (
+                          <div className="flex items-center gap-2 bg-river-red/5 border border-river-red/20 rounded-lg px-3 py-2.5">
+                            <Paperclip className="w-4 h-4 text-river-red shrink-0" />
+                            <span className="text-sm text-river-black font-medium flex-1 truncate">{archivo.name}</span>
+                            <button type="button" onClick={() => setArchivo(null)} className="text-gray-400 hover:text-gray-600">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-2 border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 cursor-pointer hover:border-river-red/40 hover:bg-river-red/5 transition-colors">
+                            <Paperclip className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-400">Seleccionar PDF o Word (.docx)</span>
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                              className="hidden"
+                              onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
+                            />
+                          </label>
+                        )}
+                        <p className="text-xs text-gray-400">Máximo 10 MB. La IA extrae el texto y corrige solo la ortografía.</p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-gray-700">
+                          Link a tu canal / redes <span className="text-gray-400 font-normal">(opcional)</span>
+                        </label>
+                        <Input {...regP("link")} placeholder="https://youtube.com/@tucanal" className={errP.link ? "border-red-500" : ""} />
+                        {errP.link && <span className="text-xs text-red-500">{errP.link.message}</span>}
+                      </div>
+
+                      {postulEstado === "error" && (
+                        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          {postulError}
+                        </div>
+                      )}
+
+                      <Button type="submit" className="w-full h-12 text-base bg-river-red hover:bg-river-red-hover flex items-center gap-2" disabled={postulEstado === "enviando"}>
+                        {postulEstado === "enviando" ? (
+                          <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Enviando...</>
+                        ) : (
+                          <><Send className="w-4 h-4" /> Enviar postulación</>
+                        )}
+                      </Button>
+                    </form>
+                  )}
+                </>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ================= VIDEOS SECTION ================= */}
+      {videos.length > 0 && (
+      <section id="videos" className="py-10 bg-river-black text-white relative">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold">La <span className="text-river-red">Pasión</span> en Imágenes</h2>
+              <p className="text-gray-400 mt-1 text-sm">Tocá un video para reproducirlo.</p>
+            </div>
+          </div>
+
+          {/* Columna scrollable de videos */}
+          <div className="flex flex-col gap-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20">
+            {videos.map((vid, i) => {
+              const src = vid.url.startsWith("/objects/")
+                ? `/api/storage${vid.url}`
+                : `${import.meta.env.BASE_URL}${vid.url.replace(/^\//, "")}`;
+              return (
+                <button
+                  key={vid.id}
+                  onClick={() => setVideoAbierto(vid)}
+                  className="w-full flex items-center gap-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-river-red/50 rounded-2xl p-3 transition-all text-left group"
+                >
+                  {/* Miniatura */}
+                  <div className="relative w-36 shrink-0 aspect-video rounded-xl overflow-hidden bg-black">
+                    {vid.thumbnail ? (
+                      <img
+                        src={vid.thumbnail.startsWith("/objects/") ? `/api/storage${vid.thumbnail}` : `${import.meta.env.BASE_URL}${vid.thumbnail.replace(/^\//, "")}`}
+                        alt={vid.titulo}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <video
+                        src={src}
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                        muted
+                      />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-river-red flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Play className="w-5 h-5 text-white" fill="currentColor" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-white group-hover:text-river-red transition-colors truncate">
+                      {vid.titulo || `Video ${i + 1}`}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">Tap para reproducir</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-river-red shrink-0 transition-colors" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+      )}
+
+      {/* ── LIGHTBOX DE VIDEO ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {videoAbierto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+            onClick={() => setVideoAbierto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-4xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setVideoAbierto(null)}
+                className="absolute -top-10 right-0 flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
+              >
+                <X className="w-5 h-5" /> Cerrar
+              </button>
+              <div className="rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video">
+                <video
+                  key={videoAbierto.id}
+                  src={videoAbierto.url.startsWith("/objects/")
+                    ? `/api/storage${videoAbierto.url}`
+                    : `${import.meta.env.BASE_URL}${videoAbierto.url.replace(/^\//, "")}`}
+                  poster={videoAbierto.thumbnail
+                    ? (videoAbierto.thumbnail.startsWith("/objects/")
+                      ? `/api/storage${videoAbierto.thumbnail}`
+                      : `${import.meta.env.BASE_URL}${videoAbierto.thumbnail.replace(/^\//, "")}`)
+                    : undefined}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain bg-black"
+                  title={videoAbierto.titulo}
+                />
+              </div>
+              {videoAbierto.titulo && (
+                <p className="text-white font-bold text-lg mt-3 text-center">{videoAbierto.titulo}</p>
+              )}
             </motion.div>
           </motion.div>
         )}
