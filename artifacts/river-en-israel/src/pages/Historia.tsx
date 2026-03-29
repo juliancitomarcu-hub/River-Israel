@@ -291,23 +291,6 @@ export default function Historia() {
         </div>
       </section>
 
-      {/* ── ERAS ── */}
-      <section className="py-10 bg-gray-50 border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs text-gray-400 uppercase tracking-widest font-semibold mb-4">Ir directamente a cada era</p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            {ERAS.map((era) => (
-              <button
-                key={era.nombre}
-                onClick={() => scrollToEra(era.scrollTo)}
-                className={`px-5 py-2 rounded-full text-sm font-bold cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm ${era.color}`}
-              >
-                {era.nombre} · <span className="font-normal opacity-80">{era.yearRange}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── TIMELINE COMPLETO ── */}
       <section className="py-20 bg-white">
