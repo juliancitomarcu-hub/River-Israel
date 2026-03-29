@@ -54,14 +54,14 @@ function guardarHitos(hitos: HitoItem[]): void {
   writeFileSync(HISTORIA_FILE, JSON.stringify(hitos, null, 2), "utf-8");
 }
 
-// GET /api/historia
-router.get("/api/historia", (_req, res) => {
+// GET /historia
+router.get("/historia", (_req, res) => {
   const hitos = leerHitos();
   res.json({ hitos });
 });
 
-// PATCH /api/historia/:index
-router.patch("/api/historia/:index", (req, res) => {
+// PATCH /historia/:index
+router.patch("/historia/:index", (req, res) => {
   const idx = parseInt(req.params.index, 10);
   const hitos = leerHitos();
 
