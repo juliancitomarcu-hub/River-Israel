@@ -6,6 +6,7 @@ export const videosTable = pgTable("videos_galeria", {
   id: serial("id").primaryKey(),
   url: text("url").notNull(),
   titulo: text("titulo").notNull().default(""),
+  thumbnail: text("thumbnail"),
   orden: integer("orden").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

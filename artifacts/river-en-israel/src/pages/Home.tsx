@@ -25,6 +25,7 @@ interface VideoGaleria {
   id: number;
   url: string;
   titulo: string;
+  thumbnail: string | null;
   orden: number;
 }
 
@@ -441,12 +442,20 @@ export default function Home() {
                 >
                   {/* Miniatura */}
                   <div className="relative w-36 shrink-0 aspect-video rounded-xl overflow-hidden bg-black">
-                    <video
-                      src={src}
-                      preload="metadata"
-                      className="w-full h-full object-cover"
-                      muted
-                    />
+                    {vid.thumbnail ? (
+                      <img
+                        src={vid.thumbnail.startsWith("/objects/") ? `/api/storage${vid.thumbnail}` : `${import.meta.env.BASE_URL}${vid.thumbnail.replace(/^\//, "")}`}
+                        alt={vid.titulo}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <video
+                        src={src}
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                        muted
+                      />
+                    )}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
                       <div className="w-10 h-10 rounded-full bg-river-red flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                         <Play className="w-5 h-5 text-white" fill="currentColor" />
@@ -500,6 +509,11 @@ export default function Home() {
                   src={videoAbierto.url.startsWith("/objects/")
                     ? `/api/storage${videoAbierto.url}`
                     : `${import.meta.env.BASE_URL}${videoAbierto.url.replace(/^\//, "")}`}
+                  poster={videoAbierto.thumbnail
+                    ? (videoAbierto.thumbnail.startsWith("/objects/")
+                      ? `/api/storage${videoAbierto.thumbnail}`
+                      : `${import.meta.env.BASE_URL}${videoAbierto.thumbnail.replace(/^\//, "")}`)
+                    : undefined}
                   controls
                   autoPlay
                   className="w-full h-full object-contain bg-black"

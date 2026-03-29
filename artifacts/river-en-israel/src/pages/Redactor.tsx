@@ -21,6 +21,7 @@ interface VideoGaleria {
   id: number;
   url: string;
   titulo: string;
+  thumbnail: string | null;
   orden: number;
 }
 
@@ -344,6 +345,14 @@ function VideosTab() {
   const [nuevoFile, setNuevoFile] = useState<File | null>(null);
   const [progreso, setProgreso] = useState(0);
 
+  // Estado de edición por video
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [editTitulo, setEditTitulo] = useState("");
+  const [editThumbFile, setEditThumbFile] = useState<File | null>(null);
+  const [editThumbPreview, setEditThumbPreview] = useState<string | null>(null);
+  const [guardandoEdit, setGuardandoEdit] = useState(false);
+  const [errorEdit, setErrorEdit] = useState("");
+
   const cargar = async () => {
     setCargando(true);
     setError("");
@@ -359,6 +368,43 @@ function VideosTab() {
   };
 
   useEffect(() => { cargar(); }, []);
+
+  const abrirEdicion = (vid: VideoGaleria) => {
+    setEditandoId(vid.id);
+    setEditTitulo(vid.titulo);
+    setEditThumbFile(null);
+    setEditThumbPreview(vid.thumbnail ? resolverUrlVideo(vid.thumbnail) : null);
+    setErrorEdit("");
+  };
+
+  const cancelarEdicion = () => {
+    setEditandoId(null);
+    setEditThumbFile(null);
+    setEditThumbPreview(null);
+    setErrorEdit("");
+  };
+
+  const guardarEdicion = async (id: number) => {
+    setGuardandoEdit(true);
+    setErrorEdit("");
+    try {
+      const fd = new FormData();
+      fd.append("titulo", editTitulo);
+      if (editThumbFile) fd.append("thumbnail", editThumbFile);
+      const res = await fetch(`/api/videos/${id}`, { method: "PUT", body: fd });
+      const data = await res.json() as { ok?: boolean; video?: VideoGaleria; error?: string };
+      if (data.ok && data.video) {
+        setVideosList(prev => prev.map(v => v.id === id ? data.video! : v));
+        cancelarEdicion();
+      } else {
+        setErrorEdit(data.error ?? "Error al guardar");
+      }
+    } catch {
+      setErrorEdit("Error de conexión");
+    } finally {
+      setGuardandoEdit(false);
+    }
+  };
 
   const eliminar = async (id: number) => {
     setEliminandoId(id);
@@ -404,7 +450,7 @@ function VideosTab() {
           <h2 className="font-display text-xl font-bold text-river-black flex items-center gap-2">
             <Video className="w-5 h-5 text-river-red" /> Videos de Galería
           </h2>
-          <p className="text-xs text-gray-400 mt-0.5">{videosList.length} videos · Subí, reproducí o eliminá videos de la galería</p>
+          <p className="text-xs text-gray-400 mt-0.5">{videosList.length} videos · Subí, editá o eliminá videos de la galería</p>
         </div>
         <button onClick={cargar} disabled={cargando}
           className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors">
@@ -487,52 +533,153 @@ function VideosTab() {
         <div className="space-y-4">
           {videosList.map(vid => (
             <div key={vid.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
-                <div className="md:col-span-2 bg-black aspect-video">
-                  <video
-                    src={resolverUrlVideo(vid.url)}
-                    controls
-                    className="w-full h-full object-contain"
-                    title={vid.titulo}
-                    preload="metadata"
-                  />
-                </div>
-                <div className="p-4 flex flex-col justify-between">
-                  <div>
-                    <p className="font-bold text-river-black text-sm mb-1">{vid.titulo || "Sin título"}</p>
-                    <p className="text-xs text-gray-400">Video #{vid.orden}</p>
+
+              {/* Vista normal */}
+              {editandoId !== vid.id ? (
+                <div className="flex gap-0">
+                  {/* Portada / Preview */}
+                  <div className="w-40 shrink-0 aspect-video bg-black relative overflow-hidden">
+                    {vid.thumbnail ? (
+                      <img
+                        src={resolverUrlVideo(vid.thumbnail)}
+                        alt={vid.titulo}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <video
+                        src={resolverUrlVideo(vid.url)}
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                        muted
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-river-red/90 flex items-center justify-center">
+                        <Play className="w-4 h-4 text-white" fill="currentColor" />
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-4">
-                    {confirmEliminar === vid.id ? (
-                      <div className="space-y-2">
-                        <p className="text-xs text-red-600 font-semibold">¿Eliminar este video?</p>
-                        <div className="flex gap-2">
+                  {/* Info + acciones */}
+                  <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                    <div>
+                      <p className="font-bold text-river-black text-sm truncate">{vid.titulo || "Sin título"}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Video #{vid.orden}</p>
+                    </div>
+                    <div className="flex items-center gap-3 mt-3">
+                      <button
+                        onClick={() => abrirEdicion(vid)}
+                        className="flex items-center gap-1.5 text-xs text-blue-500 hover:text-blue-700 font-semibold transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Editar
+                      </button>
+                      {confirmEliminar === vid.id ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-red-600 font-semibold">¿Eliminar?</span>
                           <button
                             onClick={() => eliminar(vid.id)}
                             disabled={eliminandoId === vid.id}
-                            className="flex-1 text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 rounded-lg transition-colors"
+                            className="text-xs bg-red-500 hover:bg-red-600 text-white font-bold px-2 py-1 rounded-lg transition-colors"
                           >
-                            {eliminandoId === vid.id ? "Eliminando..." : "Confirmar"}
+                            {eliminandoId === vid.id ? "..." : "Sí"}
                           </button>
                           <button
                             onClick={() => setConfirmEliminar(null)}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold transition-colors"
+                            className="text-xs px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold transition-colors"
                           >
                             No
                           </button>
                         </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmEliminar(vid.id)}
-                        className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 font-semibold transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Eliminar video
-                      </button>
-                    )}
+                      ) : (
+                        <button
+                          onClick={() => setConfirmEliminar(vid.id)}
+                          className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 font-semibold transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* Panel de edición */
+                <div className="p-4 space-y-4 bg-blue-50 border-t-2 border-blue-200">
+                  <p className="text-sm font-bold text-blue-700 flex items-center gap-2">
+                    <Pencil className="w-4 h-4" /> Editando: {vid.titulo || "Sin título"}
+                  </p>
+
+                  {/* Título */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 mb-1 block">Título</label>
+                    <input
+                      value={editTitulo}
+                      onChange={e => setEditTitulo(e.target.value)}
+                      placeholder="Ej: Gol de Borja vs Boca"
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-river-red bg-white"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Portada */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 mb-2 block">
+                      Portada del video <span className="text-gray-400 font-normal">(imagen que aparece antes de reproducir)</span>
+                    </label>
+                    <div className="flex gap-3 items-start">
+                      {/* Preview actual */}
+                      <div className="w-28 aspect-video rounded-lg overflow-hidden bg-gray-900 shrink-0 border border-gray-200">
+                        {editThumbPreview ? (
+                          <img src={editThumbPreview} alt="Portada" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-6 h-6 text-gray-500" />
+                          </div>
+                        )}
+                      </div>
+                      {/* Botón subir imagen */}
+                      <label className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-river-red rounded-xl px-4 py-3 flex-1 transition-colors bg-white text-center">
+                        <Upload className="w-5 h-5 text-gray-400 mb-1" />
+                        <span className="text-xs text-gray-500 font-medium">
+                          {editThumbFile ? editThumbFile.name : "Subir imagen de portada"}
+                        </span>
+                        <span className="text-xs text-gray-400">JPG, PNG · cualquier tamaño</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setEditThumbFile(file);
+                            const reader = new FileReader();
+                            reader.onload = ev => setEditThumbPreview(ev.target?.result as string);
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {errorEdit && <p className="text-red-500 text-xs">{errorEdit}</p>}
+
+                  {/* Acciones */}
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      onClick={() => guardarEdicion(vid.id)}
+                      disabled={guardandoEdit}
+                      className="bg-river-red hover:bg-river-red/90 text-white text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {guardandoEdit ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
+                      {guardandoEdit ? "Guardando..." : "Guardar cambios"}
+                    </Button>
+                    <button
+                      onClick={cancelarEdicion}
+                      className="text-sm px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -58,6 +58,30 @@ router.post("/videos", upload.single("video"), async (req, res) => {
   }
 });
 
+router.put("/videos/:id", upload.single("thumbnail"), async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const titulo = (req.body as { titulo?: string }).titulo;
+    const updateData: Record<string, unknown> = {};
+    if (titulo !== undefined) updateData.titulo = titulo;
+    if (req.file) {
+      const ext = req.file.originalname.split(".").pop()?.toLowerCase() ?? "jpg";
+      const subPath = `videos/thumbs/${Date.now()}.${ext}`;
+      const thumbPath = await storageService.uploadBuffer(subPath, req.file.buffer, req.file.mimetype ?? "image/jpeg");
+      updateData.thumbnail = thumbPath;
+    }
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({ error: "Nada que actualizar" });
+      return;
+    }
+    const [video] = await db.update(videosTable).set(updateData).where(eq(videosTable.id, id)).returning();
+    res.json({ ok: true, video });
+  } catch (err) {
+    req.log.error({ err }, "Error editando video");
+    res.status(500).json({ error: "Error al editar el video" });
+  }
+});
+
 router.delete("/videos/:id", async (req, res) => {
   const id = Number(req.params.id);
   try {
