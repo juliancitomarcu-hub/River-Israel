@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { name: "Inicio", href: "/" },
   { name: "Actualidad", href: "#actualidad" },
   { name: "Historia", href: "#historia" },
-  { name: "Videos", href: "#videos" },
+  { name: "Equipo", href: "/equipo" },
   { name: "Filial Ramat Gan", href: "#filial" },
   { name: "Galería", href: "#galeria" },
 ];
@@ -66,22 +66,33 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-8">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                onClick={(e) => {
-                  if (link.href.startsWith('#')) {
-                    e.preventDefault();
-                    handleNavClick(link.href);
-                  }
-                }}
-                className="text-white/90 hover:text-white font-medium text-sm uppercase tracking-wider relative group py-2"
-              >
-                {link.name}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
-              </a>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.href.startsWith("/") ? (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="text-white/90 hover:text-white font-medium text-sm uppercase tracking-wider relative group py-2"
+                >
+                  {link.name}
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+              ) : (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  onClick={(e) => {
+                    if (link.href.startsWith('#')) {
+                      e.preventDefault();
+                      handleNavClick(link.href);
+                    }
+                  }}
+                  className="text-white/90 hover:text-white font-medium text-sm uppercase tracking-wider relative group py-2"
+                >
+                  {link.name}
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
+                </a>
+              )
+            )}
             <a
               href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
               target="_blank"
@@ -112,21 +123,32 @@ export function Navbar() {
             className="md:hidden bg-river-black border-t border-white/10 overflow-hidden"
           >
             <div className="flex flex-col px-4 pt-2 pb-6 space-y-2">
-              {NAV_LINKS.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  onClick={(e) => {
-                    if (link.href.startsWith('#')) {
-                      e.preventDefault();
-                      handleNavClick(link.href);
-                    }
-                  }}
-                  className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg uppercase tracking-wider transition-colors"
-                >
-                  {link.name}
-                </a>
-              ))}
+              {NAV_LINKS.map((link) =>
+                link.href.startsWith("/") ? (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg uppercase tracking-wider transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    onClick={(e) => {
+                      if (link.href.startsWith('#')) {
+                        e.preventDefault();
+                        handleNavClick(link.href);
+                      }
+                    }}
+                    className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg uppercase tracking-wider transition-colors"
+                  >
+                    {link.name}
+                  </a>
+                )
+              )}
               <a
                 href="https://chat.whatsapp.com/CVctijXuwxmEJMpU4jmFMv?mode=gi_t"
                 target="_blank"
