@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Mic, Video, Heart, Send, AlertCircle, Paperclip, X, ChevronLeft, Download, ZoomIn } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline } from "@/hooks/use-river-data";
@@ -45,6 +45,12 @@ export default function Home() {
   // Galería
   const [galeriaFotos, setGaleriaFotos] = useState<GaleriaFoto[]>([]);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [paginaGaleria, setPaginaGaleria] = useState(0);
+  const COLS = 4;
+  const ROWS = 3;
+  const PAGE_SIZE = COLS * ROWS;
+  const totalPaginas = Math.max(1, Math.ceil(galeriaFotos.length / PAGE_SIZE));
+  const dragStartX = useRef<number | null>(null);
 
   useEffect(() => {
     fetch("/api/galeria")
@@ -640,38 +646,113 @@ export default function Home() {
             <p className="text-gray-400 max-w-lg mx-auto">Hacé clic en cualquier foto para verla completa y descargarla.</p>
           </div>
 
-          {galeriaFotos.length === 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-pulse">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-white/5 rounded-xl h-48" />
-              ))}
-            </div>
-          ) : (
-            <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
-              {galeriaFotos.map((foto, idx) => (
-                <div
-                  key={foto.id}
-                  className="break-inside-avoid overflow-hidden rounded-xl cursor-pointer relative group"
-                  onClick={() => abrirLightbox(idx)}
+          {/* ── Carrusel 3×4 ── */}
+          <div className="relative">
+
+            {/* Flecha izquierda */}
+            {totalPaginas > 1 && (
+              <button
+                onClick={() => setPaginaGaleria(p => Math.max(0, p - 1))}
+                disabled={paginaGaleria === 0}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 z-10 bg-white/10 hover:bg-river-red disabled:opacity-20 disabled:cursor-not-allowed text-white rounded-full p-2 transition-all shadow-lg"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Grid animado */}
+            <div
+              className="overflow-hidden"
+              onMouseDown={e => { dragStartX.current = e.clientX; }}
+              onMouseUp={e => {
+                if (dragStartX.current === null) return;
+                const diff = dragStartX.current - e.clientX;
+                if (diff > 50) setPaginaGaleria(p => Math.min(totalPaginas - 1, p + 1));
+                else if (diff < -50) setPaginaGaleria(p => Math.max(0, p - 1));
+                dragStartX.current = null;
+              }}
+              onTouchStart={e => { dragStartX.current = e.touches[0].clientX; }}
+              onTouchEnd={e => {
+                if (dragStartX.current === null) return;
+                const diff = dragStartX.current - e.changedTouches[0].clientX;
+                if (diff > 50) setPaginaGaleria(p => Math.min(totalPaginas - 1, p + 1));
+                else if (diff < -50) setPaginaGaleria(p => Math.max(0, p - 1));
+                dragStartX.current = null;
+              }}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={paginaGaleria}
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="grid grid-cols-4 gap-3"
                 >
-                  <img
-                    src={resolverUrl(foto.url)}
-                    alt={foto.caption || `Foto ${idx + 1}`}
-                    className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
-                    <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 drop-shadow-lg" />
-                  </div>
-                  {foto.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                      <p className="text-white text-xs font-medium truncate">{foto.caption}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                  {galeriaFotos.length === 0
+                    ? Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                        <div key={i} className="aspect-[4/3] bg-white/5 rounded-xl animate-pulse" />
+                      ))
+                    : (() => {
+                        const pageFotos = galeriaFotos.slice(paginaGaleria * PAGE_SIZE, (paginaGaleria + 1) * PAGE_SIZE);
+                        const celdas = [...pageFotos, ...Array.from({ length: PAGE_SIZE - pageFotos.length })];
+                        return celdas.map((foto, idx) => {
+                          const globalIdx = paginaGaleria * PAGE_SIZE + idx;
+                          if (!foto) return <div key={idx} className="aspect-[4/3] rounded-xl bg-white/3" />;
+                          const f = foto as GaleriaFoto;
+                          return (
+                            <div
+                              key={f.id}
+                              className="aspect-[4/3] overflow-hidden rounded-xl cursor-pointer relative group"
+                              onClick={() => abrirLightbox(globalIdx)}
+                            >
+                              <img
+                                src={resolverUrl(f.url)}
+                                alt={f.caption || `Foto ${globalIdx + 1}`}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center">
+                                <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 drop-shadow-lg" />
+                              </div>
+                              {f.caption && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                  <p className="text-white text-xs font-medium truncate">{f.caption}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })()
+                  }
+                </motion.div>
+              </AnimatePresence>
             </div>
-          )}
+
+            {/* Flecha derecha */}
+            {totalPaginas > 1 && (
+              <button
+                onClick={() => setPaginaGaleria(p => Math.min(totalPaginas - 1, p + 1))}
+                disabled={paginaGaleria === totalPaginas - 1}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 z-10 bg-white/10 hover:bg-river-red disabled:opacity-20 disabled:cursor-not-allowed text-white rounded-full p-2 transition-all shadow-lg"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Indicadores de página */}
+            {totalPaginas > 1 && (
+              <div className="flex justify-center gap-2 mt-6">
+                {Array.from({ length: totalPaginas }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setPaginaGaleria(i)}
+                    className={`w-2 h-2 rounded-full transition-all ${i === paginaGaleria ? "bg-river-red w-6" : "bg-white/30 hover:bg-white/50"}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
