@@ -69,6 +69,12 @@ export default function Home() {
   const PAGE_SIZE = COLS * ROWS;
   const totalPaginas = Math.max(1, Math.ceil(galeriaFotos.length / PAGE_SIZE));
   const dragStartX = useRef<number | null>(null);
+  const [sliderIdx, setSliderIdx] = useState(0);
+  const sliderDragX = useRef<number | null>(null);
+  const SLIDER_IMAGES = [
+    `${import.meta.env.BASE_URL}images/galeria/foto-01.jpeg`,
+    `${import.meta.env.BASE_URL}images/galeria/foto-02.jpeg`,
+  ];
 
   useEffect(() => {
     fetch("/api/galeria", { cache: "no-store" })
@@ -230,8 +236,66 @@ export default function Home() {
                   Ver todas las noticias
                 </Button>
               </div>
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 flex gap-3 items-start">
                 <ProximoPartidoWidget />
+
+                {/* Mini slider de imágenes */}
+                <div
+                  className="relative w-44 rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-lg select-none"
+                  style={{ aspectRatio: "3/4" }}
+                  onMouseDown={e => { sliderDragX.current = e.clientX; }}
+                  onMouseUp={e => {
+                    if (sliderDragX.current === null) return;
+                    const diff = sliderDragX.current - e.clientX;
+                    if (diff > 30) setSliderIdx(i => (i + 1) % SLIDER_IMAGES.length);
+                    else if (diff < -30) setSliderIdx(i => (i - 1 + SLIDER_IMAGES.length) % SLIDER_IMAGES.length);
+                    sliderDragX.current = null;
+                  }}
+                  onTouchStart={e => { sliderDragX.current = e.touches[0].clientX; }}
+                  onTouchEnd={e => {
+                    if (sliderDragX.current === null) return;
+                    const diff = sliderDragX.current - e.changedTouches[0].clientX;
+                    if (diff > 30) setSliderIdx(i => (i + 1) % SLIDER_IMAGES.length);
+                    else if (diff < -30) setSliderIdx(i => (i - 1 + SLIDER_IMAGES.length) % SLIDER_IMAGES.length);
+                    sliderDragX.current = null;
+                  }}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.img
+                      key={sliderIdx}
+                      src={SLIDER_IMAGES[sliderIdx]}
+                      alt={`Imagen ${sliderIdx + 1}`}
+                      initial={{ opacity: 0, x: 30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -30 }}
+                      transition={{ duration: 0.25 }}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </AnimatePresence>
+                  {/* Flechas */}
+                  <button
+                    onClick={() => setSliderIdx(i => (i - 1 + SLIDER_IMAGES.length) % SLIDER_IMAGES.length)}
+                    className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-river-red text-white rounded-full p-1 transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setSliderIdx(i => (i + 1) % SLIDER_IMAGES.length)}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-river-red text-white rounded-full p-1 transition-colors"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  {/* Dots */}
+                  <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
+                    {SLIDER_IMAGES.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSliderIdx(i)}
+                        className={`rounded-full transition-all ${i === sliderIdx ? "bg-white w-4 h-1.5" : "bg-white/40 w-1.5 h-1.5"}`}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
