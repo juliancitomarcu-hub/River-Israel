@@ -173,7 +173,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all hover:scale-105"
               >
-                Unite a la Filial
+                Súmate a la Filial
               </a>
               <div className="flex gap-2">
                 <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-river-red text-white font-bold rounded-full text-xs uppercase tracking-wide hover:bg-river-red-hover transition-all shadow-[0_0_12px_rgba(204,0,0,0.5)]">
