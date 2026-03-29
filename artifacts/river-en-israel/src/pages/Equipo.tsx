@@ -206,7 +206,7 @@ function CoudetCard() {
           style={{ backfaceVisibility: "hidden" }}
         >
           <img
-            src="https://www.cariverplate.com.ar/imagenes/contenidos/2026-03/27935-x-hclisyjawambj9i.jpg"
+            src="/images/coudet.jpeg"
             alt="Eduardo Coudet"
             className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-500"
           />
