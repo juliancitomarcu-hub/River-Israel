@@ -14,6 +14,62 @@ import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
 import ShareButton from "@/components/ShareButton";
 import CredencialGenerador from "@/components/CredencialGenerador";
 
+const TEAM_LOGOS: Record<string, string> = {
+  "River Plate":        "https://upload.wikimedia.org/wikipedia/commons/a/a1/River_Plate_logo.svg",
+  "Boca Juniors":       "https://upload.wikimedia.org/wikipedia/commons/a/ab/CA_Boca_Juniors.svg",
+  "Racing Club":        "https://upload.wikimedia.org/wikipedia/commons/0/0d/Racing_Club_Logo.svg",
+  "Independiente":      "https://upload.wikimedia.org/wikipedia/commons/4/44/Club_Atletico_Independiente.svg",
+  "San Lorenzo":        "https://upload.wikimedia.org/wikipedia/commons/b/bb/San_Lorenzo_logo.svg",
+  "Vélez Sársfield":    "https://upload.wikimedia.org/wikipedia/commons/e/e5/Escudo_del_Club_Atl%C3%A9tico_V%C3%A9lez_S%C3%A1rsfield.svg",
+  "Vélez":              "https://upload.wikimedia.org/wikipedia/commons/e/e5/Escudo_del_Club_Atl%C3%A9tico_V%C3%A9lez_S%C3%A1rsfield.svg",
+  "Estudiantes LP":     "https://upload.wikimedia.org/wikipedia/commons/c/ce/Estudiantes_de_La_Plata_logo.svg",
+  "Estudiantes":        "https://upload.wikimedia.org/wikipedia/commons/c/ce/Estudiantes_de_La_Plata_logo.svg",
+  "Estudiantes RC":     "https://upload.wikimedia.org/wikipedia/commons/c/ce/Estudiantes_de_La_Plata_logo.svg",
+  "Talleres":           "https://upload.wikimedia.org/wikipedia/commons/9/91/Talleres_C%C3%B3rdoba.svg",
+  "Belgrano":           "https://upload.wikimedia.org/wikipedia/commons/3/3c/Belgrano_escudo.svg",
+  "Rosario Central":    "https://upload.wikimedia.org/wikipedia/commons/3/38/Rosario_Central_logo.svg",
+  "Newells Old Boys":   "https://upload.wikimedia.org/wikipedia/commons/5/52/Escudo_Club_Atletico_Newells_Old_Boys.svg",
+  "Newell's Old Boys":  "https://upload.wikimedia.org/wikipedia/commons/5/52/Escudo_Club_Atletico_Newells_Old_Boys.svg",
+  "Huracán":            "https://upload.wikimedia.org/wikipedia/commons/f/fc/Huracan_logo.svg",
+  "Lanús":              "https://upload.wikimedia.org/wikipedia/commons/8/8c/Lanus_logo.svg",
+  "Godoy Cruz":         "https://upload.wikimedia.org/wikipedia/commons/b/bf/Godoy_Cruz.svg",
+  "Gimnasia LP":        "https://upload.wikimedia.org/wikipedia/commons/9/90/Gimnasia_y_Esgrima_La_Plata.svg",
+  "Argentinos Juniors": "https://upload.wikimedia.org/wikipedia/commons/5/52/Argentinos_Juniors.svg",
+  "Tigre":              "https://upload.wikimedia.org/wikipedia/commons/1/10/Club_Atletico_Tigre.svg",
+  "Defensa y Justicia": "https://upload.wikimedia.org/wikipedia/commons/e/e8/Defensa_y_Justicia.svg",
+  "Sarmiento Junín":    "https://upload.wikimedia.org/wikipedia/commons/1/14/Sarmiento_de_Jun%C3%ADn.svg",
+  "Sarmiento":          "https://upload.wikimedia.org/wikipedia/commons/1/14/Sarmiento_de_Jun%C3%ADn.svg",
+  "Nacional (URU)":     "https://upload.wikimedia.org/wikipedia/commons/4/45/Nacional_Montevideo_logo.svg",
+  "Olimpia":            "https://upload.wikimedia.org/wikipedia/commons/8/89/Club_Olimpia.svg",
+  "Fluminense":         "https://upload.wikimedia.org/wikipedia/commons/1/16/Fluminense_fc_logo.svg",
+  "Blooming":           "https://upload.wikimedia.org/wikipedia/commons/f/f7/Club_Blooming.svg",
+};
+
+function TeamLogo({ name, size = 20 }: { name: string; size?: number }) {
+  const src = TEAM_LOGOS[name];
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        width={size}
+        height={size}
+        className="rounded-full object-contain bg-white p-px"
+        style={{ width: size, height: size, minWidth: size }}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+      />
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full bg-gray-600 text-white font-bold"
+      style={{ width: size, height: size, minWidth: size, fontSize: size * 0.45 }}
+    >
+      {name.charAt(0)}
+    </span>
+  );
+}
+
 const contactSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
   email: z.string().email("Email inválido"),
@@ -242,18 +298,24 @@ export default function Home() {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <span className={cn("flex-1 font-bold text-xs truncate", match.isRiverHome ? "text-white" : "text-gray-400")}>
-                          {match.homeTeam}
-                        </span>
+                        <div className="flex items-center gap-1 flex-1 min-w-0">
+                          <TeamLogo name={match.homeTeam} size={18} />
+                          <span className={cn("font-bold text-xs truncate", match.isRiverHome ? "text-white" : "text-gray-400")}>
+                            {match.homeTeam}
+                          </span>
+                        </div>
                         <div className="font-display text-sm bg-black/40 px-2 py-0.5 rounded tabular-nums flex-shrink-0">
                           {match.status === 'FINISHED' || match.status === 'LIVE'
                             ? <span>{match.homeScore} <span className="text-river-red/70">-</span> {match.awayScore}</span>
                             : <span className="text-gray-400 text-xs">vs</span>
                           }
                         </div>
-                        <span className={cn("flex-1 font-bold text-xs text-right truncate", !match.isRiverHome ? "text-white" : "text-gray-400")}>
-                          {match.awayTeam}
-                        </span>
+                        <div className="flex items-center gap-1 flex-1 min-w-0 justify-end">
+                          <span className={cn("font-bold text-xs truncate", !match.isRiverHome ? "text-white" : "text-gray-400")}>
+                            {match.awayTeam}
+                          </span>
+                          <TeamLogo name={match.awayTeam} size={18} />
+                        </div>
                       </div>
 
                       {match.status === 'UPCOMING' && match.horaIsrael && (
