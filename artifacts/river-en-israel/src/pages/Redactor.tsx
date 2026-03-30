@@ -1376,13 +1376,13 @@ export default function Redactor() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
               <div>
                 <h2 className="font-display text-xl font-bold text-river-black mb-1">Publicación Libre</h2>
-                <p className="text-sm text-gray-500">Escribí la nota, agregá una foto de portada y mandala para aprobación por Telegram.</p>
+                <p className="text-sm text-gray-500">Escribí la nota, agregá una foto de portada y publicala directamente en la sección Noticias.</p>
               </div>
 
               {plEstado === "ok" ? (
                 <div className="flex flex-col items-center gap-3 py-8">
                   <CheckCircle2 className="w-12 h-12 text-green-500" />
-                  <p className="font-semibold text-gray-800 text-center">¡Nota enviada! Te llegará la aprobación por Telegram.</p>
+                  <p className="font-semibold text-gray-800 text-center">¡Nota publicada! Ya aparece en la sección Noticias del sitio.</p>
                   <button
                     onClick={() => { setPlEstado("idle"); setPlTitulo(""); setPlContenido(""); setPlImagen(null); setPlImagenPreview(""); }}
                     className="mt-2 px-5 py-2 rounded-xl bg-river-red text-white text-sm font-semibold hover:bg-red-700 transition-colors"
@@ -1474,7 +1474,7 @@ export default function Redactor() {
                     {plEstado === "enviando" ? (
                       <><RefreshCw className="w-4 h-4 animate-spin" /> Enviando...</>
                     ) : (
-                      <><Send className="w-4 h-4" /> Enviar para aprobación</>
+                      <><Send className="w-4 h-4" /> Publicar ahora</>
                     )}
                   </Button>
                 </>

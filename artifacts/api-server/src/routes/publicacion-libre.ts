@@ -2,7 +2,6 @@ import { Router, type IRouter } from "express";
 import multer from "multer";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
 
 const router: IRouter = Router();
@@ -32,13 +31,6 @@ router.post("/publicacion-libre", upload.single("imagen"), async (req, res) => {
     return;
   }
 
-  const token = process.env.TELEGRAM_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) {
-    res.status(503).json({ error: "Sistema no disponible temporalmente" });
-    return;
-  }
-
   try {
     // Subir imagen si hay
     let imagenPortada = "";
@@ -57,8 +49,8 @@ router.post("/publicacion-libre", upload.single("imagen"), async (req, res) => {
       }
     }
 
-    // Guardar en DB como pendiente
-    const [publicacion] = await db
+    // Guardar en DB directamente como publicada
+    await db
       .insert(noticiasTable)
       .values({
         titulo: titulo.trim(),
@@ -66,53 +58,36 @@ router.post("/publicacion-libre", upload.single("imagen"), async (req, res) => {
         tags: "#RiverEnIsrael #PublicacionLibre",
         textoOriginal: contenido.trim(),
         fuente: "Publicación Libre",
-        publicada: false,
-        pendiente: true,
+        publicada: true,
+        pendiente: false,
         imagenPortada,
-      })
-      .returning();
+      });
 
-    // Enviar a Telegram para aprobación
-    const preview = contenido.trim().slice(0, 800) + (contenido.trim().length > 800 ? "..." : "");
-    const mensajeTg =
-      `✍️ *PUBLICACIÓN LIBRE*\n\n` +
-      `*${titulo.trim()}*\n\n` +
-      `${preview}\n\n` +
-      `${imagenPortada ? "📷 _Incluye imagen de portada_\n\n" : ""}` +
-      `_¿Publicamos esta nota?_`;
-
-    const replyMarkup = {
-      inline_keyboard: [
-        [
-          { text: "✅ Publicar", callback_data: `publicar_${publicacion.id}` },
-          { text: "❌ Rechazar", callback_data: `rechazar_${publicacion.id}` },
-        ],
-      ],
-    };
-
-    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: mensajeTg,
-        parse_mode: "Markdown",
-        reply_markup: replyMarkup,
-      }),
-    });
-
-    const tgData = await tgRes.json() as { ok: boolean; result?: { message_id: number } };
-    if (tgData.ok && tgData.result?.message_id) {
-      await db
-        .update(noticiasTable)
-        .set({ telegramMessageId: String(tgData.result.message_id) })
-        .where(eq(noticiasTable.id, publicacion.id));
+    // Notificación a Telegram (sin botones, solo aviso)
+    const token = process.env.TELEGRAM_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    if (token && chatId) {
+      const preview = contenido.trim().slice(0, 600) + (contenido.trim().length > 600 ? "..." : "");
+      const mensajeTg =
+        `✅ *PUBLICACIÓN LIBRE — PUBLICADA*\n\n` +
+        `*${titulo.trim()}*\n\n` +
+        `${preview}` +
+        `${imagenPortada ? "\n\n📷 _Con imagen de portada_" : ""}`;
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: mensajeTg,
+          parse_mode: "Markdown",
+        }),
+      }).catch(() => { /* notificación opcional, no bloquea */ });
     }
 
-    res.json({ ok: true, id: publicacion.id });
+    res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Error procesando publicación libre");
-    res.status(500).json({ error: "Error al enviar la publicación. Intentá de nuevo." });
+    res.status(500).json({ error: "Error al publicar. Intentá de nuevo." });
   }
 });
 
