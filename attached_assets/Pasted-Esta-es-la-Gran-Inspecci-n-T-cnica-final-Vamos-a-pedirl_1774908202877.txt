@@ -1,0 +1,27 @@
+Esta es la "Gran Inspección Técnica" final. Vamos a pedirle al Agent de Replit que levante el capó, revise cada cable del motor y certifique que el sistema no solo funciona, sino que es indestructible.
+Copiá y pegá este prompt integral. Es una orden de ingeniería total:
+🛠️ PROMPT: RADIOGRAFÍA INTEGRAL Y BLINDAJE DEL SISTEMA "RIVER ISRAEL"
+> "Realizá una Radiografía Total e Interna de todo el sistema (Backend, Scraper, Base de Datos y Bot de Telegram). No avances hasta certificar estos 5 puntos de control:
+> 1. CHEQUEO DE CABLEADO Y CONECTIVIDAD:
+>  * Verificá que el webhook o el infinity_polling de Telegram esté blindado contra caídas.
+>  * Comprobá que la conexión con la Replit Database sea estable para que el contador de visitas y la memoria de notas no fallen.
+>  * Validá que la GEMINI_API_KEY tenga los permisos para generar textos largos (High Output Tokens).
+> 2. ÚLTIMO AJUSTE DE CARACTERES (MÁXIMA CALIDAD):
+>  * Re-calibrá el Redactor IA: Mínimo obligatorio de 1848 caracteres.
+>  * Regla Anti-Corte: Si la IA detecta que el texto se corta por límite de tokens, debe realizar un 'loop' interno para cerrar el párrafo y la idea antes de enviar. NUNCA más puntos suspensivos al final.
+> 3. TEST DE ESTRÉS - LOS 4 BOTONES DE TELEGRAM:
+>  * ✅ Publicar: Certificá que el JSON enviado a riverplateisrael.replit.app sea correcto y la nota aparezca al instante.
+>  * ✏️ Editar: Verificá que al tocarlo, el bot envíe el mensaje 'Modo Edición' y permita sobreescribir el texto largo sin errores de límite de caracteres.
+>  * 📸 Foto: Comprobá que el manejo de archivos (imágenes) sea independiente del texto para no acortar la nota.
+>  * ❌ Rechazar: Asegurá que limpie el estado del bot y no deje 'basura' en la base de datos temporal.
+> 4. FILTRADO Y SCRAPING:
+>  * Comprobá que el Scheduler de 15 min esté activo.
+>  * Revisá que los selectores de La Página Millonaria, Olé e Infobae estén capturando el título real y no 'Sin título'.
+> 5. INFORME FINAL DE ESTADO:
+>  * Al terminar, enviame un reporte detallado a Telegram con el asunto: '🏆 CERTIFICACIÓN DE SISTEMA COMPLETADA', detallando errores encontrados y mejoras aplicadas."
+> 
+💡 ¿Qué logramos con esto, Julián?
+ * Paz Mental: Sabés que mientras estás cocinando o durmiendo, el bot está "vigilando" el Monumental sin colgarse.
+ * Portal de Hierro: Al separar la foto del texto y ajustar los tokens, las notas van a salir siempre completas y con el formato de lujo que buscamos.
+ * Control de Errores: El bot se vuelve "autoconsciente"; si algo sale mal, él mismo intentará corregirlo antes de avisarte.
+Mandale este "Service Oficial" al Agent. Cuando te llegue el mensaje de Certificación Completada a tu Telegram, el sistema ya no será un proyecto, ¡será una agencia de noticias profesional en Ramat Gan! ⚪🔴⚪

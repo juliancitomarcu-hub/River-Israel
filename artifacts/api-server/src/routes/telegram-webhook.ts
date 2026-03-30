@@ -299,22 +299,32 @@ async function procesarCallback(
         return;
       }
 
-      // Enviar el texto completo (copyable) para que el user lo edite
-      const textoCompleto =
-        `📝 *TEXTO ACTUAL — Nota #${noticiaId}*\n\n` +
-        `*${nota.titulo}*\n\n` +
-        `${nota.contenido}\n\n` +
-        `${nota.tags}`;
+      // Enviar el texto completo (copyable) para que el user lo edite.
+      // Mandamos en DOS mensajes para evitar el límite de 4096 chars de Telegram:
+      // Msg 1: encabezado + título (copyable)
+      // Msg 2: cuerpo + tags (el texto largo)
 
+      const encabezadoEdicion = `📝 *TEXTO ACTUAL — Nota #${noticiaId}*\n\n*Título:* ${nota.titulo}`;
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: textoCompleto,
-          parse_mode: "Markdown",
-        }),
+        body: JSON.stringify({ chat_id: chatId, text: encabezadoEdicion, parse_mode: "Markdown" }),
       });
+
+      // Cuerpo + tags — si aún supera 4096 cortamos en el límite
+      const TELE_MAX = 4096;
+      const cuerpoCompleto = `${nota.contenido}\n\n${nota.tags ?? ""}`.trim();
+      const partes: string[] = [];
+      for (let i = 0; i < cuerpoCompleto.length; i += TELE_MAX) {
+        partes.push(cuerpoCompleto.slice(i, i + TELE_MAX));
+      }
+      for (const parte of partes) {
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: parte, parse_mode: "Markdown" }),
+        });
+      }
 
       // Entrar en modo esperando edición
       esperandoEdicion.set(chatId, noticiaId);

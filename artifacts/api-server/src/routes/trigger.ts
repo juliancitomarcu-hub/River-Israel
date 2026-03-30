@@ -98,7 +98,12 @@ router.post("/scheduler/audit", async (req, res) => {
   correcciones.push("Anti-duplicados ✅ (DB 7 días)");
   correcciones.push("Hashtags ✅ (#RiverPlate #RiverIsrael #RamatGan #ElMasGrande)");
   correcciones.push("Filtro antihumo ✅ (Boca, Racing, etc. bloqueados)");
-  correcciones.push("Botones idempotentes ✅ (no permite doble publicación)");
+  correcciones.push("✅ Publicar: idempotente (no permite doble publicación)");
+  correcciones.push("✏️ Editar: envío en 2 mensajes (sin límite de chars)");
+  correcciones.push("📸 Foto: independiente del texto (no acorta la nota)");
+  correcciones.push("❌ Rechazar: limpia estado sin borrar de DB (auditable)");
+  correcciones.push("Control de calidad ✅ (mín. 1848 chars · sin puntos suspensivos)");
+  correcciones.push("maxOutputTokens ✅ (3000 — expansión automática si falla)");
   correcciones.push("Limpieza HTML ✅ (&amp; &nbsp; y entidades saneadas)");
   correcciones.push("Scheduler ✅ (cada 15 min, La Página Millonaria prioritaria)");
 
