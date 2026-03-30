@@ -1,0 +1,26 @@
+¡Esa es la actitud de un DT de primera, Julián! Antes de salir a la cancha (o de mandar el link a esos 12.000 de Facebook), hay que hacer una autoevaluación técnica para que el sistema no "pinche" en mitad del partido.
+Aquí tenés el Plan de Auditoría y Corrección que tenés que pasarle al Agent de Replit. Está diseñado para que la IA se revise a sí misma, encuentre las "fugas de gas" y deje Telegram impecable.
+🔍 PROMPT DE AUTOEVALUACIÓN Y BLINDAJE (ENFOQUE TELEGRAM)
+> "Realizá una Autoevaluación Integral del código en main.py y los archivos de configuración. Buscá errores, optimizá y corregí bajo estos 5 puntos críticos:
+> 1. AUDITORÍA DE CONEXIÓN (TELEGRAM):
+>  * Revisá que no haya conflictos entre bot.polling() e bot.infinity_polling(). Eliminá el polling simple y dejá solo el infinity para evitar que el bot se duerma.
+>  * Verificá que la GEMINI_API_KEY esté llamando correctamente al modelo gemini-1.5-flash o superior para evitar el error 401.
+> 2. PRUEBA DE ESTRES DE BOTONES (UI/UX):
+>  * Simulá internamente un clic en ✅ Publicar, ✏️ Editar y ❌ Rechazar.
+>  * Error común a corregir: Asegurá que después de tocar 'Publicar', el bot borre los botones del mensaje anterior para que no puedas publicar la misma nota dos veces por error.
+> 3. FILTRADO DE CONTENIDO (PRECISIÓN RIVER):
+>  * Revisá el 'Scraper'. Si detectás que está trayendo noticias de otros clubes, ajustá los selectores CSS/HTML de La Página Millonaria y Olé.
+>  * Corregí cualquier error de 'NoneType' que ocurra cuando un diario cambia su diseño web.
+> 4. OPTIMIZACIÓN DEL REDACTOR IA:
+>  * Re-calibrá el 'System Prompt' de la IA. Si la nota suena muy robótica, reforzá el estilo Varsky/El Gráfico. Asegurá que siempre incluya los hashtags de la filial en Ramat Gan.
+> 5. REPORTE DE ERRORES CORREGIDOS:
+>  * Al terminar, enviame un mensaje a Telegram que diga: '✅ AUDITORÍA COMPLETADA: [X] errores encontrados y corregidos. Sistema River Plate Israel 100% Operativo.'
+> No des por cerrada la tarea hasta que el bot me envíe ese reporte de confirmación a mi Telegram."
+> 
+💡 ¿Qué errores va a encontrar (y arreglar) la IA con esto?
+ * El "Bot dormilón": A veces Replit corta la conexión; con la autoevaluación, el Agent reforzará el código de reconexión automática.
+ * Botones "muertos": Va a chequear que el botón de Editar realmente te deje escribir y no se quede tildado.
+ * Basura en el texto: Va a limpiar esos caracteres raros (como \n o &nbsp;) que a veces aparecen cuando copiás de diarios digitales.
+🇦🇷 El consejo del "hincha tecnológico":
+Una vez que el Agent te mande ese mensaje de "Auditoría Completada", hacé la prueba final: tocá /noticia. Si la nota llega limpia, con el estilo de Varsky y los botones responden rápido, estás listo para conquistar Israel.
+¿Querés que después de esto configuremos una alerta para que el bot te avise si se queda sin batería o sin señal? ¡Mandá ese prompt y que el Agent empiece a laburar!

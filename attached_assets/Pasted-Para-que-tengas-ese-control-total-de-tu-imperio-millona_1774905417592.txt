@@ -1,0 +1,23 @@
+Para que tengas ese control total de tu "imperio millonario" en Ramat Gan, vamos a meter un Widget de Contador de Visitas que sea elegante y no te consuma recursos.
+Como ya tenemos el Agent de Replit trabajando en el motor de las noticias, vamos a pedirle que agregue este "tablero de control" al final de tu web.
+Copiá y pegá este Prompt Técnico en el chat del Agent:
+📊 PROMPT: INSTALACIÓN DE CONTADOR DE VISITAS (FOOTER WIDGET)
+> "Agregá al final de la página (en el Footer de index.html o el archivo base de la web) un Contador de Visitas en tiempo real.
+> 1. ESPECIFICACIONES TÉCNICAS:
+>  * Usá un servicio liviano como Counter.dev o creá un contador simple usando la Replit Database para que las visitas sean reales y persistentes (que no se borren al reiniciar).
+>  * El contador debe registrar Visitas Únicas y Visitas Totales.
+> 2. ESTILO VISUAL (ESTÉTICA RIVER):
+>  * Ubicación: Centrado en el fondo de la página (Footer).
+>  * Colores: Fondo blanco o gris muy claro con bordes rojos (#FF0000).
+>  * Texto: 'Hinchas que pasaron por el Monumental Digital: [Número]'.
+>  * Tipografía: Moderna y legible.
+> 3. PRIVACIDAD: Asegurate de que sea un script ligero que no ralentice la carga de las noticias de River.
+> No avances hasta confirmar que el contador sube un número cada vez que refrescás la página riverplateisrael.replit.app."
+> 
+💡 Por qué esto es clave para vos:
+ * Medir el "Ruedo": Ahora, cuando compartas el link en los grupos de "Argentinos en Israel", vas a ver en vivo cómo sube el numerito.
+ * Referencia Real: Si ves que de repente tenés 500 visitas en una hora, ¡sabés que esa nota que tiró el bot de "Azzaro/Varsky" fue un bombazo!
+ * Motivación: No hay nada como ver que la gente de Tel Aviv y Ramat Gan está entrando a leer lo que vos armaste.
+🇦🇷 El toque "Cocinero":
+Esto es como el ticket de la comanda: te dice exactamente cuánta gente está comiendo en tu restaurante.
+Pegalo ahora mismo en Replit. Una vez que el Agent termine, entrá a tu web, dale a F5 (o refrescar en el celu) y fijate abajo de todo. ¿Querés que después le pidamos al bot que te mande un reporte semanal de cuánta gente entró? Sería el cierre perfecto para tu gestión de la filial.

@@ -1,6 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { MapPin, Phone, Facebook, Instagram, Youtube, Twitter, MessageCircle, Send, X } from "lucide-react";
+import { MapPin, Phone, Facebook, Instagram, Youtube, Twitter, MessageCircle, Send, X, Users } from "lucide-react";
+
+// ─── HOOK: Contador de visitas persistente ────────────────────────────────────
+// Usa localStorage para saber si es la primera visita del navegador.
+// El contador real vive en PostgreSQL via API.
+
+function useContadorVisitas() {
+  const [conteo, setConteo] = useState<{ total: number; unicas: number } | null>(null);
+
+  useEffect(() => {
+    const clave = "river_israel_visitante";
+    const esNuevo = !localStorage.getItem(clave);
+
+    // Registrar la visita (total siempre, única solo si es nuevo navegador)
+    fetch("/api/visitas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ unica: esNuevo }),
+    })
+      .then((r) => r.json())
+      .then((data: { total: number; unicas: number }) => {
+        setConteo(data);
+        if (esNuevo) {
+          localStorage.setItem(clave, "1");
+        }
+      })
+      .catch(() => {
+        // Fallback: solo mostrar el conteo actual sin registrar
+        fetch("/api/visitas")
+          .then((r) => r.json())
+          .then((data: { total: number; unicas: number }) => setConteo(data))
+          .catch(() => {});
+      });
+  }, []);
+
+  return conteo;
+}
+
+function formatearNumero(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(".0", "")}K`;
+  return n.toString();
+}
 
 export function Footer() {
   const [clicks, setClicks] = useState(0);
@@ -8,6 +49,7 @@ export function Footer() {
   const [nombre, setNombre] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
+  const visitas = useContadorVisitas();
 
   const handleEnviar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,7 +203,38 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
+        {/* ── CONTADOR DE VISITAS ──────────────────────────────────────────── */}
+        <div className="border-t border-white/10 pt-8 mb-6">
+          <div className="flex justify-center">
+            <div className="inline-flex items-center gap-4 bg-white rounded-2xl border-2 border-red-600 px-6 py-4 shadow-lg">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-red-600 shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider leading-none mb-1">
+                    Hinchas que pasaron por el Monumental Digital
+                  </p>
+                  <div className="flex items-baseline gap-3">
+                    {visitas === null ? (
+                      <span className="text-2xl font-black text-gray-300 font-display animate-pulse">···</span>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-black text-red-600 font-display leading-none">
+                          {formatearNumero(visitas.total)}
+                        </span>
+                        <span className="text-sm text-gray-400">
+                          visitas · <span className="font-semibold text-gray-600">{formatearNumero(visitas.unicas)}</span> únicas
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── COPYRIGHT ────────────────────────────────────────────────────── */}
+        <div className="flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
           <p>© {new Date().getFullYear()} River en Israel - Filial Ramat Gan. Todos los derechos reservados.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
             <a href="#" className="hover:text-white transition-colors">Privacidad</a>
