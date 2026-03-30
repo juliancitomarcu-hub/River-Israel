@@ -6,17 +6,44 @@ import { desc, eq } from "drizzle-orm";
 const router: IRouter = Router();
 
 function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
-  const tituloMatch = texto.match(/\*\*Título:\*\*\s*(.+)/);
-  const tagsMatch = texto.match(/\*\*Tags:\*\*\s*(.+)/);
+  let tituloMatch =
+    texto.match(/\*\*Título:\*\*\s*([^\n*][^\n]+)/) ??
+    texto.match(/\*\*Título:\*\*\s*\n+\s*([^\n*][^\n]+)/);
+
+  let tituloEsNegrita = false;
+  if (!tituloMatch) {
+    const primeraNegraMatch = texto.match(/^\s*\*\*([^*\n]+)\*\*/m);
+    if (primeraNegraMatch) {
+      tituloMatch = primeraNegraMatch;
+      tituloEsNegrita = true;
+    }
+  }
+
+  const bajadaMatch =
+    texto.match(/\*\*Bajada:\*\*\s*([^\n*][^\n]+)/) ??
+    texto.match(/\*\*Bajada:\*\*\s*\n+\s*([^\n*][^\n]+)/);
+  const tagsMatch =
+    texto.match(/\*\*Tags:\*\*\s*([^\n]+)/) ??
+    texto.match(/\*\*Tags:\*\*\s*\n+\s*([^\n]+)/);
 
   const titulo = tituloMatch?.[1]?.trim() ?? "Sin título";
-  const tags = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan";
+  const bajada = bajadaMatch?.[1]?.trim() ?? "";
+  const tags = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
 
-  const contenido = texto
-    .replace(/\*\*Título:\*\*\s*.+\n?/, "")
+  let contenido = texto
+    .replace(/\*\*Título:\*\*.*?(\n|$)/gs, "")
+    .replace(/\*\*Bajada:\*\*.*?(\n|$)/gs, "")
     .replace(/\*\*Contenido:\*\*\s*\n?/, "")
-    .replace(/\*\*Tags:\*\*\s*.+\n?/, "")
+    .replace(/\*\*Tags:\*\*.*?(\n|$)/gs, "")
     .trim();
+
+  if (tituloEsNegrita && titulo !== "Sin título") {
+    contenido = contenido.replace(`**${titulo}**`, "").replace(/^\n+/, "").trim();
+  }
+
+  if (bajada) {
+    contenido = `*${bajada}*\n\n${contenido}`;
+  }
 
   return { titulo, contenido, tags };
 }

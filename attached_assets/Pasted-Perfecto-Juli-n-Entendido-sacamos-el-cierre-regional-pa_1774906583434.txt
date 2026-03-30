@@ -1,0 +1,23 @@
+Perfecto, Julián. Entendido: sacamos el cierre regional para que la nota sea 100% periodismo deportivo de exportación, con el peso de una editorial de La Nación o El Gráfico.
+Aquí tenés el Prompt Final de Redacción de Elite. Este ajuste obliga a la IA a "pensar" la nota en secciones lógicas para llegar a esos 1848 caracteres con calidad, sin repetir palabras.
+🖋️ PROMPT: ESTRUCTURA DE NOTA DE ALTO RENDIMIENTO (MÍN. 1848 CARACTERES)
+> "Reconfigurá el Redactor IA para que todas las noticias generadas sigan esta Estructura Técnica Obligatoria para alcanzar un mínimo de 1848 caracteres y 307 palabras:
+> 1. INICIO (EL IMPACTO):
+>  * Un párrafo de apertura potente. No solo el dato, sino el contexto emocional y deportivo del momento.
+> 2. DESARROLLO Y ANÁLISIS TÁCTICO (EL 'CÓMO'):
+>  * Análisis profundo de la dinámica de juego. Usá terminología de Varsky: basculaciones, tercer hombre, amplitud vs profundidad, transiciones defensa-ataque.
+> 3. COMPARATIVA HISTÓRICA (LA MÍSTICA):
+>  * Conectá el presente con el pasado. Compará al jugador, al DT o la situación actual con hitos de la historia de River (Máquina, River de Labruna, Ramón, Gallardo). Esto debe nutrir la nota con datos de archivo.
+> 4. CITAS FUNDAMENTADAS:
+>  * Incluí declaraciones (reales de la fuente o parafraseadas con rigor) y analizalas. No pongas la frase suelta; explicá el peso que tiene esa declaración en el vestuario o en la dirigencia.
+> 5. SECCIÓN DE PREGUNTAS (INTERPELACIÓN):
+>  * Planteá interrogantes que quedan en el aire para el hincha. Ej: ¿Es este el techo del equipo? ¿Cómo responderá la cantera ante esta exigencia?
+> 6. CIERRE (LA SENTENCIA):
+>  * Un párrafo final contundente que resuma la tesis de la nota. Una conclusión de 'Paladar Negro' que deje al lector reflexionando.
+> REGLA DE EXTENSIÓN: Si la noticia original es breve, la IA debe expandir el análisis táctico y la comparativa histórica para garantizar que la nota sea extensa, elegante y profesional. Confirmá cuando el Redactor esté listo para procesar la próxima nota con este nivel de detalle."
+> 
+💡 ¿Qué ganás con este cambio?
+ * Notas "Sábana" de calidad: Al obligar a la IA a hacer comparativas y análisis táctico, la longitud viene sola porque el contenido es rico.
+ * Autoridad: Tu portal riverplateisrael.replit.app va a leerse como un medio profesional, no como un blog de noticias rápidas.
+ * Dinámica: Las preguntas al final invitan a que, si después habilitamos comentarios, la gente tenga sobre qué debatir.
+Pegale esto al Agent. En cuanto te dé el OK, probá el /noticia. Vas a ver que la diferencia entre una nota de 500 caracteres y una de 1848 es como comparar un snack con un menú de pasos en tu cocina: otra categoría. ⚪🔴⚪

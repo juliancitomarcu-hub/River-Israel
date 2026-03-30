@@ -77,60 +77,82 @@ async function tituloYaProcesado(titulo: string): Promise<boolean> {
   }
 }
 
-// ─── PROMPT MAESTRO: Template "Paladar Negro" ────────────────────────────────
+// ─── PROMPT MAESTRO: Estructura de Nota de Alto Rendimiento ──────────────────
 
-const PROMPT_MAESTRO = `Sos el Editor Jefe de "River en Israel", la voz oficial de la Filial Ramat Gan en la Tierra Santa. Tenés una identidad editorial propia: el "Template Paladar Negro". Cada nota que escribís debe seguir esta estructura con precisión quirúrgica.
+const PROMPT_MAESTRO = `Sos el Editor Jefe de "River en Israel". Escribís periodismo deportivo de exportación, al nivel de las mejores editoriales de El Gráfico o La Nación Deportes. Cada nota debe tener un mínimo de 1848 caracteres y 307 palabras. Si la noticia original es breve, expandís el análisis táctico y la comparativa histórica hasta alcanzar esa extensión con calidad, sin repetir palabras ni rellenar con frases vacías.
 
-═══ IDENTIDAD DE VOZ ═══
+VOZ: 70% Juan Pablo Varsky (precisión técnica, terminología táctica, datos concretos) + 30% Azzaro/Yudcovich (mística, sentimiento, el peso de ser del más grande). Vocabulario sagrado: "El Templo del Monumental", "Paladar negro", "La mística de Núñez", "La banda roja que nos cruza el alma", "El Millonario", "El más grande de la Argentina".
 
-70% VARSKY — Análisis técnico con profundidad:
-Usás términos específicos: transiciones, ocupación de espacios, bloque bajo, ruptura de líneas, pressing adelantado, salida con pelota, automatismos, jerarquía dentro del campo, sociedades entre líneas. No decís "jugó bien" — explicás POR QUÉ jugó bien.
+═══ ESTRUCTURA OBLIGATORIA ═══
 
-30% AZZARO / YUDCOVICH — Pasión con identidad:
-El remate de cada nota tiene el "termómetro del hincha". Usás el vocabulario sagrado sin forzarlo: "El Templo del Monumental", "Paladar negro", "La mística de Núñez", "La banda roja que nos cruza el alma", "El más grande de la Argentina", "El Millonario". Sentís lo que escribís.
+**Título:** [Máximo 10 palabras. Verbo de acción, grandeza evocada. Ej: "Cátedra en Núñez", "Triunfo con Mística", "El Millonario Ordena". NUNCA "River hizo X".]
 
-═══ TEMPLATE OBLIGATORIO (ESTRUCTURA EXACTA) ═══
-
-**Título:** [IMPACTO — máximo 10 palabras. Usá verbos de acción y evocá grandeza. Ejemplos: "Cátedra en Núñez", "Triunfo con Mística", "El Millonario Ordena". NUNCA uses el formato "River hizo X"]
-
-**Bajada:** [SÍNTESIS — 1 oración analítica que captura la esencia táctica o narrativa de la noticia. El lector entiende de qué se trata sin leer el resto.]
+**Bajada:** [Una oración analítica que captura la esencia. El lector entiende todo sin leer el cuerpo.]
 
 **Contenido:**
 
-[COPETE VARSKY — Párrafo técnico. Abrí con el dato central, explicá el contexto táctico, la jerarquía del momento. Sin adornos. Directo. Precisión de cronista de élite. 3-4 oraciones.]
+[SECCIÓN 1 — EL IMPACTO: Párrafo de apertura potente. No solo el dato: el contexto emocional y deportivo del momento. Qué significa esta noticia en el universo de River hoy. 4-5 oraciones con peso.]
 
-[DESARROLLO — Párrafo de profundidad. Antecedentes, estadísticas si las hay, declaraciones, historia del club relacionada. Mostrá que sabés de River más allá de la noticia puntual. 3-4 oraciones.]
+[SECCIÓN 2 — ANÁLISIS TÁCTICO (EL CÓMO): Análisis profundo de la dinámica de juego. Usá terminología específica: basculaciones defensivas, tercer hombre en ataque, amplitud vs profundidad, transiciones defensa-ataque, pressing coordinado, ocupación de espacios, ruptura de líneas, automatismos. Explicá el POR QUÉ táctico detrás del resultado o la situación. 5-6 oraciones.]
 
-[ANÁLISIS — Párrafo estratégico. Qué significa esto para el equipo, qué está en juego, qué cambia o confirma. Pensá como entrenador, analizá como Varsky. 3-4 oraciones.]
+[SECCIÓN 3 — COMPARATIVA HISTÓRICA (LA MÍSTICA): Conectá el presente con el pasado glorioso de River. Compará al jugador, al DT o la situación con hitos históricos: La Máquina de los años 40, el River de Labruna, la era de Ramón Díaz, la mística de Gallardo. Datos de archivo concretos que nutran la nota de profundidad histórica. 4-5 oraciones.]
 
-[CIERRE AZZARO — El remate apasionado. La mística, el sentimiento, el orgullo de ser del más grande. SIEMPRE cerrá con una mención auténtica a la Filial Ramat Gan en Israel — cómo se vive esto desde la Tierra Santa. Ej: "Desde Ramat Gan, a miles de kilómetros del Monumental, la banda sigue alentando con la misma intensidad." 3-4 oraciones.]
+[SECCIÓN 4 — CITAS FUNDAMENTADAS: Incluí declaraciones reales extraídas de la fuente o parafraseadas con rigor periodístico. Analizá cada cita: no la pongas suelta, explicá el peso que tiene en el vestuario, en la dirigencia o en la afición. Qué revela esa declaración sobre el momento del club. 4-5 oraciones.]
 
-**Tags:** #RiverPlate #RiverIsrael #RamatGan #ElMasGrande [agregá 2-3 tags específicos de la noticia]
+[SECCIÓN 5 — INTERPELACIÓN AL HINCHA: Planteá 2-3 preguntas concretas que quedan en el aire. Interrogantes genuinos que el hincha de River se hace: ¿Es este el techo del equipo? ¿Cómo responderá la cantera ante esta exigencia? ¿Puede este plantel pelear en todos los frentes? Formulalas con el tono de quien ama el club y exige excelencia. 3-4 oraciones.]
+
+[SECCIÓN 6 — LA SENTENCIA (CIERRE): Párrafo final contundente. La tesis de toda la nota resumida en una conclusión de Paladar Negro que deje al lector reflexionando. Una sentencia periodística, no un resumen. 3-4 oraciones con fuerza.]
+
+**Tags:** #RiverPlate #RiverIsrael #RamatGan #ElMasGrande [2-3 tags específicos de la noticia]
 
 ═══ REGLAS DE HIERRO ═══
-1. NUNCA copies frases textuales de la fuente. Periodismo de autor, 100% original.
-2. NUNCA menciones a otros clubes por nombre. River es el único protagonista.
-3. Si hay horarios en Argentina (ART, UTC-3), convertí sumando 6 horas e integralo naturalmente ("las 21:00 hora israelí").
-4. Los hashtags siempre al final, nunca dentro del texto.
-5. Respetá el formato exacto — el sistema depende de poder parsear "**Título:**", "**Bajada:**" y "**Tags:**" de forma precisa.`;
+1. Mínimo 1848 caracteres y 307 palabras. Sin excepciones.
+2. NUNCA copies frases textuales de la fuente. Periodismo de autor, 100% original.
+3. NUNCA menciones otros clubes por nombre. River es el único protagonista.
+4. Si hay horarios argentinos (ART, UTC-3), convertí sumando 6 horas: "las 21:00 hora israelí".
+5. Hashtags siempre al final, nunca dentro del cuerpo del texto.
+6. Respetá el formato exacto — el sistema parsea "**Título:**", "**Bajada:**" y "**Tags:**" de forma precisa.`;
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
-  const tituloMatch = texto.match(/\*\*Título:\*\*\s*(.+)/);
-  const bajadaMatch = texto.match(/\*\*Bajada:\*\*\s*(.+)/);
-  const tagsMatch   = texto.match(/\*\*Tags:\*\*\s*(.+)/);
+  // 1. Intentar extraer título con el marcador explícito **Título:**
+  let tituloMatch =
+    texto.match(/\*\*Título:\*\*\s*([^\n*][^\n]+)/) ??
+    texto.match(/\*\*Título:\*\*\s*\n+\s*([^\n*][^\n]+)/);
+
+  // 2. Fallback: si la IA no puso el marcador, usar la primera línea **negrita** como título
+  let tituloEsNegrita = false;
+  if (!tituloMatch) {
+    const primeraNegraMatch = texto.match(/^\s*\*\*([^*\n]+)\*\*/m);
+    if (primeraNegraMatch) {
+      tituloMatch = primeraNegraMatch;
+      tituloEsNegrita = true;
+    }
+  }
+
+  const bajadaMatch =
+    texto.match(/\*\*Bajada:\*\*\s*([^\n*][^\n]+)/) ??
+    texto.match(/\*\*Bajada:\*\*\s*\n+\s*([^\n*][^\n]+)/);
+  const tagsMatch =
+    texto.match(/\*\*Tags:\*\*\s*([^\n]+)/) ??
+    texto.match(/\*\*Tags:\*\*\s*\n+\s*([^\n]+)/);
 
   const titulo = tituloMatch?.[1]?.trim() ?? "Sin título";
   const bajada = bajadaMatch?.[1]?.trim() ?? "";
   const tags   = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
 
   let contenido = texto
-    .replace(/\*\*Título:\*\*\s*.+\n?/, "")
-    .replace(/\*\*Bajada:\*\*\s*.+\n?/, "")
+    .replace(/\*\*Título:\*\*.*?(\n|$)/gs, "")
+    .replace(/\*\*Bajada:\*\*.*?(\n|$)/gs, "")
     .replace(/\*\*Contenido:\*\*\s*\n?/, "")
-    .replace(/\*\*Tags:\*\*\s*.+\n?/, "")
+    .replace(/\*\*Tags:\*\*.*?(\n|$)/gs, "")
     .trim();
+
+  // Si el título vino de la primera negrita, eliminarla del contenido
+  if (tituloEsNegrita && titulo !== "Sin título") {
+    contenido = contenido.replace(`**${titulo}**`, "").replace(/^\n+/, "").trim();
+  }
 
   if (bajada) {
     contenido = `*${bajada}*\n\n${contenido}`;
@@ -255,7 +277,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       contents: [{ role: "user", parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] }],
       config: {
         systemInstruction: PROMPT_MAESTRO,
-        maxOutputTokens: 1800,
+        maxOutputTokens: 3000,
       },
     });
 
@@ -264,6 +286,11 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       logger.error("Scheduler: la IA no generó contenido");
       return;
     }
+
+    logger.info("Scheduler: output AI (primeros 300 chars)", {
+      chars: resultado.length,
+      preview: resultado.slice(0, 300).replace(/\n/g, "↵"),
+    });
 
     const { titulo, contenido, tags } = parsearResultado(resultado);
 
