@@ -13,6 +13,7 @@ import galeriaRouter from "./galeria";
 import videosRouter from "./videos";
 import contactoRouter from "./contacto";
 import analyticsRouter from "./analytics";
+import publicacionLibreRouter from "./publicacion-libre";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(galeriaRouter);
 router.use(videosRouter);
 router.use(contactoRouter);
 router.use(analyticsRouter);
+router.use(publicacionLibreRouter);
 
 export default router;

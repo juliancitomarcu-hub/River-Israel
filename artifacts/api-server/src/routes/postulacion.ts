@@ -95,20 +95,24 @@ router.post("/postular-redactor", upload.single("archivo"), async (req, res) => 
       return;
     }
 
-    // Corrección con IA
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      max_completion_tokens: 4096,
-      messages: [
-        { role: "system", content: PROMPT_EDITOR_RESPETUOSO },
-        {
-          role: "user",
-          content: `Corregí este texto de ${nombre} (${ciudad}), sin cambiar su voz:\n\n${textoRaw}`
-        }
-      ],
-    });
-
-    const textoCorregido = completion.choices[0]?.message?.content?.trim() ?? textoRaw;
+    // Corrección con IA (con fallback: si falla, se usa el texto original)
+    let textoCorregido = textoRaw;
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4.1-mini",
+        max_completion_tokens: 4096,
+        messages: [
+          { role: "system", content: PROMPT_EDITOR_RESPETUOSO },
+          {
+            role: "user",
+            content: `Corregí este texto de ${nombre} (${ciudad}), sin cambiar su voz:\n\n${textoRaw}`
+          }
+        ],
+      });
+      textoCorregido = completion.choices[0]?.message?.content?.trim() ?? textoRaw;
+    } catch (aiErr) {
+      req.log.warn({ err: aiErr }, "Postulación: fallo IA, usando texto original");
+    }
 
     // Guardar en DB
     const titulo = `✍️ ${nombre} (${ciudad})`;
