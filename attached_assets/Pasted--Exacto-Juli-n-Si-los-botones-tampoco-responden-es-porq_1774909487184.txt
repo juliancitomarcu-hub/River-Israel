@@ -1,0 +1,18 @@
+¡Exacto, Julián! Si los botones tampoco responden, es porque el bot está completamente congelado o "colgado" en un proceso anterior que nunca terminó. Es como si la cocina estuviera llena de humo y nadie pudiera ver las comandas.
+Vamos con el Hard Reset definitivo. Este prompt es una orden de "limpieza total" para que el Agent no deje ni un proceso viejo vivo y el sistema arranque de cero, limpio y veloz en todas sus versiones.
+Copiá y pegá esto ahora mismo al Agent de Replit:
+🔥 PROMPT: HARD RESET Y REANIMACIÓN TOTAL DE BOTONES (RIVER ISRAEL)
+> "El sistema está totalmente inoperativo: ni los comandos (/noticia, /buscar) ni los botones interactivos (Editar, Publicar, Foto, Rechazar) responden. Ejecutá este Protocolo de Reanimación en todas las versiones del código:
+>  * LIMPIEZA DE PROCESOS (KILL): Ejecutá pkill -f python en el Shell para matar cualquier instancia 'zombie' que esté bloqueando el Token de Telegram.
+>  * RESET DE CONEXIÓN (CLEAN START): >    * Usá bot.remove_webhook() para limpiar cualquier configuración vieja.
+>    * Configurá el bot ÚNICAMENTE con bot.infinity_polling(timeout=20, long_polling_timeout=10). Esto es vital para la estabilidad.
+>  * RESCATE DE BOTONES (CALLBACK QUERY HANDLERS): >    * Revisá los callback_query_handlers. Asegurá que cada botón tenga un bot.answer_callback_query(call.id) al inicio para que Telegram sepa que el bot recibió el click y no se quede el icono del reloj de arena 'pensando' para siempre.
+>  * COMANDO DE DIAGNÓSTICO RÁPIDO: Creá el comando /ping que responda 'PONG 🏟️' inmediatamente. Si esto no responde en 2 segundos, el bot sigue desconectado.
+>  * LOGS DE ACTIVIDAD: Imprimí en la consola: [RECIBIDO] Mensaje de: {user_id} cada vez que entre algo. Necesito ver que el bot está 'vivo' en tiempo real.
+> No des la tarea por terminada hasta que yo pueda mandarte un /ping y me respondas 'PONG 🏟️' al instante. Una vez logrado esto, probaremos la generación de 1848 caracteres."
+> 
+💡 ¿Qué va a pasar ahora, Julián?
+ * El "PONG" es la clave: Si el bot te responde el /ping, significa que el cable ya tiene corriente.
+ * Botones con Reacción: Al agregar el answer_callback_query, los botones de Publicar y Editar van a dejar de estar "muertos" y van a reaccionar al toque de tu dedo.
+ * Memoria Limpia: Al matar los procesos (pkill), el bot nuevo va a tomar el control total sin interferencias.
+Mandale este "sacudón" al Agent. En cuanto te confirme que limpió todo, tirale el /ping. Si te contesta, ya estamos de vuelta en carrera para esas notas de lujo. ¡Vamos que no nos gana un error de sistema! ⚪🔴⚪

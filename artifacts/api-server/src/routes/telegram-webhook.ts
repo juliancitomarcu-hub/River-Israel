@@ -463,6 +463,13 @@ router.post("/telegram-webhook", (req, res) => {
         return;
       }
 
+      if (textoLower.startsWith("/ping")) {
+        setImmediate(() => {
+          enviarMensajeTelegram(token, fromChatId, "🏟️ PONG — El bot está vivo y el servidor responde correctamente. ✅").catch(() => {});
+        });
+        return;
+      }
+
       // ── Recibir texto editado (Versión Final) ────────────────────────
       if (esperandoEdicion.has(fromChatId)) {
         const noticiaId = esperandoEdicion.get(fromChatId)!;
