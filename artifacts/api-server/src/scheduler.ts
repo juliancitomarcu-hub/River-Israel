@@ -133,6 +133,30 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
   return { titulo, contenido, tags };
 }
 
+// ─── LIMPIEZA DE TEXTO ────────────────────────────────────────────────────────
+// Elimina caracteres raros, HTML entities y basura tipográfica del texto scrapeado.
+
+function limpiarTexto(texto: string): string {
+  return texto
+    .replace(/&amp;/g, "&")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#8211;/g, "–")
+    .replace(/&#8212;/g, "—")
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&#8230;/g, "…")
+    .replace(/\u00a0/g, " ")      // non-breaking space
+    .replace(/\r\n|\r/g, "\n")    // normalizar saltos de línea
+    .replace(/\n{3,}/g, "\n\n")   // máximo 2 saltos seguidos
+    .replace(/[ \t]{2,}/g, " ")   // múltiples espacios a uno
+    .trim();
+}
+
 async function obtenerTextoArticulo(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
@@ -143,7 +167,7 @@ async function obtenerTextoArticulo(url: string): Promise<string> {
     const html = await res.text();
     const $ = cheerio.load(html);
     const parrafos = $("article p, .article-body p, .nota-body p, .article__content p, .post-content p, .detail-body p, .entry-content p")
-      .map((_: number, el: cheerio.Element) => $(el).text().trim())
+      .map((_: number, el: cheerio.Element) => limpiarTexto($(el).text().trim()))
       .get()
       .filter((t: string) => t.length > 50);
     const texto = parrafos.slice(0, 20).join("\n\n");

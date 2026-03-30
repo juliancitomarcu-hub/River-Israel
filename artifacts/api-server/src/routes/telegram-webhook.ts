@@ -218,7 +218,12 @@ async function procesarCallback(
       await responderCallback(token, callbackId, "✅ Publicando...");
 
       const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
-      if (!actual || actual.publicada) return;
+      if (!actual) return;
+      if (actual.publicada) {
+        // Ya publicada — avisar sin hacer nada (evita doble publicación)
+        await responderCallback(token, callbackId, "⚠️ Esta nota ya fue publicada.");
+        return;
+      }
 
       const [noticia] = await db
         .update(noticiasTable)
@@ -285,7 +290,12 @@ async function procesarCallback(
       await responderCallback(token, callbackId, "❌ Rechazando...");
 
       const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
-      if (!actual || !actual.pendiente) return;
+      if (!actual) return;
+      if (!actual.pendiente) {
+        // Ya procesada — avisar sin hacer nada
+        await responderCallback(token, callbackId, "ℹ️ Esta nota ya fue procesada.");
+        return;
+      }
 
       const [noticia] = await db
         .update(noticiasTable)
