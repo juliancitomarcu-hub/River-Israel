@@ -51,40 +51,81 @@ async function editarMensajeTelegram(token: string, chatId: string, messageId: s
   }
 }
 
+// ─── HELPERS DE BOTONES ───────────────────────────────────────────────────────
+
+function botonesAprobacion(noticiaId: number, _domain?: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: "✅ Publicar",  callback_data: `publicar_${noticiaId}` },
+        { text: "✏️ Editar",   callback_data: `editar_${noticiaId}` },
+        { text: "❌ Rechazar", callback_data: `rechazar_${noticiaId}` },
+      ],
+    ],
+  };
+}
+
 // ─── COMANDO /noticia ─────────────────────────────────────────────────────────
-// Envía la última noticia publicada al chat
+// Envía la última nota pendiente (transformada por IA) con botones ✅ ✏️ ❌
 
 async function handleComandoNoticia(token: string, chatId: string) {
   try {
-    const [ultima] = await db
+    // Primero busca la última pendiente de aprobación
+    let [nota] = await db
       .select()
       .from(noticiasTable)
-      .where(and(eq(noticiasTable.publicada, true), eq(noticiasTable.pendiente, false)))
-      .orderBy(desc(noticiasTable.creadoEn))
+      .where(eq(noticiasTable.pendiente, true))
+      .orderBy(desc(noticiasTable.createdAt))
       .limit(1);
 
-    if (!ultima) {
-      await enviarMensajeTelegram(token, chatId, "⚠️ No hay noticias publicadas todavía.");
+    // Si no hay pendientes, muestra la última publicada (sin botones)
+    const hayPendiente = !!nota;
+    if (!nota) {
+      [nota] = await db
+        .select()
+        .from(noticiasTable)
+        .where(eq(noticiasTable.publicada, true))
+        .orderBy(desc(noticiasTable.createdAt))
+        .limit(1);
+    }
+
+    if (!nota) {
+      await enviarMensajeTelegram(token, chatId, "⚠️ No hay notas todavía. Usá /buscar para escanear medios.");
       return;
     }
 
-    const bajadaTexto = ultima.bajada ? `\n_${ultima.bajada}_\n` : "";
-    const resumen = ultima.contenido
-      ? ultima.contenido.slice(0, 300) + (ultima.contenido.length > 300 ? "…" : "")
-      : "";
-    const fuente = ultima.fuente ? `\n📰 Fuente: ${ultima.fuente}` : "";
-    const tags = ultima.tags ? `\n🏷 ${ultima.tags}` : "";
-
     const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
-    const verLink = domain ? `\n\n🌐 [Ver en el sitio](https://${domain})` : "";
+    const bajada = nota.bajada ? `\n_${nota.bajada}_\n` : "";
+    const resumen = nota.contenido
+      ? nota.contenido.slice(0, 400) + (nota.contenido.length > 400 ? "…" : "")
+      : "";
+    const fuente = nota.fuente ? `\n📰 ${nota.fuente}` : "";
+    const tags = nota.tags ? `\n🏷 ${nota.tags}` : "";
 
-    const texto =
-      `📢 *ÚLTIMA NOTICIA*\n\n*${ultima.titulo}*\n${bajadaTexto}\n${resumen}${fuente}${tags}${verLink}`;
+    const encabezado = hayPendiente
+      ? "📝 *NOTA PENDIENTE DE APROBACIÓN*"
+      : "📢 *ÚLTIMA NOTA PUBLICADA*";
 
-    await enviarMensajeTelegram(token, chatId, texto);
+    const texto = `${encabezado}\n\n*${nota.titulo}*${bajada}\n${resumen}${fuente}${tags}`;
+
+    if (hayPendiente) {
+      // Envía con botones de acción
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: texto,
+          parse_mode: "Markdown",
+          reply_markup: botonesAprobacion(nota.id, domain ?? undefined),
+        }),
+      });
+    } else {
+      await enviarMensajeTelegram(token, chatId, texto + "\n\n_Usá /buscar para encontrar nuevas notas._");
+    }
   } catch (err) {
     logger.error({ err }, "Telegram /noticia: error");
-    await enviarMensajeTelegram(token, chatId, "❌ Error al obtener la última noticia.");
+    await enviarMensajeTelegram(token, chatId, "❌ Error al obtener la nota. Intentá de nuevo.");
   }
 }
 
