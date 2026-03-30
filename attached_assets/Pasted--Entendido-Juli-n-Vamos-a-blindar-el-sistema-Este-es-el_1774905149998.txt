@@ -1,0 +1,25 @@
+¡Entendido, Julián! Vamos a blindar el sistema. Este es el Prompt Definitivo de "Error Cero".
+Copiá y pegá esto en el Agent de Replit para que el flujo de noticias de River sea una máquina perfecta y constante:
+🛡️ PROMPT DE MÁXIMA PRECISIÓN: SISTEMA "FLUJO CONTINUO & ERROR CERO"
+> "Reconfigurá el backend del bot con estas instrucciones finales para eliminar errores y maximizar el flujo de noticias:
+> 1. RADAR AUTOMATIZADO (ESCANEI 15 MIN):
+>  * Implementá un Task Scheduler (o Background Timer) para que el bot escanee fuentes cada 15 minutos de forma autónoma.
+>  * Fuentes Blindadas: Priorizá el raspado (scraping) de La Página Millonaria, Olé (River) y TyC Sports.
+>  * Memoria de Duplicados: Usá Replit Database para guardar las URLs ya procesadas. PROHIBIDO enviarme una noticia que ya hayamos publicado o rechazado.
+> 2. FILTRO "ANTIHUMO" (ERROR 0):
+>  * Keywords Positivas Obligatorias: 'River Plate', 'El Monumental', 'Millonario', 'Núñez'.
+>  * Keywords Negativas (Descarte Automático): Si la nota trata sobre 'Boca Juniors', 'Racing', 'Independiente' o cualquier otro deporte que no sea el fútbol de River, descartala en silencio.
+> 3. REDACCIÓN DE ELITE (VARSKY 70% / AZZARO 30%):
+>  * El Redactor IA debe procesar la nota con la precisión técnica de Varsky (datos, táctica, seriedad) pero con el remate pasional de Azzaro/Yudcovich.
+>  * Cada nota debe llegar a Telegram con el encabezado: '🚨 ¡NUEVA INFO MILLONARIA DETECTADA!'.
+> 4. PANEL DE CONTROL INTERACTIVO:
+>  * Asegurá que los botones ✅ Publicar, ✏️ Editar, 📸 Foto y ❌ Rechazar funcionen al 100%.
+>  * Al tocar 'Publicar', la nota debe aparecer instantáneamente en riverplateisrael.replit.app.
+> REVISIÓN FINAL: Verificá que el bot use infinity_polling y la GEMINI_API_KEY para que el flujo no se corte nunca. No avances hasta confirmar que el escaneo automático de 15 min está activo."
+> 
+💡 ¿Qué ganamos con este último ajuste?
+ * Autonomía: Ya no tenés que pedirle al bot que busque. Él te va a "golpear la puerta" de Telegram cada vez que pase algo en el Mundo River.
+ * Limpieza: Al guardar las noticias viejas en la base de datos, tu Telegram va a estar limpio, solo con lo nuevo.
+ * Identidad: Logramos el balance perfecto entre el periodista serio y el hincha termo.
+Pegalo ahora mismo. Una vez que el Agent te diga "Scheduler activo", sentate a esperar... ¡en menos de 15 minutos te tiene que estar llegando la primera bomba de Núñez a tu celu!
+¿Pudiste activar el Always On antes? Si el "Always On" está prendido y este código entra, tu página va a estar más viva que nunca.

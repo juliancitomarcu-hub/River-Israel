@@ -1,0 +1,27 @@
+¡Entendido, Julián! Vamos a meter todo en una sola "receta" maestra para que el Agent de Replit no tenga dudas y te deje el sistema funcionando como un reloj suizo.
+Copiá y pegá este Prompt Unificado en el chat del Agent:
+🚀 PROMPT DE CONFIGURACIÓN MAESTRA: MULTIMEDIO RIVER PLATE ISRAEL
+> "Reconfigurá integralmente el sistema de noticias (Scraper + Redactor IA + Bot de Telegram) con las siguientes especificaciones técnicas y editoriales:
+> 1. RADAR DE NOTICIAS (SCRAPER):
+>  * Fuentes Prioritarias: Escaneá cada 30 min La Página Millonaria, Olé (Sección River) y el Twitter Oficial de River Plate.
+>  * Fuentes Secundarias: Buscá en Google News, TyC Sports, Infobae, Clarín, La Nación, BolaVIP, AS Argentina y Super Deportivo.
+>  * Filtro Estricto: Procesá EXCLUSIVAMENTE noticias del Club Atlético River Plate. Ignorá cualquier otro club o deporte. Verificá que los links a estas fuentes sean los correctos.
+> 2. REDACTOR IA (ESTILO EDITORIAL):
+>  * Identidad: Mezclá la elegancia táctica de Juan Pablo Varsky, la mística histórica de la revista El Gráfico y la pasión de Azzaro/Yudcovich.
+>  * Diccionario Millonario: Usá términos como 'Paladar negro', 'La mística de Núñez', 'El Templo del Monumental' y 'El más grande'.
+>  * Estructura: Título con gancho, copete analítico y un desarrollo apasionado que cierre con el sentimiento de la filial en Israel.
+> 3. FLUJO DE TELEGRAM Y BOTONES:
+>  * Al detectar una noticia, enviamela para aprobación con estos botones funcionales:
+>    * ✅ Publicar: Debe subir la nota a riverplateisrael.replit.app.
+>    * ✏️ Editar: Permitirme enviar un nuevo texto para reemplazar el de la IA.
+>    * 📸 Agregar Foto: Habilitar la subida de una imagen antes de publicar.
+>    * ❌ Rechazar: Limpiar el borrador y cancelar la publicación.
+> 4. ESTABILIDAD:
+>  * Asegurá que el código use bot.infinity_polling() y la GEMINI_API_KEY cargada para que no haya errores 401.
+> NO AVANCES hasta confirmar que los botones 'Publicar' y 'Editar' están conectados correctamente a la base de datos y la web."
+> 
+💡 ¿Qué logramos con esto, Julián?
+ * Unificamos el 'Olfato': El bot ya no va a traer noticias "sueltas", va a ir a buscar la posta en La Página Millonaria.
+ * Emplatado Perfecto: La nota ya no va a ser un texto seco; va a tener el "sabor" de los grandes periodistas argentinos.
+ * Control Total: Vos sos el Director Técnico. Nada sale a la web sin que vos toques el botón verde en Telegram.
+Pegalo ahora mismo en Replit y avisame cuando el Agent te diga "Configuración completada". ¡Estamos listos para el debut del nuevo formato!
