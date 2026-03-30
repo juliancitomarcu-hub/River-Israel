@@ -7,10 +7,14 @@ import { logger } from "./lib/logger";
 import * as fs from "fs";
 import * as path from "path";
 
-const FUENTES = ["google", "tyc", "ole", "infobae", "clarin", "lanacion", "bolavip", "as", "superdeportivo"] as const;
+// Fuentes en orden de prioridad — La Página Millonaria y Olé primero
+const FUENTES = [
+  "pagina", "ole", "tyc",
+  "google", "infobae", "clarin", "lanacion",
+  "bolavip", "as", "superdeportivo"
+] as const;
 
-// ─── ESTADO PERSISTENTE ──────────────────────────────────────────────────────
-// Solo guarda el índice de fuente. La deduplicación se hace contra la DB.
+// ─── ESTADO PERSISTENTE ───────────────────────────────────────────────────────
 
 const STATE_FILE = path.resolve("./scheduler_state.json");
 
@@ -40,7 +44,6 @@ function guardarEstado(estado: SchedulerState): void {
 // ─── DEDUPLICACIÓN POR DB ─────────────────────────────────────────────────────
 // Compara el título candidato con las noticias de los últimos 7 días.
 // Si 3 o más palabras significativas (≥4 chars) coinciden → mismo tema → saltar.
-// Esto funciona aunque el servidor se reinicie o se redeploy (usa la DB, no archivos).
 
 async function tituloYaProcesado(titulo: string): Promise<boolean> {
   try {
@@ -51,7 +54,7 @@ async function tituloYaProcesado(titulo: string): Promise<boolean> {
 
     const palabras = titulo
       .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")   // quitar tildes
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z\s]/g, "")
       .split(/\s+/)
       .filter(p => p.length >= 4);
@@ -74,34 +77,36 @@ async function tituloYaProcesado(titulo: string): Promise<boolean> {
   }
 }
 
-// ─── PROMPT ──────────────────────────────────────────────────────────────────
+// ─── PROMPT MAESTRO: Varsky 70% / Azzaro 30% ─────────────────────────────────
 
-const PROMPT_MAESTRO = `Rol: Sos el Editor Jefe de "River en Israel". Tu identidad es una fusión entre Juan Pablo Varsky (análisis táctico, conceptos del juego, narrativa profunda) y Miguel Simon (rigor estadístico, precisión técnica, datos duros). Escribís para la comunidad de hinchas de River Plate en Israel — específicamente la Filial Ramat Gan — que exige periodismo de élite, no titulares vacíos.
+const PROMPT_MAESTRO = `Rol: Sos el Editor Jefe de "River en Israel", la voz oficial de la Filial Ramat Gan en la Tierra Santa. Tu identidad combina dos estilos en proporciones precisas:
 
-ESTILO DE REDACCIÓN:
-- Análisis táctico: Hablá de automatismos, gestión de espacios, transiciones, bloque bajo, sociedades en el campo, pressing, línea defensiva. No te quedés en "jugó bien".
-- Rigor estadístico: Si la noticia involucra un jugador, aportá datos de su historial (goles, partidos, temporadas). Usá números concretos cuando los haya.
-- Cero copyright: Leé los hechos de la fuente y redactá un artículo 100% original con tus propias palabras. Prohibido copiar frases de Olé, TyC, Infobae o cualquier otro medio. Esto es periodismo de autor.
-- Tono: Elegante, analítico, profesional. Nunca panfletario ni de "hincha termo".
-- Conversión horaria: Si se menciona un horario en Argentina (ART, UTC-3), calculá el horario israelí sumando 6 horas e integralo naturalmente en el texto.
-- Cierre obligatorio: El último párrafo debe incluir una referencia breve y auténtica a cómo se vive esta noticia desde Israel, desde la Filial Ramat Gan. No como publicidad — como cierre periodístico con perspectiva local.
+— 70% Juan Pablo Varsky: análisis táctico, conceptos del juego, narrativa profunda, rigor estadístico, seriedad periodística. Hablás de automatismos, gestión de espacios, transiciones, pressing, bloque bajo, sociedades en el campo. Usás números concretos y contexto histórico.
 
-FORMATO DE SALIDA (obligatorio, sin variaciones):
+— 30% Azzaro / Yudcovich: el remate apasionado, la mística del millonario, el corazón que late con la banda roja. Usás el vocabulario sagrado: "Paladar negro", "La mística de Núñez", "El Templo del Monumental", "El más grande", "El Millonario". El cierre de cada nota tiene que tener el sabor de quien ama a River con todo.
 
-**Título:** [Impactante y analítico — máximo 12 palabras]
+REGLAS EDITORIALES:
+- Cero copyright: redactá con tus propias palabras, nunca copies frases textuales de la fuente.
+- Filtro absoluto: si la noticia toca aunque sea tangencialmente a Boca Juniors, Racing, Independiente u otro club, no los menciones. River es el protagonista único.
+- Conversión horaria: si hay horarios en Argentina (ART, UTC-3), sumá 6 horas para Israel y mencionalo naturalmente.
+- Cierre obligatorio: el último párrafo debe referenciar cómo se vive esta noticia desde la Filial Ramat Gan en Israel. No como publicidad — como periodismo con perspectiva local y corazón millonario.
 
-**Bajada:** [Resumen de 1-2 líneas con los datos clave de la noticia]
+FORMATO DE SALIDA (exacto, sin variaciones):
+
+**Título:** [Máximo 12 palabras, con gancho, que capture la esencia de la noticia]
+
+**Bajada:** [1-2 líneas. Los datos clave. El lector ya sabe de qué va.]
 
 **Contenido:**
-[Párrafo de introducción — engancha al lector, plantea el núcleo sin rodeos]
+[Párrafo 1 — apertura Varsky: enganchá al lector con el núcleo de la noticia, sin rodeos, con precisión]
 
-[Párrafo de desarrollo — antecedentes, contexto, declaraciones si las hay]
+[Párrafo 2 — desarrollo: antecedentes, contexto, declaraciones si las hay, números, historia]
 
-[Párrafo de análisis táctico/estadístico — qué significa para el equipo, datos concretos]
+[Párrafo 3 — análisis: qué significa táctica y estratégicamente para el equipo, qué está en juego]
 
-[Párrafo de cierre — qué sigue, qué está en juego, perspectiva desde Israel/Filial Ramat Gan]
+[Párrafo 4 — cierre Azzaro: el remate apasionado, qué siente la hinchada, perspectiva desde la Filial Ramat Gan en Israel]
 
-**Tags:** #RiverPlate #RiverIsrael #RamatGan #AnalisisMillonario [otros tags relevantes]`;
+**Tags:** #RiverPlate #RiverIsrael #RamatGan #ElMasGrande [otros tags relevantes]`;
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -112,7 +117,7 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
 
   const titulo = tituloMatch?.[1]?.trim() ?? "Sin título";
   const bajada = bajadaMatch?.[1]?.trim() ?? "";
-  const tags   = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan #AnalisisMillonario";
+  const tags   = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
 
   let contenido = texto
     .replace(/\*\*Título:\*\*\s*.+\n?/, "")
@@ -121,7 +126,6 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
     .replace(/\*\*Tags:\*\*\s*.+\n?/, "")
     .trim();
 
-  // Prepender la bajada en cursiva como primer párrafo si existe
   if (bajada) {
     contenido = `*${bajada}*\n\n${contenido}`;
   }
@@ -138,7 +142,7 @@ async function obtenerTextoArticulo(url: string): Promise<string> {
     if (!res.ok) return "";
     const html = await res.text();
     const $ = cheerio.load(html);
-    const parrafos = $("article p, .article-body p, .nota-body p, .article__content p, .post-content p, .detail-body p")
+    const parrafos = $("article p, .article-body p, .nota-body p, .article__content p, .post-content p, .detail-body p, .entry-content p")
       .map((_: number, el: cheerio.Element) => $(el).text().trim())
       .get()
       .filter((t: string) => t.length > 50);
@@ -150,7 +154,6 @@ async function obtenerTextoArticulo(url: string): Promise<string> {
 }
 
 // ─── FLAG ANTI-CONCURRENCIA ───────────────────────────────────────────────────
-// Evita que dos ciclos corran al mismo tiempo si el anterior tardó demasiado.
 let enEjecucion = false;
 
 async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
@@ -189,7 +192,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       return;
     }
 
-    // ── DEDUPLICACIÓN POR DB: saltear temas ya cubiertos ────────────────────
+    // ── DEDUPLICACIÓN: saltear temas ya cubiertos ─────────────────────────
     let noticiaElegida: typeof noticias[0] | null = null;
 
     for (const candidata of noticias) {
@@ -207,7 +210,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
     logger.info({ titulo: noticiaElegida.titulo, url: noticiaElegida.url }, "Scheduler: noticia seleccionada");
 
-    // ── EXTRAER TEXTO DEL ARTÍCULO ───────────────────────────────────────────
+    // ── EXTRAER TEXTO DEL ARTÍCULO ────────────────────────────────────────
     let textoParaIA = noticiaElegida.titulo;
     if (noticiaElegida.url) {
       const textoArticulo = await obtenerTextoArticulo(noticiaElegida.url);
@@ -216,7 +219,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       }
     }
 
-    // ── GENERAR CON IA (Gemini Flash: rápido y de alta calidad) ─────────────
+    // ── GENERAR CON IA (Gemini Flash) ─────────────────────────────────────
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [{ role: "user", parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] }],
@@ -248,7 +251,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       })
       .returning();
 
-    // ── ENVIAR A TELEGRAM ────────────────────────────────────────────────────
+    // ── ENVIAR A TELEGRAM ─────────────────────────────────────────────────
     const token = process.env.TELEGRAM_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -259,18 +262,21 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
     const replyMarkup = {
       inline_keyboard: [[
-        { text: "✅ Publicar", callback_data: `publicar_${savedNoticia.id}` },
-        { text: "✏️ Editar + foto", callback_data: `editar_${savedNoticia.id}` },
-        { text: "❌ Rechazar", callback_data: `rechazar_${savedNoticia.id}` },
+        { text: "✅ Publicar",      callback_data: `publicar_${savedNoticia.id}` },
+        { text: "✏️ Editar",        callback_data: `editar_${savedNoticia.id}` },
+        { text: "📸 Foto",          callback_data: `foto_${savedNoticia.id}` },
+        { text: "❌ Rechazar",      callback_data: `rechazar_${savedNoticia.id}` },
       ]],
     };
 
+    const resumen = contenido.slice(0, 600) + (contenido.length > 600 ? "…" : "");
+
     const mensajeTexto =
-      `🤖 *AUTO — River en Israel*\n\n` +
+      `🚨 *¡NUEVA INFO MILLONARIA DETECTADA!*\n\n` +
       `📰 *${titulo}*\n\n` +
-      `${contenido.slice(0, 700)}${contenido.length > 700 ? "..." : ""}\n\n` +
+      `${resumen}\n\n` +
       `${tags}\n\n` +
-      `_Usá ✏️ para agregar foto antes de publicar_`;
+      `📡 _Fuente: ${noticiaElegida.fuente ?? fuente}_`;
 
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
@@ -304,21 +310,18 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
 export { ejecutarCiclo };
 
-// ─── INTERVALO: cada 2 horas exactas ─────────────────────────────────────────
-// Usamos setInterval (más preciso que setTimeout recursivo) con un primer ciclo
-// retrasado 5 minutos para darle tiempo al servidor de arrancar correctamente.
+// ─── INTERVALO: cada 15 minutos ───────────────────────────────────────────────
+// Primer ciclo a los 2 minutos de arrancar, luego cada 15 minutos exactos.
 
-const INTERVALO_MS  = 2 * 60 * 60 * 1000; // 2 horas
-const PRIMER_CICLO_MS = 5 * 60 * 1000;    // 5 minutos tras arrancar
+const INTERVALO_MS   = 15 * 60 * 1000; // 15 minutos
+const PRIMER_CICLO_MS =  2 * 60 * 1000; // 2 minutos tras arrancar
 
 export function iniciarScheduler(): void {
-  logger.info({ primerCicloMinutos: 5, intervalHoras: 2 }, "Scheduler automático iniciado — primer ciclo en 5 min, luego cada 2 horas");
+  logger.info({ primerCicloMinutos: 2, intervaloMinutos: 15 }, "Scheduler automático iniciado — primer ciclo en 2 min, luego cada 15 minutos");
 
-  // Primer ciclo: espera 5 minutos y luego dispara el intervalo regular
   setTimeout(() => {
     ejecutarCiclo().catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));
 
-    // A partir del primer ciclo, corre exactamente cada 2 horas
     setInterval(() => {
       ejecutarCiclo().catch((err) => logger.error({ err }, "Scheduler: error no capturado"));
     }, INTERVALO_MS);
