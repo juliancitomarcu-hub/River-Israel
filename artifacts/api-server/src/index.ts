@@ -16,9 +16,12 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+// Detectar producción por NODE_ENV o por TELEGRAM_WEBHOOK_DOMAIN (que solo existe en prod)
+const esProduccion = process.env.NODE_ENV === "production" || !!process.env.TELEGRAM_WEBHOOK_DOMAIN;
+
 async function registrarWebhookTelegram() {
   // Solo registrar el webhook en producción para no sobreescribir el webhook de prod desde dev
-  if (process.env.NODE_ENV !== "production") {
+  if (!esProduccion) {
     logger.info("Modo desarrollo: registro de webhook de Telegram omitido (evita sobreescribir producción)");
     return;
   }
@@ -63,7 +66,7 @@ app.listen(port, (err) => {
     logger.error({ err }, "Error en registro de webhook");
   });
 
-  if (process.env.NODE_ENV === "production") {
+  if (esProduccion) {
     iniciarScheduler();
   } else {
     logger.info("Modo desarrollo: scheduler automático desactivado (solo corre en producción)");

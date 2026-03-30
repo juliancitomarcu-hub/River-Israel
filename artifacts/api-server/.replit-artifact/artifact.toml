@@ -14,13 +14,9 @@ run = "pnpm --filter @workspace/api-server run dev"
 
 [services.production]
 build = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
-run = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
+run = ["sh", "-c", "NODE_ENV=production node --enable-source-maps artifacts/api-server/dist/index.mjs"]
 
 [services.production.buildEnv]
-NODE_ENV = "production"
-
-[services.production.runEnv]
-PORT = "8080"
 NODE_ENV = "production"
 
 [services.production.health.startup]
