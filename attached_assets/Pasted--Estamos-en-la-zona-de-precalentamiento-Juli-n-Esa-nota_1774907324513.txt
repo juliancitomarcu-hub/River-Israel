@@ -1,0 +1,19 @@
+¡Estamos en la zona de precalentamiento, Julián! Esa nota ya tiene otra cara: 2.950 caracteres aproximadamente. Es decir, superamos con creces el mínimo de 1.848. Se nota el "toque Varsky" en el análisis de las basculaciones y la transición.
+Pero, como buen cocinero, sabés que el plato está rico pero le falta emplatado y sazón. Hay tres errores que saltan a la vista para que sea una nota de "diez puntos":
+❌ Lo que falló en esta nota:
+ * El Final Cortado: La nota termina en "...un baluarte en el centro de…". La IA se quedó sin "gas" justo al final.
+ * Faltan las Preguntas: No incluyó la sección de interrogantes que le pedimos para interpelar al lector.
+ * Falta el Cierre de Sentencia: Le falta ese párrafo final contundente que resuma todo.
+ * Formato Visual: Está todo muy pegado. Necesitamos negritas y separadores para que en el celular no sea un "vómito de texto".
+🛠️ PROMPT DE AJUSTE FINO (EL "EMPLATADO" FINAL)
+Copiá y pegá esto al Agent de Replit:
+> "La última nota mejoró en extensión (2950 chars), pero cometió errores graves de formato. Ajustá el Redactor IA con estas 4 reglas de oro:
+>  * TERMINACIÓN OBLIGATORIA: La nota NUNCA puede quedar cortada. Si se está acercando al límite de tokens, debe resumir el cierre pero finalizar la oración y el párrafo correctamente.
+>  * SECCIONES FALTANTES: Es obligatorio incluir la sección 'INTERPELACIÓN Y PREGUNTAS' antes del cierre, con al menos 3 interrogantes profundos sobre el tema.
+>  * FORMATO DE LECTURA RÁPIDA: Usá negritas para los conceptos clave (ej: Paladar Negro, Eduardo Coudet, basculaciones) y separá las secciones con una línea de guiones --- o emojis para que sea escaneable en Telegram.
+>  * EL CIERRE (LA SENTENCIA): Agregá un párrafo final de 'Cierre' que sea una sentencia definitiva sobre la noticia, con la mística de El Gráfico.
+> No avances hasta que la próxima nota de prueba en Telegram tenga: Título, Inicio, Análisis, Comparativa, Citas, Preguntas y Cierre completo, todo bien formateado con negritas."
+> 
+💡 El consejo de "Colega":
+Fijate que la noticia de Tobías Ramírez es un golazo porque es info fresca. Si logramos que el bot la saque con este formato nuevo, vas a tener a todos los de la filial en Israel comentando la nota porque parece escrita por un enviado especial en el Monumental.
+¿Querés que probemos tirar un /buscar ahora para ver si pesca otra noticia y la redacta con este formato "Premium"? ¡Ya casi lo tenemos, Julián! ⚪🔴⚪

@@ -81,9 +81,9 @@ async function tituloYaProcesado(titulo: string): Promise<boolean> {
 
 const PROMPT_MAESTRO = `Sos el Editor Jefe de "River en Israel". Escribís periodismo deportivo de exportación, al nivel de las mejores editoriales de El Gráfico o La Nación Deportes. Cada nota debe tener un mínimo de 1848 caracteres y 307 palabras. Si la noticia original es breve, expandís el análisis táctico y la comparativa histórica hasta alcanzar esa extensión con calidad, sin repetir palabras ni rellenar con frases vacías.
 
-VOZ: 70% Juan Pablo Varsky (precisión técnica, terminología táctica, datos concretos) + 30% Azzaro/Yudcovich (mística, sentimiento, el peso de ser del más grande). Vocabulario sagrado: "El Templo del Monumental", "Paladar negro", "La mística de Núñez", "La banda roja que nos cruza el alma", "El Millonario", "El más grande de la Argentina".
+VOZ: 70% Juan Pablo Varsky (precisión técnica, terminología táctica, datos concretos) + 30% Azzaro/Yudcovich (mística, sentimiento, el peso de ser del más grande). Vocabulario sagrado: "**El Templo del Monumental**", "**Paladar negro**", "**La mística de Núñez**", "La banda roja que nos cruza el alma", "**El Millonario**", "El más grande de la Argentina".
 
-═══ ESTRUCTURA OBLIGATORIA ═══
+═══ ESTRUCTURA OBLIGATORIA (6 SECCIONES, TODAS OBLIGATORIAS) ═══
 
 **Título:** [Máximo 10 palabras. Verbo de acción, grandeza evocada. Ej: "Cátedra en Núñez", "Triunfo con Mística", "El Millonario Ordena". NUNCA "River hizo X".]
 
@@ -91,69 +91,115 @@ VOZ: 70% Juan Pablo Varsky (precisión técnica, terminología táctica, datos c
 
 **Contenido:**
 
-[SECCIÓN 1 — EL IMPACTO: Párrafo de apertura potente. No solo el dato: el contexto emocional y deportivo del momento. Qué significa esta noticia en el universo de River hoy. 4-5 oraciones con peso.]
+⚽ *EL IMPACTO*
+[Párrafo de apertura potente. No solo el dato: el contexto emocional y deportivo del momento. Qué significa esta noticia en el universo de River hoy. Usá **negritas** para los conceptos clave (nombres propios, términos tácticos, fechas importantes). 4-5 oraciones.]
 
-[SECCIÓN 2 — ANÁLISIS TÁCTICO (EL CÓMO): Análisis profundo de la dinámica de juego. Usá terminología específica: basculaciones defensivas, tercer hombre en ataque, amplitud vs profundidad, transiciones defensa-ataque, pressing coordinado, ocupación de espacios, ruptura de líneas, automatismos. Explicá el POR QUÉ táctico detrás del resultado o la situación. 5-6 oraciones.]
+---
 
-[SECCIÓN 3 — COMPARATIVA HISTÓRICA (LA MÍSTICA): Conectá el presente con el pasado glorioso de River. Compará al jugador, al DT o la situación con hitos históricos: La Máquina de los años 40, el River de Labruna, la era de Ramón Díaz, la mística de Gallardo. Datos de archivo concretos que nutran la nota de profundidad histórica. 4-5 oraciones.]
+🔬 *ANÁLISIS TÁCTICO*
+[Análisis profundo de la dinámica de juego. Terminología obligatoria según corresponda: **basculaciones defensivas**, **tercer hombre**, **amplitud vs profundidad**, **transiciones defensa-ataque**, **pressing coordinado**, **ocupación de espacios**, **ruptura de líneas**, **automatismos**. Poneé en negrita los términos tácticos. Explicá el POR QUÉ táctico detrás del resultado o la situación. 5-6 oraciones.]
 
-[SECCIÓN 4 — CITAS FUNDAMENTADAS: Incluí declaraciones reales extraídas de la fuente o parafraseadas con rigor periodístico. Analizá cada cita: no la pongas suelta, explicá el peso que tiene en el vestuario, en la dirigencia o en la afición. Qué revela esa declaración sobre el momento del club. 4-5 oraciones.]
+---
 
-[SECCIÓN 5 — INTERPELACIÓN AL HINCHA: Planteá 2-3 preguntas concretas que quedan en el aire. Interrogantes genuinos que el hincha de River se hace: ¿Es este el techo del equipo? ¿Cómo responderá la cantera ante esta exigencia? ¿Puede este plantel pelear en todos los frentes? Formulalas con el tono de quien ama el club y exige excelencia. 3-4 oraciones.]
+📖 *LA MÍSTICA — COMPARATIVA HISTÓRICA*
+[Conectá el presente con el pasado glorioso de River. Compará al jugador, al DT o la situación con hitos históricos: **La Máquina** de los años 40, el River de **Labruna**, la era de **Ramón Díaz**, la mística de **Gallardo**. Datos de archivo concretos. 4-5 oraciones.]
 
-[SECCIÓN 6 — LA SENTENCIA (CIERRE): Párrafo final contundente. La tesis de toda la nota resumida en una conclusión de Paladar Negro que deje al lector reflexionando. Una sentencia periodística, no un resumen. 3-4 oraciones con fuerza.]
+---
+
+🗣️ *CITAS Y CONTEXTO*
+[Declaraciones reales de la fuente o parafraseadas con rigor. Analizá cada cita: explicá el peso que tiene en el vestuario, en la dirigencia o en la afición. Qué revela sobre el momento del club. 4-5 oraciones.]
+
+---
+
+❓ *PREGUNTAS QUE QUEDAN EN EL AIRE*
+[OBLIGATORIO: exactamente 3 preguntas profundas que el hincha se hace. Empezá cada una con ¿ y terminá con ?. Ejemplos del estilo: ¿Es este el techo del equipo o hay margen para crecer? ¿Cómo responderá la cantera ante esta exigencia? ¿Puede este plantel pelear en todos los frentes sin perder identidad? Formulalas con el tono de quien ama el club y exige excelencia.]
+
+---
+
+🏆 *LA SENTENCIA*
+[OBLIGATORIO Y SIEMPRE AL FINAL: Un párrafo contundente de 3-4 oraciones que resuma la tesis de toda la nota. Una conclusión de Paladar Negro al estilo El Gráfico que deje al lector reflexionando. No es un resumen, es una sentencia periodística. IMPORTANTE: esta sección debe completarse SIEMPRE, aunque las anteriores hayan sido extensas. Nunca dejes la nota sin este cierre.]
 
 **Tags:** #RiverPlate #RiverIsrael #RamatGan #ElMasGrande [2-3 tags específicos de la noticia]
 
 ═══ REGLAS DE HIERRO ═══
-1. Mínimo 1848 caracteres y 307 palabras. Sin excepciones.
-2. NUNCA copies frases textuales de la fuente. Periodismo de autor, 100% original.
-3. NUNCA menciones otros clubes por nombre. River es el único protagonista.
-4. Si hay horarios argentinos (ART, UTC-3), convertí sumando 6 horas: "las 21:00 hora israelí".
-5. Hashtags siempre al final, nunca dentro del cuerpo del texto.
-6. Respetá el formato exacto — el sistema parsea "**Título:**", "**Bajada:**" y "**Tags:**" de forma precisa.`;
+1. Mínimo 1848 caracteres y 307 palabras. Las 6 secciones son TODAS obligatorias.
+2. TERMINACIÓN OBLIGATORIA: La nota NUNCA puede quedar cortada a mitad de oración. Si te estás acercando al límite, resumí alguna sección anterior pero completá siempre LA SENTENCIA con un cierre limpio.
+3. FORMATO: usá **negritas** para conceptos clave, nombres propios y términos tácticos. Respetá los separadores --- entre secciones y los emojis de encabezado.
+4. NUNCA copies frases textuales de la fuente. Periodismo de autor, 100% original.
+5. NUNCA menciones otros clubes por nombre. River es el único protagonista.
+6. Si hay horarios argentinos (ART, UTC-3), convertí sumando 6 horas: "las 21:00 hora israelí".
+7. Hashtags siempre al final, nunca dentro del cuerpo.
+8. El sistema parsea "**Título:**", "**Bajada:**" y "**Tags:**" — respetá ese formato exacto.`;
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
-  // 1. Intentar extraer título con el marcador explícito **Título:**
-  let tituloMatch =
-    texto.match(/\*\*Título:\*\*\s*([^\n*][^\n]+)/) ??
-    texto.match(/\*\*Título:\*\*\s*\n+\s*([^\n*][^\n]+)/);
+  const lines = texto.split("\n");
 
-  // 2. Fallback: si la IA no puso el marcador, usar la primera línea **negrita** como título
-  let tituloEsNegrita = false;
-  if (!tituloMatch) {
-    const primeraNegraMatch = texto.match(/^\s*\*\*([^*\n]+)\*\*/m);
-    if (primeraNegraMatch) {
-      tituloMatch = primeraNegraMatch;
-      tituloEsNegrita = true;
+  // ── Extraer título ─────────────────────────────────────────────────────────
+  let titulo = "Sin título";
+  let tituloLineIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    // Formato explícito: **Título:** texto
+    const m = l.match(/^\*\*Título:\*\*\s*(.+)$/);
+    if (m) { titulo = m[1].trim(); tituloLineIdx = i; break; }
+    // Formato explícito multi-línea: línea siguiente al marcador
+    if (/^\*\*Título:\*\*\s*$/.test(l) && lines[i + 1]) {
+      titulo = lines[i + 1].trim().replace(/^\*\*|\*\*$/g, "");
+      tituloLineIdx = i; break;
+    }
+  }
+  // Fallback: primera línea en negrita standalone
+  if (tituloLineIdx === -1) {
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].trim().match(/^\*\*([^*]+)\*\*$/);
+      if (m) { titulo = m[1].trim(); tituloLineIdx = i; break; }
     }
   }
 
-  const bajadaMatch =
-    texto.match(/\*\*Bajada:\*\*\s*([^\n*][^\n]+)/) ??
-    texto.match(/\*\*Bajada:\*\*\s*\n+\s*([^\n*][^\n]+)/);
-  const tagsMatch =
-    texto.match(/\*\*Tags:\*\*\s*([^\n]+)/) ??
-    texto.match(/\*\*Tags:\*\*\s*\n+\s*([^\n]+)/);
-
-  const titulo = tituloMatch?.[1]?.trim() ?? "Sin título";
-  const bajada = bajadaMatch?.[1]?.trim() ?? "";
-  const tags   = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
-
-  let contenido = texto
-    .replace(/\*\*Título:\*\*.*?(\n|$)/gs, "")
-    .replace(/\*\*Bajada:\*\*.*?(\n|$)/gs, "")
-    .replace(/\*\*Contenido:\*\*\s*\n?/, "")
-    .replace(/\*\*Tags:\*\*.*?(\n|$)/gs, "")
-    .trim();
-
-  // Si el título vino de la primera negrita, eliminarla del contenido
-  if (tituloEsNegrita && titulo !== "Sin título") {
-    contenido = contenido.replace(`**${titulo}**`, "").replace(/^\n+/, "").trim();
+  // ── Extraer bajada ─────────────────────────────────────────────────────────
+  let bajada = "";
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    const m = l.match(/^\*\*Bajada:\*\*\s*(.+)$/);
+    if (m) { bajada = m[1].trim(); break; }
+    if (/^\*\*Bajada:\*\*\s*$/.test(l) && lines[i + 1]) {
+      bajada = lines[i + 1].trim(); break;
+    }
   }
 
+  // ── Extraer tags ───────────────────────────────────────────────────────────
+  let tags = "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const l = lines[i].trim();
+    const m = l.match(/^\*\*Tags:\*\*\s*(.+)$/);
+    if (m) { tags = m[1].trim(); break; }
+    // Línea suelta de hashtags al final
+    if (/^#River/.test(l) && l.includes("#")) { tags = l; break; }
+  }
+
+  // ── Construir contenido: todo excepto las líneas de metadatos ──────────────
+  // Marcamos las líneas que son headers de parseo y las eliminamos
+  const headerPatterns = [
+    /^\*\*Título:\*\*/, /^\*\*Bajada:\*\*/, /^\*\*Contenido:\*\*/, /^\*\*Tags:\*\*/,
+  ];
+  const bodyLines = lines.filter((l, idx) => {
+    const trimmed = l.trim();
+    // Eliminar líneas de header
+    if (headerPatterns.some(p => p.test(trimmed))) return false;
+    // Eliminar la línea del título si vino de fallback de negrita
+    if (idx === tituloLineIdx) return false;
+    // Eliminar la línea que es exactamente la bajada (para no duplicarla)
+    if (bajada && trimmed === bajada) return false;
+    // Eliminar líneas que son solo hashtags al final
+    if (/^#River/.test(trimmed) && trimmed === tags) return false;
+    return true;
+  });
+
+  let contenido = bodyLines.join("\n").trim();
+
+  // Si la bajada es valiosa, la prepend como cursiva
   if (bajada) {
     contenido = `*${bajada}*\n\n${contenido}`;
   }

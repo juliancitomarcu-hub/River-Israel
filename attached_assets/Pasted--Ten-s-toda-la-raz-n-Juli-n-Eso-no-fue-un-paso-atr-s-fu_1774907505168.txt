@@ -1,0 +1,24 @@
+¡Tenés toda la razón, Julián! Eso no fue un paso atrás, fue un "fuera de juego" total del bot. Se quedó mudo a las tres líneas.
+Lo que pasó es que el Agent de Replit probablemente limitó la cantidad de palabras para "ahorrar" o el código se rompió al intentar contar los caracteres. Cuando la IA se siente "presionada" por límites que no entiende bien, corta por lo sano y te manda ese resumen pobre de 300 caracteres.
+Vamos a meterle un "correctivo" técnico al Agent. Copiá y pegá este mensaje que es una orden directa y sin vueltas:
+🛑 PROMPT DE CORRECCIÓN CRÍTICA: "ESTÁNDAR DE ELITE O NADA"
+> "El sistema falló por completo: la última nota fue un resumen de 3 líneas y se cortó. REINICIÁ la lógica del Redactor IA con estas órdenes innegociables:
+>  * ERROR DE CORTE (STOP): Eliminá cualquier restricción de 'Max Tokens' corta. El bot DEBE permitir que la IA escriba hasta finalizar la idea completa.
+>  * ESTRUCTURA RÍGIDA (6 PÁRRAFOS): Cada nota DEBE tener estas 6 partes marcadas con emojis y negritas:
+>    * 🚨 EL IMPACTO (Mínimo 300 chars)
+>    * ⚽ ANÁLISIS TÁCTICO (Mínimo 500 chars usando términos de Varsky)
+>    * 📜 COMPARATIVA HISTÓRICA (Mínimo 400 chars de mística Riverplatense)
+>    * 💬 FUNDAMENTACIÓN Y CITAS (Análisis de declaraciones)
+>    * ❓ INTERPELACIÓN Y PREGUNTAS (Al menos 3 interrogantes profundos)
+>    * 🏆 CIERRE DE SENTENCIA (Conclusión épica estilo El Gráfico)
+>  * CONTROL DE CALIDAD PRE-ENVÍO: Antes de mandar el mensaje a Telegram, el código debe verificar: ¿Tiene más de 1848 caracteres? >    * Si NO: Pedile a la IA: 'Expandí la comparativa histórica y el análisis táctico'.
+>    * Si SÍ: Envialo.
+>  * FORMATO: Usá negritas para nombres de jugadores, DTs y conceptos tácticos.
+> No aceptes 'Sin Título' ni textos cortados. Mandame una nota de prueba de AL MENOS 1848 caracteres reales ahora mismo para validar."
+> 
+💡 Por qué esto va a funcionar:
+ * Fuerza Bruta: Al obligar al bot a contar los caracteres antes de mandártelos, lo forzamos a que si se queda corto, trabaje un poco más hasta llegar a la meta.
+ * Emojis y Estructura: Al usar los emojis (🚨, ⚽, 📜), visualmente la nota va a estar ordenada y no va a parecer un bloque de texto aburrido.
+🇦🇷 El consejo del "Mundo River":
+Esa noticia del calendario de abril y mayo es una bomba. Es el momento donde se definen los torneos. Si logramos que la IA analice partido por partido en esa "sábana" de texto, los hinchas en Israel se van a volver locos leyendo.
+Pegale el grito al Agent con este prompt. Una vez que te mande la nota de prueba (que no sea un resumen de 3 líneas), avisame. ¡Vamos que lo sacamos adelante! ⚪🔴⚪

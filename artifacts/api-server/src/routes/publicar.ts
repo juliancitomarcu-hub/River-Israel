@@ -6,44 +6,56 @@ import { desc, eq } from "drizzle-orm";
 const router: IRouter = Router();
 
 function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
-  let tituloMatch =
-    texto.match(/\*\*Título:\*\*\s*([^\n*][^\n]+)/) ??
-    texto.match(/\*\*Título:\*\*\s*\n+\s*([^\n*][^\n]+)/);
+  const lines = texto.split("\n");
 
-  let tituloEsNegrita = false;
-  if (!tituloMatch) {
-    const primeraNegraMatch = texto.match(/^\s*\*\*([^*\n]+)\*\*/m);
-    if (primeraNegraMatch) {
-      tituloMatch = primeraNegraMatch;
-      tituloEsNegrita = true;
+  let titulo = "Sin título";
+  let tituloLineIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    const m = l.match(/^\*\*Título:\*\*\s*(.+)$/);
+    if (m) { titulo = m[1].trim(); tituloLineIdx = i; break; }
+    if (/^\*\*Título:\*\*\s*$/.test(l) && lines[i + 1]) {
+      titulo = lines[i + 1].trim().replace(/^\*\*|\*\*$/g, "");
+      tituloLineIdx = i; break;
+    }
+  }
+  if (tituloLineIdx === -1) {
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].trim().match(/^\*\*([^*]+)\*\*$/);
+      if (m) { titulo = m[1].trim(); tituloLineIdx = i; break; }
     }
   }
 
-  const bajadaMatch =
-    texto.match(/\*\*Bajada:\*\*\s*([^\n*][^\n]+)/) ??
-    texto.match(/\*\*Bajada:\*\*\s*\n+\s*([^\n*][^\n]+)/);
-  const tagsMatch =
-    texto.match(/\*\*Tags:\*\*\s*([^\n]+)/) ??
-    texto.match(/\*\*Tags:\*\*\s*\n+\s*([^\n]+)/);
-
-  const titulo = tituloMatch?.[1]?.trim() ?? "Sin título";
-  const bajada = bajadaMatch?.[1]?.trim() ?? "";
-  const tags = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
-
-  let contenido = texto
-    .replace(/\*\*Título:\*\*.*?(\n|$)/gs, "")
-    .replace(/\*\*Bajada:\*\*.*?(\n|$)/gs, "")
-    .replace(/\*\*Contenido:\*\*\s*\n?/, "")
-    .replace(/\*\*Tags:\*\*.*?(\n|$)/gs, "")
-    .trim();
-
-  if (tituloEsNegrita && titulo !== "Sin título") {
-    contenido = contenido.replace(`**${titulo}**`, "").replace(/^\n+/, "").trim();
+  let bajada = "";
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    const m = l.match(/^\*\*Bajada:\*\*\s*(.+)$/);
+    if (m) { bajada = m[1].trim(); break; }
+    if (/^\*\*Bajada:\*\*\s*$/.test(l) && lines[i + 1]) {
+      bajada = lines[i + 1].trim(); break;
+    }
   }
 
-  if (bajada) {
-    contenido = `*${bajada}*\n\n${contenido}`;
+  let tags = "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const l = lines[i].trim();
+    const m = l.match(/^\*\*Tags:\*\*\s*(.+)$/);
+    if (m) { tags = m[1].trim(); break; }
+    if (/^#River/.test(l) && l.includes("#")) { tags = l; break; }
   }
+
+  const headerPatterns = [/^\*\*Título:\*\*/, /^\*\*Bajada:\*\*/, /^\*\*Contenido:\*\*/, /^\*\*Tags:\*\*/];
+  const bodyLines = lines.filter((l, idx) => {
+    const trimmed = l.trim();
+    if (headerPatterns.some(p => p.test(trimmed))) return false;
+    if (idx === tituloLineIdx) return false;
+    if (bajada && trimmed === bajada) return false;
+    if (/^#River/.test(trimmed) && trimmed === tags) return false;
+    return true;
+  });
+
+  let contenido = bodyLines.join("\n").trim();
+  if (bajada) contenido = `*${bajada}*\n\n${contenido}`;
 
   return { titulo, contenido, tags };
 }
