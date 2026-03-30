@@ -1,12 +1,25 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { ejecutarCiclo } from "../scheduler";
 
 const router: IRouter = Router();
 
 // ─── HELPERS TELEGRAM ─────────────────────────────────────────────────────────
+
+async function enviarMensajeTelegram(token: string, chatId: string, text: string, options?: Record<string, unknown>) {
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown", ...options }),
+    });
+  } catch (err) {
+    logger.warn({ err }, "Telegram: error enviando mensaje");
+  }
+}
 
 async function responderCallback(token: string, callbackQueryId: string, text: string) {
   try {
@@ -38,9 +51,60 @@ async function editarMensajeTelegram(token: string, chatId: string, messageId: s
   }
 }
 
-// ─── PROCESAMIENTO ASÍNCRONO ──────────────────────────────────────────────────
-// Todo el trabajo real se hace DESPUÉS de responder 200 a Telegram.
-// Esto evita timeouts de Telegram y reintentos duplicados.
+// ─── COMANDO /noticia ─────────────────────────────────────────────────────────
+// Envía la última noticia publicada al chat
+
+async function handleComandoNoticia(token: string, chatId: string) {
+  try {
+    const [ultima] = await db
+      .select()
+      .from(noticiasTable)
+      .where(and(eq(noticiasTable.publicada, true), eq(noticiasTable.pendiente, false)))
+      .orderBy(desc(noticiasTable.creadoEn))
+      .limit(1);
+
+    if (!ultima) {
+      await enviarMensajeTelegram(token, chatId, "⚠️ No hay noticias publicadas todavía.");
+      return;
+    }
+
+    const bajadaTexto = ultima.bajada ? `\n_${ultima.bajada}_\n` : "";
+    const resumen = ultima.contenido
+      ? ultima.contenido.slice(0, 300) + (ultima.contenido.length > 300 ? "…" : "")
+      : "";
+    const fuente = ultima.fuente ? `\n📰 Fuente: ${ultima.fuente}` : "";
+    const tags = ultima.tags ? `\n🏷 ${ultima.tags}` : "";
+
+    const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
+    const verLink = domain ? `\n\n🌐 [Ver en el sitio](https://${domain})` : "";
+
+    const texto =
+      `📢 *ÚLTIMA NOTICIA*\n\n*${ultima.titulo}*\n${bajadaTexto}\n${resumen}${fuente}${tags}${verLink}`;
+
+    await enviarMensajeTelegram(token, chatId, texto);
+  } catch (err) {
+    logger.error({ err }, "Telegram /noticia: error");
+    await enviarMensajeTelegram(token, chatId, "❌ Error al obtener la última noticia.");
+  }
+}
+
+// ─── COMANDO /buscar ──────────────────────────────────────────────────────────
+// Dispara el ciclo completo del scheduler (scrapeo + IA + Telegram)
+
+async function handleComandoBuscar(token: string, chatId: string) {
+  await enviarMensajeTelegram(
+    token, chatId,
+    "🔍 *Buscando noticias…*\n\nIniciando escaneo de todos los medios. Las notas transformadas por IA llegarán en unos minutos con sus botones ✅ ✏️ ❌."
+  );
+  try {
+    await ejecutarCiclo();
+  } catch (err) {
+    logger.error({ err }, "Telegram /buscar: error en ciclo");
+    await enviarMensajeTelegram(token, chatId, "❌ Hubo un error durante la búsqueda. Revisá los logs.");
+  }
+}
+
+// ─── PROCESAMIENTO DE CALLBACKS (botones ✅ ✏️ ❌) ────────────────────────────
 
 async function procesarCallback(
   token: string,
@@ -54,10 +118,8 @@ async function procesarCallback(
       const noticiaId = parseInt(data.replace("publicar_", ""));
       if (isNaN(noticiaId)) return;
 
-      // ⚡ Responder al botón PRIMERO — quita el "cargando" instantáneamente
       await responderCallback(token, callbackId, "✅ Publicando...");
 
-      // Idempotencia: verificar estado actual antes de actuar
       const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
       if (!actual) return;
       if (actual.publicada) return;
@@ -87,7 +149,6 @@ async function procesarCallback(
 
       const editUrl = `https://${domain}/redactor?editar=${noticiaId}`;
 
-      // ⚡ Responder al botón PRIMERO
       await responderCallback(token, callbackId, "✏️ Link enviado");
 
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -104,10 +165,8 @@ async function procesarCallback(
       const noticiaId = parseInt(data.replace("rechazar_", ""));
       if (isNaN(noticiaId)) return;
 
-      // ⚡ Responder al botón PRIMERO
       await responderCallback(token, callbackId, "❌ Rechazando...");
 
-      // Idempotencia
       const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
       if (!actual) return;
       if (!actual.pendiente) return;
@@ -134,7 +193,6 @@ async function procesarCallback(
 
 router.post("/telegram-webhook", (req, res) => {
   // ⚡ Responder 200 a Telegram INMEDIATAMENTE — antes de cualquier operación.
-  // Si no respondemos en ~5 segundos, Telegram reintenta y genera duplicados.
   res.status(200).json({ ok: true });
 
   const token = process.env.TELEGRAM_TOKEN;
@@ -148,15 +206,45 @@ router.post("/telegram-webhook", (req, res) => {
       data?: string;
       message?: { message_id: number };
     };
+    message?: {
+      message_id: number;
+      chat: { id: number };
+      text?: string;
+    };
   };
 
+  // ── Comandos de texto ──
+  const msg = update.message;
+  if (msg?.text) {
+    const texto = msg.text.trim().toLowerCase();
+    const fromChatId = String(msg.chat.id);
+
+    if (texto.startsWith("/noticia")) {
+      setImmediate(() => {
+        handleComandoNoticia(token, fromChatId).catch((err) =>
+          logger.error({ err }, "Telegram /noticia: error asíncrono")
+        );
+      });
+      return;
+    }
+
+    if (texto.startsWith("/buscar")) {
+      setImmediate(() => {
+        handleComandoBuscar(token, fromChatId).catch((err) =>
+          logger.error({ err }, "Telegram /buscar: error asíncrono")
+        );
+      });
+      return;
+    }
+  }
+
+  // ── Botones de aprobación (callback_query) ──
   const callback = update.callback_query;
   if (!callback?.data) return;
 
   const { id: callbackId, data, message } = callback;
   const messageId = String(message?.message_id ?? "");
 
-  // Procesar de forma asíncrona — sin bloquear la respuesta ya enviada
   setImmediate(() => {
     procesarCallback(token, chatId, callbackId, data, messageId).catch((err) =>
       logger.error({ err }, "Telegram webhook: error en procesamiento asíncrono")

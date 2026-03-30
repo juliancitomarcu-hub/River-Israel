@@ -1278,12 +1278,13 @@ export default function Redactor() {
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm gap-1">
+        {/* Tabs — doble fila */}
+        <div className="flex flex-col items-center gap-2 mb-8">
+          {/* Fila 1 */}
+          <div className="flex flex-wrap justify-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm gap-1">
             <button
               onClick={() => setTab("redactor")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "redactor"
                   ? "bg-river-red text-white shadow-sm"
                   : "text-gray-500 hover:text-river-red"
@@ -1293,7 +1294,7 @@ export default function Redactor() {
             </button>
             <button
               onClick={() => { setTab("publicaciones"); cargarPublicaciones(); }}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "publicaciones"
                   ? "bg-river-red text-white shadow-sm"
                   : "text-gray-500 hover:text-river-red"
@@ -1303,7 +1304,7 @@ export default function Redactor() {
             </button>
             <button
               onClick={() => { setTab("publicaciones-libres"); setPlEstado("idle"); }}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "publicaciones-libres"
                   ? "bg-river-red text-white shadow-sm"
                   : "text-gray-500 hover:text-river-red"
@@ -1313,7 +1314,7 @@ export default function Redactor() {
             </button>
             <button
               onClick={() => { setTab("historia"); cargarHistoria(); }}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "historia"
                   ? "bg-river-red text-white shadow-sm"
                   : "text-gray-500 hover:text-river-red"
@@ -1323,7 +1324,7 @@ export default function Redactor() {
             </button>
             <button
               onClick={() => { setTab("analytics"); if (!analytics) cargarAnalytics(); }}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "analytics"
                   ? "bg-river-red text-white shadow-sm"
                   : "text-gray-500 hover:text-river-red"
@@ -1332,9 +1333,12 @@ export default function Redactor() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               Analytics
             </button>
+          </div>
+          {/* Fila 2 */}
+          <div className="flex flex-wrap justify-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm gap-1">
             <button
               onClick={() => { setTab("postulantes"); cargarPostulaciones(); }}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all relative ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all relative ${
                 tab === "postulantes"
                   ? "bg-river-red text-white shadow-sm"
                   : "text-gray-500 hover:text-river-red"
@@ -1349,7 +1353,7 @@ export default function Redactor() {
             </button>
             <button
               onClick={() => setTab("galeria")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "galeria"
                   ? "bg-river-red text-white shadow-sm"
                   : "text-gray-500 hover:text-river-red"
@@ -1359,7 +1363,7 @@ export default function Redactor() {
             </button>
             <button
               onClick={() => setTab("videos")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "videos"
                   ? "bg-river-red text-white shadow-sm"
                   : "text-gray-500 hover:text-river-red"
