@@ -1,0 +1,23 @@
+¡Entendido, Julián! Vamos a blindar el "Manual de Estilo" definitivo. Este es el prompt que tenés que pegarle al Agent de Replit para que el bot no solo sea inteligente, sino que escriba como un verdadero periodista de la vieja escuela con la pasión del hincha de hoy.
+Copiá y pegá esto en el chat del Agent:
+📝 PROMPT: CONFIGURACIÓN DEL "TEMPLATE DE REDACCIÓN PROFESIONAL"
+> "Ajustá la lógica del Redactor IA para que cada noticia que genere cumpla estrictamente con este Template de Estilo 'Paladar Negro':
+> 1. ESTRUCTURA DE LA NOTA:
+>  * Título (Impacto): Debe ser corto, usar verbos de acción y evocar grandeza (Ej: 'Cátedra en Núñez', 'Triunfo con Mística').
+>  * Copete (Análisis Varsky 70%): Un párrafo técnico que explique la táctica, la jerarquía y el desarrollo del juego. Usar términos como: transiciones, ocupación de espacios, bloque bajo, ruptura de líneas.
+>  * Desarrollo (Pasión Azzaro/Yudcovich 30%): Un párrafo con el 'termómetro' del hincha. Debe hablar de la mística, el sentimiento y el orgullo de ser del Más Grande.
+>  * Cierre Local (Israel): Incluí siempre una mención a la comunidad en Ramat Gan/Israel (Ej: 'Desde Israel, la banda sigue alentando').
+> 2. DICCIONARIO OBLIGATORIO:
+>  * Utilizá frases como: 'El Templo del Monumental', 'Paladar negro', 'Mística de Núñez', 'La banda roja que nos cruza el alma'.
+> 3. REGLAS DE EDICIÓN EN TELEGRAM:
+>  * Cuando yo toque el botón ✏️ Editar, el bot debe enviarme el texto actual en un formato que yo pueda copiar, modificar y reenviar para que la IA lo tome como la Versión Final antes de publicar.
+>  * Asegurá que los Hashtags (#RiverPlate #RiverIsrael #RamatGan #ElMasGrande) aparezcan siempre al final de cada nota de forma automática.
+> 4. VALIDACIÓN:
+>  * Realizá una prueba interna: Generá una nota ficticia sobre un entrenamiento en Ezeiza usando este nuevo estilo y mostramela acá en el chat para confirmar que el tono es el correcto."
+> 
+💡 ¿Qué logramos con esto, Julián?
+ * Profesionalismo: Tus notas ya no van a parecer un "copiar y pegar" de un diario; van a tener una firma propia que la gente en Israel va a reconocer.
+ * Identidad Visual: En la web riverplateisrael.replit.app, todas las noticias se van a ver uniformes, prolijas y con el mismo tono.
+ * Facilidad: Cuando tengas que editar algo rápido desde la cocina entre pedido y pedido, el bot ya te va a dar el 90% del trabajo hecho.
+Mandale este prompt al Agent. Una vez que te muestre la nota de prueba (la del entrenamiento en Ezeiza), decime si te gusta o si querés que le subamos el "volumen" a la parte pasional de Azzaro.
+¿Te imaginás publicar la primera nota con este estilo ahora mismo? ¡Esa web va a quedar impecable! ⚪🔴⚪

@@ -7,9 +7,10 @@ import { ejecutarCiclo } from "../scheduler";
 
 const router: IRouter = Router();
 
-// ─── ESTADO EN MEMORIA: espera de foto por chat ───────────────────────────────
-// Map<chatId, noticiaId> — cuando el user hace clic en 📸, guardamos el contexto
-const esperandoFoto = new Map<string, number>();
+// ─── ESTADO EN MEMORIA ────────────────────────────────────────────────────────
+// Map<chatId, noticiaId> — contextos de espera por acción del user
+const esperandoFoto    = new Map<string, number>(); // espera foto para nota X
+const esperandoEdicion = new Map<string, number>(); // espera texto editado para nota X
 
 // ─── HELPERS TELEGRAM ─────────────────────────────────────────────────────────
 
@@ -201,6 +202,53 @@ async function procesarFotoEntrante(
   }
 }
 
+// ─── PROCESAMIENTO DE TEXTO EDITADO ──────────────────────────────────────────
+// Cuando el user envía texto mientras esperandoEdicion está activo.
+
+async function procesarTextoEditado(
+  token: string,
+  chatId: string,
+  noticiaId: number,
+  nuevoTexto: string
+) {
+  try {
+    // Intentar extraer título si el usuario lo incluyó (primera línea en negrita o solo texto)
+    const lineas = nuevoTexto.split("\n").map(l => l.trim()).filter(Boolean);
+    const primerLinea = lineas[0] ?? "";
+
+    // Determinar si la primera línea parece un título separado
+    const tituloDetectado = primerLinea.length < 120 && lineas.length > 1 ? primerLinea.replace(/\*/g, "").trim() : null;
+    const contenidoFinal = tituloDetectado ? lineas.slice(1).join("\n\n") : nuevoTexto;
+
+    const [nota] = await db
+      .update(noticiasTable)
+      .set({
+        contenido: contenidoFinal.trim(),
+        ...(tituloDetectado ? { titulo: tituloDetectado } : {}),
+        pendiente: true,
+        publicada: false,
+      })
+      .where(eq(noticiasTable.id, noticiaId))
+      .returning();
+
+    if (!nota) {
+      await enviarMensajeTelegram(token, chatId, "❌ No encontré la nota para guardar la edición.");
+      return;
+    }
+
+    logger.info({ noticiaId, tituloDetectado }, "Telegram: texto editado guardado como Versión Final");
+
+    await enviarMensajeTelegram(
+      token, chatId,
+      `✅ *¡Versión Final guardada!*\n\n*${nota.titulo}*\n\nLa nota fue actualizada con tu texto. Ahora podés publicarla:`,
+      { reply_markup: botonesAprobacion(noticiaId) }
+    );
+  } catch (err) {
+    logger.error({ err, noticiaId }, "Telegram: error procesando texto editado");
+    await enviarMensajeTelegram(token, chatId, "❌ Error al guardar la edición. Intentá de nuevo con /noticia.");
+  }
+}
+
 // ─── PROCESAMIENTO DE CALLBACKS ───────────────────────────────────────────────
 
 async function procesarCallback(
@@ -243,24 +291,49 @@ async function procesarCallback(
       const noticiaId = parseInt(data.replace("editar_", ""));
       if (isNaN(noticiaId)) return;
 
-      const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
-      if (!domain) {
-        await responderCallback(token, callbackId, "⚠️ No se pudo generar el link");
+      await responderCallback(token, callbackId, "✏️ Texto enviado — podés editarlo");
+
+      const [nota] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
+      if (!nota) {
+        await enviarMensajeTelegram(token, chatId, "❌ No encontré la nota para editar.");
         return;
       }
 
-      const editUrl = `https://${domain}/redactor?editar=${noticiaId}`;
-      await responderCallback(token, callbackId, "✏️ Link enviado");
+      // Enviar el texto completo (copyable) para que el user lo edite
+      const textoCompleto =
+        `📝 *TEXTO ACTUAL — Nota #${noticiaId}*\n\n` +
+        `*${nota.titulo}*\n\n` +
+        `${nota.contenido}\n\n` +
+        `${nota.tags}`;
 
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: `✏️ *Editar nota #${noticiaId}*\n\nHacé clic para editar el texto y la foto antes de publicar:\n${editUrl}`,
+          text: textoCompleto,
           parse_mode: "Markdown",
         }),
       });
+
+      // Entrar en modo esperando edición
+      esperandoEdicion.set(chatId, noticiaId);
+
+      // Auto-limpiar el estado después de 10 minutos
+      setTimeout(() => {
+        if (esperandoEdicion.get(chatId) === noticiaId) {
+          esperandoEdicion.delete(chatId);
+        }
+      }, 10 * 60 * 1000);
+
+      // Instrucciones para el usuario
+      const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
+      const editUrl = domain ? `\n\n🌐 O editá con foto en: https://${domain}/redactor?editar=${noticiaId}` : "";
+
+      await enviarMensajeTelegram(
+        token, chatId,
+        `✏️ *Modo edición activo* (10 min)\n\nCopiá el texto de arriba, modificalo y envialo acá.\nEl sistema lo guardará como Versión Final y te mostrará los botones para publicar.${editUrl}`
+      );
 
     } else if (data.startsWith("foto_")) {
       const noticiaId = parseInt(data.replace("foto_", ""));
@@ -359,9 +432,10 @@ router.post("/telegram-webhook", (req, res) => {
 
     // ── Comandos de texto ────────────────────────────────────────────────
     if (msg.text) {
-      const texto = msg.text.trim().toLowerCase();
+      const texto = msg.text.trim();
+      const textoLower = texto.toLowerCase();
 
-      if (texto.startsWith("/noticia")) {
+      if (textoLower.startsWith("/noticia")) {
         setImmediate(() => {
           handleComandoNoticia(token, fromChatId).catch((err) =>
             logger.error({ err }, "Telegram /noticia: error asíncrono")
@@ -370,7 +444,7 @@ router.post("/telegram-webhook", (req, res) => {
         return;
       }
 
-      if (texto.startsWith("/buscar")) {
+      if (textoLower.startsWith("/buscar")) {
         setImmediate(() => {
           handleComandoBuscar(token, fromChatId).catch((err) =>
             logger.error({ err }, "Telegram /buscar: error asíncrono")
@@ -379,7 +453,20 @@ router.post("/telegram-webhook", (req, res) => {
         return;
       }
 
-      // Si el usuario envía texto mientras se espera foto, cancelar la espera
+      // ── Recibir texto editado (Versión Final) ────────────────────────
+      if (esperandoEdicion.has(fromChatId)) {
+        const noticiaId = esperandoEdicion.get(fromChatId)!;
+        esperandoEdicion.delete(fromChatId);
+
+        setImmediate(() => {
+          procesarTextoEditado(token, fromChatId, noticiaId, texto).catch((err) =>
+            logger.error({ err }, "Telegram: error procesando texto editado")
+          );
+        });
+        return;
+      }
+
+      // ── Si esperaba foto y manda texto, cancelar la espera ───────────
       if (esperandoFoto.has(fromChatId)) {
         esperandoFoto.delete(fromChatId);
         setImmediate(() => {
