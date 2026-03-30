@@ -142,73 +142,26 @@ router.post("/enviar-telegram", async (req, res) => {
       ],
     };
 
-    let tgRes: Response;
+    // Texto completo como mensaje independiente — nunca como caption de foto.
+    // La imagen se adjunta por separado vía el botón 📸 (telegram-webhook.ts).
+    // Telegram admite hasta 4096 chars en sendMessage, vs 1024 en caption de imagen.
+    const TELEGRAM_MAX = 4096;
+    const encabezado = `📰 *NUEVA NOTA — River en Israel*\n\n*${titulo}*\n\n`;
+    const pie = `\n\n${tags}\n\n_¿Publicamos esta nota en el sitio?_`;
+    const maxCuerpo = TELEGRAM_MAX - encabezado.length - pie.length - 5;
+    const cuerpo = contenido.length > maxCuerpo ? contenido.slice(0, maxCuerpo) + "…" : contenido;
+    const mensajeTexto = encabezado + cuerpo + pie;
 
-    if (imagenPortada) {
-      const encabezado = `📰 *NUEVA NOTA — River en Israel*\n\n*${titulo}*\n\n`;
-      const pie = `\n\n${tags}\n\n_¿Publicamos esta nota en el sitio?_`;
-      const maxContenido = 1024 - encabezado.length - pie.length - 3;
-      const contenidoRecortado = contenido.length > maxContenido
-        ? contenido.slice(0, maxContenido) + "..."
-        : contenido;
-      const caption = encabezado + contenidoRecortado + pie;
-
-      try {
-        // Descargamos la imagen desde nuestro servidor local y la enviamos como binario
-        const port = process.env.PORT;
-        const imgRes = await fetch(`http://localhost:${port}/api/storage${imagenPortada}`, {
-          signal: AbortSignal.timeout(15000),
-        });
-
-        if (!imgRes.ok) throw new Error("No se pudo descargar imagen");
-
-        const imgBuffer = await imgRes.arrayBuffer();
-        const contentType = imgRes.headers.get("content-type") ?? "image/jpeg";
-        const form = new FormData();
-        form.append("chat_id", chatId);
-        form.append("caption", caption);
-        form.append("parse_mode", "Markdown");
-        form.append("reply_markup", JSON.stringify(replyMarkup));
-        form.append("photo", new Blob([imgBuffer], { type: contentType }), "portada.jpg");
-
-        tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-          method: "POST",
-          body: form,
-        });
-      } catch {
-        // Si falla la foto, enviamos como texto simple
-        const mensajeTexto =
-          `📰 *NUEVA NOTA — River en Israel*\n\n` +
-          `*${titulo}*\n\n` +
-          `${contenido.slice(0, 700)}${contenido.length > 700 ? "..." : ""}\n\n` +
-          `${tags}\n\n` +
-          `_¿Publicamos esta nota en el sitio?_`;
-
-        tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, text: mensajeTexto, parse_mode: "Markdown", reply_markup: replyMarkup }),
-        });
-      }
-    } else {
-      const mensajeTexto =
-        `📰 *NUEVA NOTA — River en Israel*\n\n` +
-        `*${titulo}*\n\n` +
-        `${contenido.slice(0, 700)}${contenido.length > 700 ? "..." : ""}\n\n` +
-        `${tags}\n\n` +
-        `_¿Publicamos esta nota en el sitio?_`;
-
-      tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: mensajeTexto,
-          parse_mode: "Markdown",
-          reply_markup: replyMarkup,
-        }),
-      });
-    }
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: mensajeTexto,
+        parse_mode: "Markdown",
+        reply_markup: replyMarkup,
+      }),
+    });
 
     const tgData = await tgRes.json() as { ok: boolean; result?: { message_id: number } };
 

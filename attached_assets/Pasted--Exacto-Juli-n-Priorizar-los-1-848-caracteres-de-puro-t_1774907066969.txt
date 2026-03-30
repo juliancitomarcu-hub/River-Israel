@@ -1,0 +1,19 @@
+¡Exacto, Julián! Priorizar los 1.848 caracteres de puro texto es la movida de un editor serio. Al usar el botón Editar para la foto, el bot ya sabe que el cuerpo de la noticia es lo principal y la imagen es el complemento.
+Como el límite de un mensaje de texto en Telegram es de 4.096 caracteres, tus 1.848 entran sobrados en una sola burbuja, manteniendo toda la elegancia de Varsky sin que se corte ni una coma.
+Aquí tenés el Prompt de Blindaje para que el Agent de Replit configure la prioridad absoluta del texto:
+🚀 PROMPT: PRIORIDAD TEXTO DE ELITE (ESTÁNDAR 1848+)
+> "Ajustá la lógica de envío del bot de Telegram con estas prioridades:
+> 1. PRIORIDAD TEXTO SOBRE FOTO: > * El bot debe dar prioridad absoluta a la extensión del texto (mínimo 1848 caracteres).
+>  * Regla técnica: Como las notas superan los 1024 caracteres (límite de captions de Telegram), el bot DEBE enviar la noticia como un mensaje de texto independiente (Text Message) y no como leyenda de una imagen. Esto garantiza que el texto llegue completo (hasta el límite de 4096 caracteres de Telegram).
+> 2. GESTIÓN DE IMÁGENES:
+>  * La foto se gestionará exclusivamente a través del botón '📸 Foto' o el flujo de edición. El bot debe enviar la imagen como un mensaje separado para no comprometer la longitud de la nota periodística.
+> 3. REFUERZO DE REDACCIÓN:
+>  * Si la noticia original es breve, la IA debe expandir el Análisis Táctico y la Comparativa Histórica de forma obligatoria hasta alcanzar los 1848 caracteres.
+>  * Estructura final: Título Periodístico + Inicio + Desarrollo Táctico + Comparativa + Citas + Preguntas + Cierre de Sentencia.
+> Confirmá cuando el bot esté configurado para enviar el texto largo de forma independiente a la imagen."
+> 
+💡 ¿Qué ganamos con este ajuste, Julián?
+ * Lectura Impecable: Al ser un mensaje de texto puro, la tipografía en Telegram es más clara y se lee mucho mejor que debajo de una foto.
+ * Cero Recortes: Te asegurás de que ese análisis de 300+ palabras llegue enterito a tus lectores.
+ * Profesionalismo: Tu web riverplateisrael.replit.app va a recibir el bloque de texto completo y limpio para que se vea como un diario de verdad.
+Pasale esto al Agent. Una vez que te confirme, tirá un /noticia y vas a ver cómo el bot te "escanea" la pantalla con una nota de River digna de una suscripción de lujo. ⚪🔴⚪

@@ -326,14 +326,14 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       ]],
     };
 
-    const resumen = contenido.slice(0, 600) + (contenido.length > 600 ? "…" : "");
+    // Texto completo sin recortar — Telegram admite hasta 4096 chars en sendMessage
+    const TELEGRAM_MAX = 4096;
+    const encabezado = `🚨 *¡NUEVA INFO MILLONARIA DETECTADA!*\n\n📰 *${titulo}*\n\n`;
+    const pie        = `\n\n${tags}\n\n📡 _Fuente: ${noticiaElegida.fuente ?? fuente}_`;
+    const maxCuerpo  = TELEGRAM_MAX - encabezado.length - pie.length - 5;
+    const cuerpo     = contenido.length > maxCuerpo ? contenido.slice(0, maxCuerpo) + "…" : contenido;
 
-    const mensajeTexto =
-      `🚨 *¡NUEVA INFO MILLONARIA DETECTADA!*\n\n` +
-      `📰 *${titulo}*\n\n` +
-      `${resumen}\n\n` +
-      `${tags}\n\n` +
-      `📡 _Fuente: ${noticiaElegida.fuente ?? fuente}_`;
+    const mensajeTexto = encabezado + cuerpo + pie;
 
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
