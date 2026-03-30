@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import multer from "multer";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { ai } from "@workspace/integrations-gemini-ai";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
@@ -98,18 +98,15 @@ router.post("/postular-redactor", upload.single("archivo"), async (req, res) => 
     // Corrección con IA (con fallback: si falla, se usa el texto original)
     let textoCorregido = textoRaw;
     try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4.1-mini",
-        max_completion_tokens: 4096,
-        messages: [
-          { role: "system", content: PROMPT_EDITOR_RESPETUOSO },
-          {
-            role: "user",
-            content: `Corregí este texto de ${nombre} (${ciudad}), sin cambiar su voz:\n\n${textoRaw}`
-          }
-        ],
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [{ text: `Corregí este texto de ${nombre} (${ciudad}), sin cambiar su voz:\n\n${textoRaw}` }] }],
+        config: {
+          systemInstruction: PROMPT_EDITOR_RESPETUOSO,
+          maxOutputTokens: 4096,
+        },
       });
-      textoCorregido = completion.choices[0]?.message?.content?.trim() ?? textoRaw;
+      textoCorregido = response.text?.trim() ?? textoRaw;
     } catch (aiErr) {
       req.log.warn({ err: aiErr }, "Postulación: fallo IA, usando texto original");
     }

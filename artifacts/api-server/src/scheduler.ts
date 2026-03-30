@@ -1,4 +1,4 @@
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { ai } from "@workspace/integrations-gemini-ai";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq, sql as sqlRaw } from "drizzle-orm";
@@ -216,17 +216,17 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       }
     }
 
-    // ── GENERAR CON IA (gpt-4o-mini: más rápido, mismo resultado) ────────────
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 1800,
-      messages: [
-        { role: "system", content: PROMPT_MAESTRO },
-        { role: "user", content: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` },
-      ],
+    // ── GENERAR CON IA (Gemini Flash: rápido y de alta calidad) ─────────────
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] }],
+      config: {
+        systemInstruction: PROMPT_MAESTRO,
+        maxOutputTokens: 1800,
+      },
     });
 
-    const resultado = completion.choices[0]?.message?.content ?? "";
+    const resultado = response.text ?? "";
     if (!resultado || resultado.length < 50) {
       logger.error("Scheduler: la IA no generó contenido");
       return;

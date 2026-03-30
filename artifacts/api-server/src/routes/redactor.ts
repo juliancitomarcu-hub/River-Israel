@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { ai } from "@workspace/integrations-gemini-ai";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -69,18 +69,17 @@ router.post("/procesar-noticia", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
 
   try {
-    const stream = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 8192,
-      messages: [
-        { role: "system", content: PROMPT_MAESTRO },
-        { role: "user", content: `Transformá esta noticia para el sitio River en Israel:\n\n${texto}` }
-      ],
-      stream: true,
+    const stream = await ai.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${texto}` }] }],
+      config: {
+        systemInstruction: PROMPT_MAESTRO,
+        maxOutputTokens: 8192,
+      },
     });
 
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
+      const content = chunk.text;
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
       }
