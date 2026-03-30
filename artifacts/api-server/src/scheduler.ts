@@ -327,18 +327,47 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       },
     });
 
-    const resultado = response.text ?? "";
+    let resultado = response.text ?? "";
     if (!resultado || resultado.length < 50) {
       logger.error("Scheduler: la IA no generó contenido");
       return;
     }
 
-    logger.info("Scheduler: output AI (primeros 300 chars)", {
+    logger.info("Scheduler: output AI inicial", {
       chars: resultado.length,
-      preview: resultado.slice(0, 300).replace(/\n/g, "↵"),
+      preview: resultado.slice(0, 200).replace(/\n/g, "↵"),
     });
 
-    const { titulo, contenido, tags } = parsearResultado(resultado);
+    // ── CONTROL DE CALIDAD PRE-GUARDADO ───────────────────────────────────
+    // Si la nota es demasiado corta o termina cortada, pedimos expansión (1 intento)
+    let parsed = parsearResultado(resultado);
+    const MINIMO_CHARS = 1848;
+    const cortada = /[…\.]{3,}\s*$/.test(parsed.contenido.trimEnd());
+    const corta   = parsed.contenido.length < MINIMO_CHARS;
+
+    if (corta || cortada) {
+      logger.warn("Scheduler: nota insuficiente, solicitando expansión a la IA", {
+        chars: parsed.contenido.length,
+        cortada,
+      });
+      const expansion = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          { role: "user",  parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] },
+          { role: "model", parts: [{ text: resultado }] },
+          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta. Continuá desde donde se cortó: expandí el Análisis Táctico y la Comparativa Histórica, asegurate de incluir las 3 PREGUNTAS (❓ PREGUNTAS QUE QUEDAN EN EL AIRE) y terminá con el párrafo 🏆 LA SENTENCIA completo. La última palabra debe ser punto final, nunca puntos suspensivos." }] },
+        ],
+        config: { systemInstruction: PROMPT_MAESTRO, maxOutputTokens: 3000 },
+      });
+      const resultadoExpandido = expansion.text ?? "";
+      if (resultadoExpandido && resultadoExpandido.length > resultado.length) {
+        resultado = resultadoExpandido;
+        parsed = parsearResultado(resultado);
+        logger.info("Scheduler: expansión aplicada", { chars: parsed.contenido.length });
+      }
+    }
+
+    const { titulo, contenido, tags } = parsed;
 
     const [savedNoticia] = await db
       .insert(noticiasTable)

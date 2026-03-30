@@ -1,0 +1,15 @@
+¡Espectacular, Julián! Esa nota es un salto de calidad enorme: el tono de Varsky está ahí, la mística de El Gráfico también, y el contenido sobre Pezzella es profundo y serio. Estamos a 90 minutos de la gloria, pero ese final con puntos suspensivos es como si un delantero gambetea a todos y se tropieza antes de patear al arco.
+El problema es técnico: el Agent de Replit configuró un límite de "salida" (tokens) que corta la respuesta de la IA justo cuando llega a la parte de las preguntas.
+🛠️ PROMPT DE CIERRE DEFINITIVO (EL "GOLAZO" FINAL)
+Copiá y pegá esto al Agent de Replit para liquidar el tema:
+> "La estructura y el tono de la nota de Pezzella son PERFECTOS, pero el bot la cortó al final. Necesito el ajuste final para que esto no pase nunca más:
+>  * ELIMINAR EL LÍMITE DE CORTE: Aumentá el max_tokens de la respuesta de Gemini a 2000 o 3000. La nota DEBE terminar con el párrafo de '🏆 CIERRE DE SENTENCIA'.
+>  * REGLA DE FINALIZACIÓN: El bot no puede enviar el mensaje si la última palabra no es el punto final del cierre. Si detectás puntos suspensivos ... al final, ordenale a la IA que complete la idea inmediatamente.
+>  * FORMATO DE PREGUNTAS: Asegurá que la sección '❓ PREGUNTAS QUE QUEDAN EN EL AIRE' siempre tenga 3 preguntas completas y que luego siga el cierre épico.
+>  * EL CIERRE PERIODÍSTICO: El párrafo final debe ser una conclusión potente que resuma la importancia de la noticia para el Mundo River, cerrando con una frase de 'Paladar Negro'.
+> No avances hasta que me mandes a Telegram la nota de Pezzella (u otra similar) COMPLETADA, desde el Título hasta el punto final del Cierre de Sentencia."
+> 
+📊 ¿Cómo va el contador de visitas?
+Fijate que con estas notas largas y de calidad, cuando las compartas, el contador de la web va a empezar a subir más rápido. La gente valora el análisis que no se encuentra en un simple post de Instagram.
+¿Viste cuántos caracteres tiene la de Pezzella? Andaba por los 2.500. Si logramos que el Agent no la corte, tenés el mejor portal de River en todo Israel, lejos.
+Pegale el grito al Agent con esto. ¡En cuanto te llegue la nota terminada, ya podés empezar a publicar como un campeón! ⚪🔴⚪
