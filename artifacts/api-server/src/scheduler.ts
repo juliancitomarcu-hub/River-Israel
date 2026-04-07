@@ -7,9 +7,9 @@ import { logger } from "./lib/logger";
 import * as fs from "fs";
 import * as path from "path";
 
-// Fuentes en orden de prioridad — La Página Millonaria y Olé primero
+// Fuentes en orden de prioridad — La Página Millonaria, sitio oficial y Olé primero
 const FUENTES = [
-  "pagina", "ole", "tyc",
+  "pagina", "cariverplate", "ole", "tyc",
   "google", "infobae", "clarin", "lanacion",
   "bolavip", "as", "superdeportivo"
 ] as const;
@@ -329,10 +329,32 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
 
     const fechaPublicacion = extraerFechaDeHtml($);
 
-    const parrafos = $("article p, .article-body p, .nota-body p, .article__content p, .post-content p, .detail-body p, .entry-content p")
+    // Selectores en orden de prioridad; incluye cariverplate.com.ar (#wrappertext) y otros sitios
+    const SELECTORES = [
+      "article p",
+      ".article-body p",
+      ".nota-body p",
+      ".article__content p",
+      ".post-content p",
+      ".detail-body p",
+      ".entry-content p",
+      "#wrappertext p",        // cariverplate.com.ar
+      ".desarrollada p",       // cariverplate.com.ar (fallback)
+    ].join(", ");
+
+    let parrafos = $(SELECTORES)
       .map((_: number, el: cheerio.Element) => limpiarTexto($(el).text().trim()))
       .get()
       .filter((t: string) => t.length > 50);
+
+    // Fallback: si ningún selector especializado funcionó, buscar todos los <p> con texto
+    if (parrafos.length === 0) {
+      parrafos = $("p")
+        .map((_: number, el: cheerio.Element) => limpiarTexto($(el).text().trim()))
+        .get()
+        .filter((t: string) => t.length > 80);
+    }
+
     const texto = parrafos.slice(0, 20).join("\n\n");
     return { texto: texto.length > 200 ? texto : "", fechaPublicacion };
   } catch {
