@@ -235,7 +235,7 @@ export function Footer() {
 
         {/* ── COPYRIGHT ────────────────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} River en Israel - Filial Ramat Gan. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} River en Israel - Filial River Plate Israel. Todos los derechos reservados.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
             <a href="#" className="hover:text-white transition-colors">Privacidad</a>
             <a href="#" className="hover:text-white transition-colors">Términos</a>

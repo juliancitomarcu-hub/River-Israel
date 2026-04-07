@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { name: "Actualidad", href: "#actualidad" },
   { name: "Historia", href: "/historia" },
   { name: "Plantel Profesional Masculino", href: "/equipo" },
-  { name: "Filial Ramat Gan", href: "#filial" },
+  { name: "Filial River Plate Israel", href: "#filial" },
   { name: "Galería", href: "#galeria" },
   { name: "Videos", href: "#videos" },
   { name: "Reacciones Post Partido", href: "#videos" },
@@ -64,7 +64,7 @@ export function Navbar() {
                 RIVER EN ISRAEL
               </span>
               <span className="text-[0.65rem] text-gray-300 font-semibold uppercase tracking-widest flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-river-red" /> Ramat Gan 🇮🇱
+                <MapPin className="w-3 h-3 text-river-red" /> Filial Gaby &quot;El Tucu&quot; Sajnin
               </span>
             </div>
           </Link>
@@ -99,12 +99,12 @@ export function Navbar() {
               )
             )}
             <a
-              href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+              href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-river-red hover:bg-river-red-hover text-white px-5 py-2 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)] hover:-translate-y-0.5"
             >
-              Unite al canal de WhatsApp
+              Unite al grupo de WhatsApp
             </a>
           </div>
 
@@ -155,12 +155,12 @@ export function Navbar() {
                 )
               )}
               <a
-                href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-river-red text-white px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center mt-4"
               >
-                Unite al canal de WhatsApp
+                Unite al grupo de WhatsApp
               </a>
             </div>
           </motion.div>
