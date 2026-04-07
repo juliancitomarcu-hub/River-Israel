@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NAV_LINKS = [
-  { name: "Inicio", href: "/" },
-  { name: "Actualidad", href: "#actualidad" },
-  { name: "Historia", href: "/historia" },
-  { name: "Plantel Profesional Masculino", href: "/equipo" },
-  { name: "Nuestra Filial", href: "#filial" },
-  { name: "Galería", href: "#galeria" },
-  { name: "Videos", href: "#videos" },
-  { name: "Reacciones Post Partido", href: "#videos" },
+  { name: "Inicio",        href: "/" },
+  { name: "Actualidad",    href: "#actualidad" },
+  { name: "Historia",      href: "/historia" },
+  { name: "Plantel",       href: "/equipo" },
+  { name: "Nuestra Filial",href: "#filial" },
+  { name: "Galería",       href: "#galeria" },
+  { name: "Videos",        href: "#videos" },
+  { name: "Reacciones",    href: "#videos" },
 ];
 
 export function Navbar() {
@@ -48,35 +48,36 @@ export function Navbar() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out border-b border-transparent",
         isScrolled
-          ? "bg-river-black/95 backdrop-blur-md py-3 shadow-lg border-white/10"
-          : "bg-gradient-to-b from-black/80 to-transparent py-5"
+          ? "bg-river-black/95 backdrop-blur-md py-2 shadow-lg border-white/10"
+          : "bg-gradient-to-b from-black/80 to-transparent py-3"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
+
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10 overflow-hidden rounded-full border-2 border-white shadow-[0_0_10px_rgba(204,0,0,0.5)] group-hover:scale-105 transition-transform">
+          <Link href="/" className="flex items-center gap-2 group shrink-0">
+            <div className="relative w-9 h-9 overflow-hidden rounded-full border-2 border-white shadow-[0_0_10px_rgba(204,0,0,0.5)] group-hover:scale-105 transition-transform">
               <div className="absolute inset-0 bg-diagonal-red"></div>
             </div>
             <div className="flex flex-col">
-              <span className="font-display font-bold text-2xl text-white leading-none tracking-wide">
+              <span className="font-display font-bold text-lg lg:text-xl text-white leading-none tracking-wide">
                 RIVER EN ISRAEL
               </span>
-              <span className="text-[0.6rem] text-gray-300 font-semibold tracking-wider whitespace-nowrap flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-river-red shrink-0" /> Filial River Israel &quot;El TUCU&quot; SAJNIN
+              <span className="text-[0.55rem] text-gray-300 font-semibold tracking-wide whitespace-nowrap flex items-center gap-0.5">
+                <MapPin className="w-2.5 h-2.5 text-river-red shrink-0" /> Filial River Israel &quot;El TUCU&quot; SAJNIN
               </span>
             </div>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center gap-3 lg:gap-5">
             {NAV_LINKS.map((link) =>
               link.href.startsWith("/") ? (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="text-white/90 hover:text-white font-medium text-sm uppercase tracking-wider relative group py-2"
+                  className="text-white/90 hover:text-white font-medium text-[0.7rem] lg:text-xs uppercase tracking-wide relative group py-1 whitespace-nowrap"
                 >
                   {link.name}
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
@@ -91,7 +92,7 @@ export function Navbar() {
                       handleNavClick(link.href);
                     }
                   }}
-                  className="text-white/90 hover:text-white font-medium text-sm uppercase tracking-wider relative group py-2"
+                  className="text-white/90 hover:text-white font-medium text-[0.7rem] lg:text-xs uppercase tracking-wide relative group py-1 whitespace-nowrap"
                 >
                   {link.name}
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
@@ -102,9 +103,9 @@ export function Navbar() {
               href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-river-red hover:bg-river-red-hover text-white px-5 py-2 rounded-full font-bold uppercase tracking-wider text-sm transition-all shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:shadow-[0_0_20px_rgba(204,0,0,0.6)] hover:-translate-y-0.5"
+              className="shrink-0 bg-river-red hover:bg-river-red-hover text-white px-3 py-1.5 rounded-full font-bold uppercase tracking-wide text-[0.65rem] lg:text-xs transition-all shadow-[0_0_12px_rgba(204,0,0,0.4)] hover:shadow-[0_0_18px_rgba(204,0,0,0.6)] hover:-translate-y-0.5 whitespace-nowrap"
             >
-              Unite al grupo de WhatsApp
+              Unite al WhatsApp
             </a>
           </div>
 
