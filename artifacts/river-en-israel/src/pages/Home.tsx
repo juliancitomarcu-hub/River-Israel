@@ -191,20 +191,20 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="relative flex-shrink-0 self-center flex items-center gap-2 sm:gap-4"
+            className="relative flex-shrink-0 self-center flex items-center gap-1 sm:gap-4"
           >
             <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
             <img
               src={`${import.meta.env.BASE_URL}filial-logo.jpeg`}
               alt="Escudo Filial River Plate Israel - Gaby El Tucu Sajnin"
-              className="relative z-10 w-24 h-24 sm:w-36 sm:h-36 md:w-48 md:h-48 object-contain rounded-full"
+              className="relative z-10 w-14 h-14 sm:w-36 sm:h-36 md:w-48 md:h-48 object-contain rounded-full"
               style={{ filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.7))" }}
               draggable={false}
             />
             <img
               src={`${import.meta.env.BASE_URL}images/escudo-carp.png?v=4`}
               alt="Escudo Club Atlético River Plate"
-              className="relative z-10 w-28 h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 object-contain"
+              className="relative z-10 w-16 h-16 sm:w-44 sm:h-44 md:w-56 md:h-56 object-contain"
               style={{ filter: "drop-shadow(0 4px 28px rgba(204,0,0,0.9))" }}
               draggable={false}
             />
