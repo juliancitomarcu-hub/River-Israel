@@ -64,7 +64,7 @@ export function Navbar() {
                 RIVER EN ISRAEL
               </span>
               <span className="text-[0.65rem] text-gray-300 font-semibold tracking-widest flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-river-red" /> Filial Gaby &quot;EL TUCU&quot; SAJNIN
+                <MapPin className="w-3 h-3 text-river-red" /> Filial GABY &quot;EL TUCU&quot; SAJNIN
               </span>
             </div>
           </Link>
