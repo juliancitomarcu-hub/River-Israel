@@ -97,9 +97,25 @@ export interface Partido {
   estadio?: string;
 }
 
-// Convierte "DD-MM-YYYY HH:MM" (hora Argentina, UTC-3) a fecha e hora Israel (UTC+3 en verano)
-// Maneja correctamente el cruce de medianoche y el cambio de día.
-function convertirArgentinaAIsrael(startTime: string | undefined): { fecha: string; horaIsrael: string } {
+// Equipos de países con UTC-4 (1 hora detrás de Argentina UTC-3).
+// Promiedos muestra la hora local del equipo local → cuando el local es de UTC-4
+// el tiempo aparece 1 hora menos de lo real en horario argentino, hay que sumar 1h extra.
+// Bolivia (BOT = UTC-4), Venezuela (VET = UTC-4), Paraguay (PYT ≈ UTC-4 en invierno)
+const EQUIPOS_UTC_MINUS_4 = new Set([
+  // Bolivia
+  "blooming", "always-ready", "bolivar", "oriente-petrolero", "the-strongest",
+  "nacional-potosi", "guabira", "san-jose-oruro",
+  // Venezuela
+  "carabobo", "carabobo-fc", "caracas", "metropolitanos", "deportivo-tachira",
+  "zamora", "monagas", "estudiantes-merida", "mineros-guayana",
+  // Paraguay (invierno sin DST)
+  "olimpia", "cerro-porteno", "libertad", "nacional-py", "tacuary",
+  "general-caballero", "guarani", "sportivo-luqueno",
+]);
+
+// Convierte "DD-MM-YYYY HH:MM" (hora local del equipo local según Promiedos) a fecha e hora Israel.
+// extraHoras: ajuste adicional en horas cuando el equipo local es de una zona UTC-4 (1h detrás de ART).
+function convertirArgentinaAIsrael(startTime: string | undefined, extraHoras = 0): { fecha: string; horaIsrael: string } {
   if (!startTime) return { fecha: "", horaIsrael: "" };
   const partes = startTime.split(" ");
   if (partes.length < 2) return { fecha: startTime, horaIsrael: "" };
@@ -107,11 +123,14 @@ function convertirArgentinaAIsrael(startTime: string | undefined): { fecha: stri
   const [h, m] = partes[1].split(":").map(Number);
   if (!dia || !mes || !anio || isNaN(h) || isNaN(m)) return { fecha: "", horaIsrael: "" };
 
-  // Argentina = UTC-3 → sumar 3 horas para llegar a UTC
-  // Israel abril-oct = UTC+3 → sumar 3 horas más desde UTC
-  // Total: Argentina + 6h = Israel (pero calculamos via UTC para que el día sea correcto)
-  const utcMs = Date.UTC(anio, mes - 1, dia, h + 3, m); // AR → UTC
-  const israelMs = utcMs + 3 * 60 * 60 * 1000;           // UTC → Israel (verano UTC+3)
+  // Base: hora local del equipo local (Argentina o similar) → UTC
+  // Argentina = UTC-3 → +3h para llegar a UTC
+  // Israel verano (abr-oct) = UTC+3 → +3h más desde UTC
+  // Si el equipo local es de UTC-4 (Bolivia, Venezuela, Paraguay), Promiedos muestra hora UTC-4
+  //   → +4h para llegar a UTC (en vez de +3h)  → extraHoras = 1
+  const offsetLocalAUtc = 3 + extraHoras; // horas a sumar para llegar a UTC
+  const utcMs = Date.UTC(anio, mes - 1, dia, h + offsetLocalAUtc, m);
+  const israelMs = utcMs + 3 * 60 * 60 * 1000; // UTC → Israel verano (UTC+3)
   const d = new Date(israelMs);
 
   const ilDia  = String(d.getUTCDate()).padStart(2, "0");
@@ -147,8 +166,14 @@ function mapearPartido(row: PromediosRow, tipo: "proximo" | "resultado"): Partid
   const timeVal = row.values.find((v) => v.key === "time")?.value ?? "";
   const resultVal = row.values.find((v) => v.key === "result")?.value ?? null;
 
+  // Detectar si el equipo local es de un país UTC-4 (Bolivia, Venezuela, Paraguay)
+  // para corregir que Promiedos muestra hora local del equipo local.
+  const homeUrlName = (teams[0]?.url_name ?? "").toLowerCase();
+  const esLocalUtcMinus4 = EQUIPOS_UTC_MINUS_4.has(homeUrlName);
+  const extraHoras = esLocalUtcMinus4 ? 1 : 0;
+
   // Usar conversión correcta de timezone si tenemos start_time completo (incluye fecha)
-  const { fecha: fechaIsrael, horaIsrael: horaIsraelConvertida } = convertirArgentinaAIsrael(game.start_time);
+  const { fecha: fechaIsrael, horaIsrael: horaIsraelConvertida } = convertirArgentinaAIsrael(game.start_time, extraHoras);
   const fechaFinal = fechaIsrael || dateVal;
   const horaIsrael = horaIsraelConvertida || (timeVal ? horaArgentinaAIsrael(timeVal) : "");
 
@@ -300,7 +325,9 @@ router.get("/partido-proximo", async (req, res) => {
     const game = baseRow.game;
     const teams = game.teams ?? [];
     const esLocalRiver = teams[0]?.id === RIVER_TEAM_ID;
-    const { fecha, horaIsrael } = convertirArgentinaAIsrael(game.start_time);
+    const homeUrlName = (teams[0]?.url_name ?? "").toLowerCase();
+    const extraHorasWidget = EQUIPOS_UTC_MINUS_4.has(homeUrlName) ? 1 : 0;
+    const { fecha, horaIsrael } = convertirArgentinaAIsrael(game.start_time, extraHorasWidget);
     const scores = game.scores ?? [];
     const statusEnum = game.status?.enum ?? -1;
     let estado: PartidoDetallado["estado"] = "PROXIMO";
