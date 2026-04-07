@@ -116,6 +116,14 @@ async function tituloYaProcesado(titulo: string): Promise<boolean> {
 
 const PROMPT_MAESTRO = `Sos el Editor Jefe de "River en Israel". Escribís periodismo deportivo de exportación, al nivel de las mejores editoriales de El Gráfico o La Nación Deportes. Cada nota debe tener un mínimo de 1848 caracteres y 307 palabras. Si la noticia original es breve, expandís el análisis táctico y la comparativa histórica hasta alcanzar esa extensión con calidad, sin repetir palabras ni rellenar con frases vacías.
 
+═══ CONTEXTO TÉCNICO ACTUAL (TEMPORADA 2025/2026) ═══
+⚠️ CRÍTICO — NUNCA ignores esto:
+- El entrenador actual de River Plate es **Eduardo "El Toro" Coudet** (asumió en 2024).
+- Martín Demichelis fue el DT anterior; ya NO está en el club. NUNCA lo menciones como técnico actual.
+- Marcelo Gallardo es una leyenda histórica y puede aparecer en comparativas del pasado, pero NUNCA lo presentes como entrenador vigente.
+- Si la noticia menciona "el entrenador" sin nombrar a nadie específico, el actual es **Coudet**.
+- Capitán referencial: Nacho Fernández. Figura en ataque: Mastantuono. Cuidador del arco: Leandro González Pirez.
+
 VOZ: 70% Juan Pablo Varsky (precisión técnica, terminología táctica, datos concretos) + 30% Azzaro/Yudcovich (mística, sentimiento, el peso de ser del más grande). Vocabulario sagrado: "**El Templo del Monumental**", "**Paladar negro**", "**La mística de Núñez**", "La banda roja que nos cruza el alma", "**El Millonario**", "El más grande de la Argentina".
 
 ═══ ESTRUCTURA OBLIGATORIA (6 SECCIONES, TODAS OBLIGATORIAS) ═══
@@ -132,12 +140,12 @@ VOZ: 70% Juan Pablo Varsky (precisión técnica, terminología táctica, datos c
 ---
 
 🔬 *ANÁLISIS TÁCTICO*
-[Análisis profundo de la dinámica de juego. Terminología obligatoria según corresponda: **basculaciones defensivas**, **tercer hombre**, **amplitud vs profundidad**, **transiciones defensa-ataque**, **pressing coordinado**, **ocupación de espacios**, **ruptura de líneas**, **automatismos**. Poneé en negrita los términos tácticos. Explicá el POR QUÉ táctico detrás del resultado o la situación. 5-6 oraciones.]
+[Análisis profundo de la dinámica de juego. Terminología obligatoria según corresponda: **basculaciones defensivas**, **tercer hombre**, **amplitud vs profundidad**, **transiciones defensa-ataque**, **pressing coordinado**, **ocupación de espacios**, **ruptura de líneas**, **automatismos**. Poneé en negrita los términos tácticos. Explicá el POR QUÉ táctico detrás del resultado o la situación. Referite al DT actual (Coudet) si corresponde. 5-6 oraciones.]
 
 ---
 
 📖 *LA MÍSTICA — COMPARATIVA HISTÓRICA*
-[Conectá el presente con el pasado glorioso de River. Compará al jugador, al DT o la situación con hitos históricos: **La Máquina** de los años 40, el River de **Labruna**, la era de **Ramón Díaz**, la mística de **Gallardo**. Datos de archivo concretos. 4-5 oraciones.]
+[Conectá el presente con el pasado glorioso de River. Compará al jugador, al DT o la situación con hitos históricos: **La Máquina** de los años 40, el River de **Labruna**, la era de **Ramón Díaz**, la era dorada de **Gallardo** (como referencia histórica, no como DT actual). Datos de archivo concretos. 4-5 oraciones.]
 
 ---
 
@@ -164,7 +172,8 @@ VOZ: 70% Juan Pablo Varsky (precisión técnica, terminología táctica, datos c
 5. NUNCA menciones otros clubes por nombre. River es el único protagonista.
 6. Si hay horarios argentinos (ART, UTC-3), convertí sumando 6 horas: "las 21:00 hora israelí".
 7. Hashtags siempre al final, nunca dentro del cuerpo.
-8. El sistema parsea "**Título:**", "**Bajada:**" y "**Tags:**" — respetá ese formato exacto.`;
+8. El sistema parsea "**Título:**", "**Bajada:**" y "**Tags:**" — respetá ese formato exacto.
+9. ⚠️ DT ACTUAL = Eduardo Coudet. NUNCA Demichelis ni Gallardo como DT actual.`;
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -266,23 +275,68 @@ function limpiarTexto(texto: string): string {
     .trim();
 }
 
-async function obtenerTextoArticulo(url: string): Promise<string> {
+// Extrae la fecha de publicación del artículo leyendo metadatos del HTML.
+// Devuelve un Date o null si no se pudo determinar.
+function extraerFechaDeHtml($: ReturnType<typeof cheerio.load>): Date | null {
+  // 1. Open Graph / article:published_time
+  const ogDate = $('meta[property="article:published_time"]').attr("content")
+    ?? $('meta[name="article:published_time"]').attr("content")
+    ?? $('meta[property="article:modified_time"]').attr("content");
+  if (ogDate) {
+    const d = new Date(ogDate);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // 2. <time> con datetime
+  const timeEl = $("time[datetime]").first().attr("datetime");
+  if (timeEl) {
+    const d = new Date(timeEl);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // 3. JSON-LD datePublished
+  let ldDate: string | null = null;
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (ldDate) return;
+    try {
+      const obj = JSON.parse($(el).text()) as Record<string, unknown>;
+      const dp = obj["datePublished"] ?? obj["dateModified"];
+      if (typeof dp === "string") ldDate = dp;
+    } catch { /* skip */ }
+  });
+  if (ldDate) {
+    const d = new Date(ldDate);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  return null;
+}
+
+interface TextoArticulo {
+  texto: string;
+  fechaPublicacion: Date | null;
+}
+
+async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": UA, "Accept-Language": "es-AR,es;q=0.9" },
       signal: AbortSignal.timeout(12000),
     });
-    if (!res.ok) return "";
+    if (!res.ok) return { texto: "", fechaPublicacion: null };
     const html = await res.text();
     const $ = cheerio.load(html);
+
+    const fechaPublicacion = extraerFechaDeHtml($);
+
     const parrafos = $("article p, .article-body p, .nota-body p, .article__content p, .post-content p, .detail-body p, .entry-content p")
       .map((_: number, el: cheerio.Element) => limpiarTexto($(el).text().trim()))
       .get()
       .filter((t: string) => t.length > 50);
     const texto = parrafos.slice(0, 20).join("\n\n");
-    return texto.length > 200 ? texto : "";
+    return { texto: texto.length > 200 ? texto : "", fechaPublicacion };
   } catch {
-    return "";
+    return { texto: "", fechaPublicacion: null };
   }
 }
 
@@ -365,12 +419,29 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<EjecucionResultad
 
     logger.info({ titulo: noticiaElegida.titulo, url: noticiaElegida.url }, "Scheduler: noticia seleccionada");
 
-    // ── EXTRAER TEXTO DEL ARTÍCULO ────────────────────────────────────────
+    // ── EXTRAER TEXTO DEL ARTÍCULO + VALIDAR FECHA ────────────────────────
     let textoParaIA = noticiaElegida.titulo;
     if (noticiaElegida.url) {
-      const textoArticulo = await obtenerTextoArticulo(noticiaElegida.url);
-      if (textoArticulo) {
-        textoParaIA = `${noticiaElegida.titulo}\n\n${textoArticulo}`;
+      const { texto, fechaPublicacion } = await obtenerTextoArticulo(noticiaElegida.url);
+
+      // Si la fecha del artículo es detectable y tiene más de 3 días, descartar
+      if (fechaPublicacion) {
+        const diasAtras = (Date.now() - fechaPublicacion.getTime()) / (1000 * 60 * 60 * 24);
+        if (diasAtras >= 3) {
+          logger.warn(
+            { url: noticiaElegida.url, titulo: noticiaElegida.titulo, diasAtras: diasAtras.toFixed(1), fecha: fechaPublicacion.toISOString() },
+            "Scheduler: artículo viejo detectado por fecha del HTML, descartando"
+          );
+          // Marcar como procesada para no volver a intentarlo
+          marcarUrlProcesada(noticiaElegida.url, estado);
+          guardarEstado(estado);
+          return { tipo: "todas_procesadas", fuente };
+        }
+        logger.info({ fechaPublicacion: fechaPublicacion.toISOString(), diasAtras: diasAtras.toFixed(1) }, "Scheduler: artículo dentro del rango de fechas");
+      }
+
+      if (texto) {
+        textoParaIA = `${noticiaElegida.titulo}\n\n${texto}`;
       }
     }
 
