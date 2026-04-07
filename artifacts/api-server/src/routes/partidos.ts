@@ -1,6 +1,33 @@
 import { Router, type IRouter } from "express";
+import * as fs from "fs";
+import * as path from "path";
 
 const router: IRouter = Router();
+
+// ─── OVERRIDE MANUAL DE PARTIDO ───────────────────────────────────────────────
+// Permite corregir datos incorrectos de Promiedos sin tocar el código.
+// Archivo: artifacts/api-server/partido-override.json
+// Formato: { "horaIsrael": "03:30 🕐 Israel", "fecha": "09/04/2026", "expiraEnUTC": "2026-04-10T06:00:00Z" }
+
+const OVERRIDE_FILE = path.resolve("./partido-override.json");
+
+interface PartidoOverride {
+  horaIsrael?: string;
+  fecha?: string;
+  expiraEnUTC?: string;   // ISO 8601 — el override se ignora después de esta fecha
+}
+
+function leerOverride(): PartidoOverride | null {
+  try {
+    const raw = JSON.parse(fs.readFileSync(OVERRIDE_FILE, "utf-8")) as PartidoOverride;
+    if (raw.expiraEnUTC && new Date(raw.expiraEnUTC).getTime() < Date.now()) {
+      return null; // Override expirado
+    }
+    return raw;
+  } catch {
+    return null;
+  }
+}
 
 const RIVER_TEAM_ID = "igi";
 const RIVER_URL_NAME = "river-plate";
@@ -334,11 +361,14 @@ router.get("/partido-proximo", async (req, res) => {
       ?? (game as any).stadium?.name
       ?? (esLocalRiver ? "Estadio Monumental" : undefined);
 
+    // Aplicar override manual si existe y no está expirado (corrige datos incorrectos de Promiedos)
+    const override = estado === "PROXIMO" ? leerOverride() : null;
+
     const resultado: PartidoDetallado = {
       id: game.id,
       competicion: game.stage_round_name ?? "Partido",
-      fecha,
-      horaIsrael,
+      fecha:      override?.fecha      ?? fecha,
+      horaIsrael: override?.horaIsrael ?? horaIsrael,
       equipoLocal: teams[0]?.name ?? "",
       equipoVisitante: teams[1]?.name ?? "",
       golesLocal: estado !== "PROXIMO" ? (scores[0] ?? 0) : null,
