@@ -226,63 +226,71 @@ async function scrapearSuperDeportivo(): Promise<NoticiaRaw[]> {
 // La portada expone noticias con href + title en los <a> tags.
 async function scrapearCARiverPlate(): Promise<NoticiaRaw[]> {
   const BASE = "https://www.cariverplate.com.ar";
-  const SKIP_PATTERNS = ["estadisticas-de-", "video-goles-", "video-resumen-", "desde-la-tribuna"];
+  // Tipos de páginas que NO son artículos editoriales
+  const SKIP_PATTERNS = [
+    "estadisticas-de-", "video-goles-", "video-resumen-", "video-",
+    "desde-la-tribuna", "comision-directiva-",
+  ];
 
-  const res = await fetch(BASE + "/", {
-    headers: {
-      "User-Agent": UA,
-      "Accept": "text/html,application/xhtml+xml,*/*;q=0.9",
-      "Accept-Language": "es-AR,es;q=0.9",
-      "Referer": BASE,
-    },
-    signal: AbortSignal.timeout(15000),
-  });
+  const HEADERS = {
+    "User-Agent": UA,
+    "Accept": "text/html,application/xhtml+xml,*/*;q=0.9",
+    "Accept-Language": "es-AR,es;q=0.9",
+    "Referer": BASE,
+  };
 
-  if (!res.ok) throw new Error(`cariverplate.com.ar respondió ${res.status}`);
+  const normalizar = (href: string) =>
+    href.startsWith("http") ? href :
+    href.startsWith("/")    ? `${BASE}${href}` :
+                              `${BASE}/${href}`;
 
-  const html = await res.text();
-  const $ = cheerio.load(html);
+  const extraerDeHtml = (html: string, acumuladas: NoticiaRaw[]) => {
+    const $ = cheerio.load(html);
+
+    // Selector principal: <a class="titulo"> — indica un enlace de artículo en la maqueta del sitio
+    $("a.titulo[href]").each((_, el) => {
+      const href  = $(el).attr("href") ?? "";
+      const title = ($(el).attr("title") ?? $(el).text()).trim();
+
+      if (!title || title.length < 10 || title.length > 300) return;
+      if (SKIP_PATTERNS.some(p => href.includes(p))) return;
+
+      const url = normalizar(href);
+      if (!acumuladas.find(n => n.url === url)) {
+        acumuladas.push({ titulo: title, url, fuente: "CA River Plate Oficial" });
+      }
+    });
+
+    // Complemento: <a href title> con año en la URL (captura artículos destacados sin class="titulo")
+    $("a[href][title]").each((_, el) => {
+      const href  = $(el).attr("href") ?? "";
+      const title = $(el).attr("title")?.trim() ?? "";
+
+      if (!title || title.length < 10 || title.length > 300) return;
+      if (!/20\d\d/.test(href)) return;                        // solo URLs con año
+      if (SKIP_PATTERNS.some(p => href.includes(p))) return;
+      if (title === "Ver fotos" || title === "Ver video") return; // botones, no artículos
+
+      const url = normalizar(href);
+      if (!acumuladas.find(n => n.url === url)) {
+        acumuladas.push({ titulo: title, url, fuente: "CA River Plate Oficial" });
+      }
+    });
+  };
+
+  // ── Paso 1: página principal ──────────────────────────────────────────────
   const noticias: NoticiaRaw[] = [];
 
-  // Busca todos los <a href title> cuyo href parece un artículo (slug con guiones, año en URL)
-  $("a[href][title]").each((_, el) => {
-    const href  = $(el).attr("href") ?? "";
-    const title = $(el).attr("title")?.trim() ?? "";
+  const resHome = await fetch(BASE + "/", { headers: HEADERS, signal: AbortSignal.timeout(15000) });
+  if (resHome.ok) extraerDeHtml(await resHome.text(), noticias);
 
-    if (!title || title.length < 15 || title.length > 250) return;
-    // Las noticias de cariverplate.com.ar siempre tienen el año en el slug (ej: "-2026" al final)
-    // Esto las distingue de páginas de sección como /comision-de-derechos-humanos
-    const esNoticia = /20\d\d/.test(href);
-    if (!esNoticia) return;
-    // Filtrar páginas que no son artículos de noticias
-    if (SKIP_PATTERNS.some(p => href.includes(p))) return;
-
-    const fullUrl = href.startsWith("/") ? `${BASE}${href}` : `${BASE}/${href}`;
-    if (!noticias.find((n) => n.url === fullUrl)) {
-      noticias.push({ titulo: title, url: fullUrl, fuente: "CA River Plate Oficial" });
-    }
-  });
-
-  // También buscar títulos en h2/h3 dentro del header de noticias
-  $("#noticias-header h1, #noticias-header h2, #noticias-header h3, #noticias-header h4").each((_, el) => {
-    const texto = $(el).text().trim();
-    const link  = $(el).find("a").attr("href") ?? $(el).closest("a").attr("href") ?? "";
-    if (!texto || texto.length < 15 || !link) return;
-    const fullUrl = link.startsWith("/") ? `${BASE}${link}` : `${BASE}/${link}`;
-    if (!noticias.find((n) => n.url === fullUrl || n.titulo === texto)) {
-      noticias.push({ titulo: texto, url: fullUrl, fuente: "CA River Plate Oficial" });
-    }
-  });
+  // ── Paso 2: página de todas las noticias (amplía el listado) ─────────────
+  const resTodas = await fetch(`${BASE}/todas-las-noticias`, { headers: HEADERS, signal: AbortSignal.timeout(15000) });
+  if (resTodas.ok) extraerDeHtml(await resTodas.text(), noticias);
 
   if (noticias.length === 0) throw new Error("cariverplate.com.ar: no se encontraron noticias");
 
-  // Todo el sitio es sobre River, solo filtramos negativos
-  const filtradas = noticias.filter((n) => {
-    const t = n.titulo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return !PALABRAS_NEGATIVAS.some((neg) => t.includes(neg.normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
-  });
-
-  return (filtradas.length >= 2 ? filtradas : noticias).slice(0, 10);
+  return noticias.slice(0, 15);
 }
 
 // ─── GOOGLE NEWS RSS ──────────────────────────────────────────────────────────
