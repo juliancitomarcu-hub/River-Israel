@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { ejecutarCiclo } from "../scheduler";
+import { ejecutarCiclo, type EjecucionResultado } from "../scheduler";
 
 const router: IRouter = Router();
 
@@ -84,47 +84,123 @@ function botonesAprobacion(noticiaId: number) {
   };
 }
 
-// ─── COMANDO /noticia ─────────────────────────────────────────────────────────
+// ─── FUENTES PARA REINTENTOS ──────────────────────────────────────────────────
+// Si una fuente no tiene noticias nuevas, probamos con las siguientes.
+const FUENTES_FALLBACK = [
+  "pagina", "ole", "google", "tyc", "infobae",
+  "clarin", "bolavip", "as", "lanacion", "superdeportivo",
+] as const;
+
+// ─── MENSAJE LEGIBLE POR RESULTADO ───────────────────────────────────────────
+function mensajeDeResultado(r: EjecucionResultado): string {
+  switch (r.tipo) {
+    case "ok":
+      return `✅ *¡Listo!* La nota llegará con los botones de aprobación.\n\n📰 _${r.titulo}_`;
+    case "todas_procesadas":
+      return `📭 _Fuente ${r.fuente}: todas las noticias disponibles ya fueron enviadas esta semana._`;
+    case "sin_noticias":
+      return `📭 _Fuente ${r.fuente}: no se encontraron artículos de River._`;
+    case "scraping_fallido":
+      return `⚠️ _Fuente ${r.fuente}: el sitio no respondió correctamente._`;
+    case "concurrente":
+      return `⏳ _Ya hay una búsqueda en curso. Esperá unos segundos y volvé a intentar._`;
+    case "ia_sin_contenido":
+      return `🤖 _La IA no pudo generar contenido. Intentá de nuevo en un momento._`;
+    case "telegram_error":
+      return `⚠️ _La nota se generó pero Telegram no respondió al enviarla._`;
+    case "error":
+      return `❌ _Error inesperado: ${r.mensaje.slice(0, 200)}_`;
+  }
+}
+
+// ─── BUSCAR CON REINTENTOS ────────────────────────────────────────────────────
+// Intenta hasta MAX_INTENTOS fuentes distintas hasta encontrar una noticia nueva.
+async function ejecutarBusquedaConReintentos(
+  token: string,
+  chatId: string,
+  fuenteInicial?: string
+): Promise<void> {
+  const MAX_INTENTOS = 4;
+  let fuentesIntentadas: string[] = [];
+
+  // Si hay concurrencia, esperar 20s y reintentar una vez
+  const primerIntento = await ejecutarCiclo(fuenteInicial);
+  if (primerIntento.tipo === "concurrente") {
+    await enviarMensajeTelegram(token, chatId, "⏳ Hay una búsqueda en curso. Reintentando en 20 segundos…");
+    await new Promise(r => setTimeout(r, 20_000));
+    const reintento = await ejecutarCiclo(fuenteInicial);
+    if (reintento.tipo === "concurrente") {
+      await enviarMensajeTelegram(token, chatId, "⏳ _El sistema sigue ocupado. La noticia llegará en cuanto termine el proceso actual._");
+      return;
+    }
+    if (reintento.tipo === "ok") {
+      await enviarMensajeTelegram(token, chatId, mensajeDeResultado(reintento));
+      return;
+    }
+  } else if (primerIntento.tipo === "ok") {
+    // Éxito en el primer intento — no hace falta decir nada más (el mensaje llegó con botones)
+    return;
+  }
+
+  // Si falló por noticias repetidas/vacías, probar otras fuentes
+  const fuentesDePrimerIntento = "fuente" in primerIntento ? primerIntento.fuente : "";
+  fuentesIntentadas = [fuentesDePrimerIntento];
+
+  if (primerIntento.tipo === "todas_procesadas" || primerIntento.tipo === "sin_noticias" || primerIntento.tipo === "scraping_fallido") {
+    await enviarMensajeTelegram(token, chatId,
+      `${mensajeDeResultado(primerIntento)}\n🔄 _Probando otras fuentes…_`
+    );
+
+    for (const fuente of FUENTES_FALLBACK) {
+      if (fuentesIntentadas.includes(fuente)) continue;
+      if (fuentesIntentadas.length >= MAX_INTENTOS) break;
+
+      fuentesIntentadas.push(fuente);
+      logger.info({ fuente }, "Telegram /buscar: reintentando con fuente alternativa");
+
+      const r = await ejecutarCiclo(fuente);
+      if (r.tipo === "ok") {
+        await enviarMensajeTelegram(token, chatId, `✅ *¡Encontrada en ${fuente}!* La nota llegará con los botones de aprobación.`);
+        return;
+      }
+      if (r.tipo === "concurrente" || r.tipo === "error" || r.tipo === "ia_sin_contenido") {
+        await enviarMensajeTelegram(token, chatId, mensajeDeResultado(r));
+        return;
+      }
+      // todas_procesadas / sin_noticias / scraping_fallido → seguir intentando
+    }
+
+    await enviarMensajeTelegram(token, chatId,
+      `📭 *Sin noticias nuevas disponibles* (probé ${fuentesIntentadas.length} fuentes).\n\n_Esperá un rato y usá /buscar de nuevo, o el scheduler las mandará automáticamente._`
+    );
+    return;
+  }
+
+  // Cualquier otro resultado inesperado
+  await enviarMensajeTelegram(token, chatId, mensajeDeResultado(primerIntento));
+}
+
+// ─── COMANDO /noticias y /noticia ─────────────────────────────────────────────
+// Si hay una nota pendiente la muestra con botones.
+// Si no hay ninguna, dispara una búsqueda nueva automáticamente.
 
 async function handleComandoNoticia(token: string, chatId: string) {
   try {
-    let [nota] = await db
+    const [notaPendiente] = await db
       .select()
       .from(noticiasTable)
       .where(eq(noticiasTable.pendiente, true))
       .orderBy(desc(noticiasTable.createdAt))
       .limit(1);
 
-    const hayPendiente = !!nota;
-    if (!nota) {
-      [nota] = await db
-        .select()
-        .from(noticiasTable)
-        .where(eq(noticiasTable.publicada, true))
-        .orderBy(desc(noticiasTable.createdAt))
-        .limit(1);
-    }
+    if (notaPendiente) {
+      // Mostrar nota pendiente con botones de aprobación
+      const resumen = notaPendiente.contenido.slice(0, 500) + (notaPendiente.contenido.length > 500 ? "…" : "");
+      const fuenteTag = notaPendiente.fuente ? `\n📰 _${notaPendiente.fuente}_` : "";
+      const fotoTag = notaPendiente.imagenPortada ? "\n🖼 _Con foto de portada_" : "";
 
-    if (!nota) {
-      await enviarMensajeTelegram(token, chatId, "⚠️ No hay notas todavía. Usá /buscar para escanear medios.");
-      return;
-    }
+      const texto = `📝 *NOTA PENDIENTE*\n\n*${notaPendiente.titulo}*\n\n${resumen}${fuenteTag}${fotoTag}`;
 
-    const bajada = nota.bajada ? `\n_${nota.bajada}_\n` : "";
-    const resumen = nota.contenido
-      ? nota.contenido.slice(0, 400) + (nota.contenido.length > 400 ? "…" : "")
-      : "";
-    const fuente = nota.fuente ? `\n📰 ${nota.fuente}` : "";
-    const tags = nota.tags ? `\n🏷 ${nota.tags}` : "";
-    const fotoIndicador = nota.imagenPortada ? "\n🖼 _Con foto de portada_" : "";
-
-    const encabezado = hayPendiente
-      ? "📝 *NOTA PENDIENTE DE APROBACIÓN*"
-      : "📢 *ÚLTIMA NOTA PUBLICADA*";
-
-    const texto = `${encabezado}\n\n*${nota.titulo}*${bajada}\n${resumen}${fuente}${tags}${fotoIndicador}`;
-
-    if (hayPendiente) {
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,12 +208,18 @@ async function handleComandoNoticia(token: string, chatId: string) {
           chat_id: chatId,
           text: texto,
           parse_mode: "Markdown",
-          reply_markup: botonesAprobacion(nota.id),
+          reply_markup: botonesAprobacion(notaPendiente.id),
         }),
       });
-    } else {
-      await enviarMensajeTelegram(token, chatId, texto + "\n\n_Usá /buscar para encontrar nuevas notas._");
+      return;
     }
+
+    // No hay pendiente → buscar nueva noticia automáticamente
+    await enviarMensajeTelegram(token, chatId,
+      "🔍 No hay notas pendientes. *Buscando nueva noticia…*\n_Esto puede tardar hasta 1 minuto._"
+    );
+    await ejecutarBusquedaConReintentos(token, chatId);
+
   } catch (err) {
     logger.error({ err }, "Telegram /noticia: error");
     await enviarMensajeTelegram(token, chatId, "❌ Error al obtener la nota. Intentá de nuevo.");
@@ -145,17 +227,17 @@ async function handleComandoNoticia(token: string, chatId: string) {
 }
 
 // ─── COMANDO /buscar ──────────────────────────────────────────────────────────
+// Dispara una búsqueda nueva (ignorando notas pendientes existentes).
 
 async function handleComandoBuscar(token: string, chatId: string) {
-  await enviarMensajeTelegram(
-    token, chatId,
-    "🔍 *Buscando noticias…*\n\nIniciando escaneo de todos los medios. Las notas transformadas por IA llegarán en unos minutos con sus botones ✅ ✏️ 📸 ❌."
+  await enviarMensajeTelegram(token, chatId,
+    "🔍 *Buscando nueva noticia de River…*\n_Escaneando medios y procesando con IA. Hasta 1 minuto._"
   );
   try {
-    await ejecutarCiclo();
+    await ejecutarBusquedaConReintentos(token, chatId);
   } catch (err) {
     logger.error({ err }, "Telegram /buscar: error en ciclo");
-    await enviarMensajeTelegram(token, chatId, "❌ Hubo un error durante la búsqueda. Revisá los logs.");
+    await enviarMensajeTelegram(token, chatId, "❌ Hubo un error durante la búsqueda. Intentá de nuevo con /buscar.");
   }
 }
 
@@ -445,6 +527,7 @@ router.post("/telegram-webhook", (req, res) => {
       const texto = msg.text.trim();
       const textoLower = texto.toLowerCase();
 
+      // /noticia y /noticias (singular y plural) → mostrar pendiente o buscar nueva
       if (textoLower.startsWith("/noticia")) {
         setImmediate(() => {
           handleComandoNoticia(token, fromChatId).catch((err) =>
@@ -454,6 +537,7 @@ router.post("/telegram-webhook", (req, res) => {
         return;
       }
 
+      // /buscar → buscar nueva noticia en medios
       if (textoLower.startsWith("/buscar")) {
         setImmediate(() => {
           handleComandoBuscar(token, fromChatId).catch((err) =>
@@ -465,7 +549,13 @@ router.post("/telegram-webhook", (req, res) => {
 
       if (textoLower.startsWith("/ping")) {
         setImmediate(() => {
-          enviarMensajeTelegram(token, fromChatId, "🏟️ PONG — El bot está vivo y el servidor responde correctamente. ✅").catch(() => {});
+          enviarMensajeTelegram(token, fromChatId,
+            `🏟️ *PONG* — Bot vivo ✅\n\n` +
+            `*Comandos disponibles:*\n` +
+            `/noticias — Ver nota pendiente o buscar una nueva\n` +
+            `/buscar — Escanear medios y generar nota nueva\n` +
+            `/ping — Estado del bot`
+          ).catch(() => {});
         });
         return;
       }

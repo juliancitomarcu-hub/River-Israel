@@ -286,13 +286,24 @@ async function obtenerTextoArticulo(url: string): Promise<string> {
   }
 }
 
+// ─── TIPO DE RESULTADO DEL CICLO ──────────────────────────────────────────────
+export type EjecucionResultado =
+  | { tipo: "concurrente" }
+  | { tipo: "scraping_fallido"; fuente: string }
+  | { tipo: "sin_noticias"; fuente: string }
+  | { tipo: "todas_procesadas"; fuente: string }
+  | { tipo: "ia_sin_contenido" }
+  | { tipo: "telegram_error"; fuente: string }
+  | { tipo: "ok"; titulo: string; id: number; fuente: string }
+  | { tipo: "error"; mensaje: string };
+
 // ─── FLAG ANTI-CONCURRENCIA ───────────────────────────────────────────────────
 let enEjecucion = false;
 
-async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
+async function ejecutarCiclo(fuenteOverride?: string): Promise<EjecucionResultado> {
   if (enEjecucion) {
     logger.warn("Scheduler: ciclo anterior aún en ejecución, saltando este turno");
-    return;
+    return { tipo: "concurrente" };
   }
   enEjecucion = true;
 
@@ -305,7 +316,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       guardarEstado(estado);
     }
 
-    logger.info({ fuente, siguiente: FUENTES[estado.fuenteIndex % FUENTES.length] }, "Scheduler: iniciando ciclo automático");
+    logger.info({ fuente, siguiente: FUENTES[estado.fuenteIndex % FUENTES.length] }, "Scheduler: iniciando ciclo");
 
     const port = process.env.PORT;
     const noticiasRes = await fetch(`http://localhost:${port}/api/noticias-river?fuente=${fuente}`, {
@@ -314,7 +325,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
     if (!noticiasRes.ok) {
       logger.warn({ fuente, status: noticiasRes.status }, "Scheduler: scraping falló");
-      return;
+      return { tipo: "scraping_fallido", fuente };
     }
 
     const data = await noticiasRes.json() as { noticias?: { titulo: string; url: string; fuente: string }[] };
@@ -322,7 +333,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
     if (!noticias.length) {
       logger.warn({ fuente }, "Scheduler: no se encontraron noticias");
-      return;
+      return { tipo: "sin_noticias", fuente };
     }
 
     // ── DEDUPLICACIÓN TRIPLE: URL procesada + antigüedad + título ────────
@@ -348,8 +359,8 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
     }
 
     if (!noticiaElegida) {
-      logger.warn({ fuente }, "Scheduler: todas las noticias disponibles ya fueron procesadas o son antiguas, esperando próximo ciclo");
-      return;
+      logger.warn({ fuente }, "Scheduler: todas las noticias disponibles ya fueron procesadas o son antiguas");
+      return { tipo: "todas_procesadas", fuente };
     }
 
     logger.info({ titulo: noticiaElegida.titulo, url: noticiaElegida.url }, "Scheduler: noticia seleccionada");
@@ -376,7 +387,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
     let resultado = response.text ?? "";
     if (!resultado || resultado.length < 50) {
       logger.error("Scheduler: la IA no generó contenido");
-      return;
+      return { tipo: "ia_sin_contenido" };
     }
 
     logger.info("Scheduler: output AI inicial", {
@@ -385,7 +396,6 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
     });
 
     // ── CONTROL DE CALIDAD PRE-GUARDADO ───────────────────────────────────
-    // Si la nota es demasiado corta o termina cortada, pedimos expansión (1 intento)
     let parsed = parsearResultado(resultado);
     const MINIMO_CHARS = 1848;
     const cortada = /[…\.]{3,}\s*$/.test(parsed.contenido.trimEnd());
@@ -435,7 +445,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
     if (!token || !chatId) {
       logger.warn("Scheduler: Telegram no configurado, nota guardada sin enviar");
-      return;
+      return { tipo: "ok", titulo, id: savedNoticia.id, fuente: noticiaElegida.fuente ?? fuente };
     }
 
     const replyMarkup = {
@@ -447,7 +457,6 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       ]],
     };
 
-    // Texto completo sin recortar — Telegram admite hasta 4096 chars en sendMessage
     const TELEGRAM_MAX = 4096;
     const encabezado = `🚨 *¡NUEVA INFO MILLONARIA DETECTADA!*\n\n📰 *${titulo}*\n\n`;
     const pie        = `\n\n${tags}\n\n📡 _Fuente: ${noticiaElegida.fuente ?? fuente}_`;
@@ -466,7 +475,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
 
     if (!tgRes.ok || !tgData.ok) {
       logger.error({ tgData }, "Scheduler: error enviando a Telegram");
-      return;
+      return { tipo: "telegram_error", fuente: noticiaElegida.fuente ?? fuente };
     }
 
     const messageId = String(tgData.result?.message_id ?? "");
@@ -477,16 +486,19 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
         .where(eq(noticiasTable.id, savedNoticia.id));
     }
 
-    // Marcar URL como procesada para no volver a enviarla aunque aparezca en scraping futuro
+    // Marcar URL como procesada para no volver a enviarla
     if (noticiaElegida.url) {
       marcarUrlProcesada(noticiaElegida.url, estado);
       guardarEstado(estado);
     }
 
     logger.info({ titulo, id: savedNoticia.id, fuente, url: noticiaElegida.url }, "Scheduler: ciclo completado correctamente");
+    return { tipo: "ok", titulo, id: savedNoticia.id, fuente: noticiaElegida.fuente ?? fuente };
 
   } catch (err) {
+    const mensaje = err instanceof Error ? err.message : String(err);
     logger.error({ err }, "Scheduler: error inesperado en ciclo automático");
+    return { tipo: "error", mensaje };
   } finally {
     enEjecucion = false;
   }
