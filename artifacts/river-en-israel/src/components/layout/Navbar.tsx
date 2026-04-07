@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { name: "Actualidad", href: "#actualidad" },
   { name: "Historia", href: "/historia" },
   { name: "Plantel Profesional Masculino", href: "/equipo" },
-  { name: "Filial River Plate Israel", href: "#filial" },
+  { name: "Nuestra Filial", href: "#filial" },
   { name: "Galería", href: "#galeria" },
   { name: "Videos", href: "#videos" },
   { name: "Reacciones Post Partido", href: "#videos" },

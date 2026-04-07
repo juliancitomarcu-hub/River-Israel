@@ -20,30 +20,63 @@ const STATE_FILE = path.resolve("./scheduler_state.json");
 
 interface SchedulerState {
   fuenteIndex: number;
+  urlsProcesadas: string[];  // URLs ya enviadas a Telegram (cap 1000)
 }
 
 function leerEstado(): SchedulerState {
   try {
     const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf-8")) as Partial<SchedulerState>;
     return {
-      fuenteIndex: typeof raw.fuenteIndex === "number" ? raw.fuenteIndex : 0,
+      fuenteIndex:    typeof raw.fuenteIndex === "number" ? raw.fuenteIndex : 0,
+      urlsProcesadas: Array.isArray(raw.urlsProcesadas) ? raw.urlsProcesadas : [],
     };
   } catch {
-    return { fuenteIndex: 0 };
+    return { fuenteIndex: 0, urlsProcesadas: [] };
   }
 }
 
 function guardarEstado(estado: SchedulerState): void {
   try {
+    // Cap en 1000 URLs para no crecer indefinidamente
+    if (estado.urlsProcesadas.length > 1000) {
+      estado.urlsProcesadas = estado.urlsProcesadas.slice(-1000);
+    }
     fs.writeFileSync(STATE_FILE, JSON.stringify(estado), "utf-8");
   } catch (err) {
     logger.warn({ err }, "Scheduler: no se pudo guardar el estado");
   }
 }
 
+// ─── DEDUPLICACIÓN POR URL ────────────────────────────────────────────────────
+function urlYaProcesada(url: string, estado: SchedulerState): boolean {
+  if (!url) return false;
+  return estado.urlsProcesadas.includes(url);
+}
+
+function marcarUrlProcesada(url: string, estado: SchedulerState): void {
+  if (!url || estado.urlsProcesadas.includes(url)) return;
+  estado.urlsProcesadas.push(url);
+}
+
+// ─── FILTRO DE ANTIGÜEDAD POR URL ─────────────────────────────────────────────
+// Muchos sitios incluyen la fecha en la URL: /2026/04/07/ o -2026-04-07-
+// Si detectamos fecha en la URL y es ≥ 3 días, la descartamos.
+function urlDemaisiadoVieja(url: string): boolean {
+  if (!url) return false;
+  // Patrón /YYYY/MM/DD/ o -YYYY-MM-DD o similar
+  const m = url.match(/[\/\-](20\d{2})[\/\-](\d{2})[\/\-](\d{2})[\/\-]/);
+  if (!m) return false;
+  const [, anio, mes, dia] = m.map(Number);
+  const fechaArticulo = Date.UTC(anio, mes - 1, dia);
+  const ahora = Date.now();
+  const diasAtras = (ahora - fechaArticulo) / (1000 * 60 * 60 * 24);
+  return diasAtras >= 3;
+}
+
 // ─── DEDUPLICACIÓN POR DB ─────────────────────────────────────────────────────
 // Compara el título candidato con las noticias de los últimos 7 días.
-// Si 3 o más palabras significativas (≥4 chars) coinciden → mismo tema → saltar.
+// Si 4 o más palabras significativas (≥5 chars) coinciden → mismo tema → saltar.
+// Umbral = 4 palabras (antes 3) para evitar falsos positivos en noticias distintas.
 
 async function tituloYaProcesado(titulo: string): Promise<boolean> {
   try {
@@ -57,7 +90,9 @@ async function tituloYaProcesado(titulo: string): Promise<boolean> {
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z\s]/g, "")
       .split(/\s+/)
-      .filter(p => p.length >= 4);
+      .filter(p => p.length >= 5);  // palabras más largas = más significativas
+
+    if (palabras.length === 0) return false;
 
     for (const row of res.rows as { titulo: string }[]) {
       const existente = row.titulo
@@ -65,7 +100,7 @@ async function tituloYaProcesado(titulo: string): Promise<boolean> {
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z\s]/g, "");
       const coincidencias = palabras.filter(p => existente.includes(p));
-      if (coincidencias.length >= 3) {
+      if (coincidencias.length >= 4) {
         logger.info({ candidato: titulo, existente: row.titulo, coincidencias }, "Scheduler: tema repetido, saltando");
         return true;
       }
@@ -290,19 +325,30 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
       return;
     }
 
-    // ── DEDUPLICACIÓN: saltear temas ya cubiertos ─────────────────────────
+    // ── DEDUPLICACIÓN TRIPLE: URL procesada + antigüedad + título ────────
     let noticiaElegida: typeof noticias[0] | null = null;
 
     for (const candidata of noticias) {
-      const yaExiste = await tituloYaProcesado(candidata.titulo);
-      if (!yaExiste) {
-        noticiaElegida = candidata;
-        break;
+      // 1. Descartar si la URL ya fue procesada (igual artículo, distinto ciclo)
+      if (candidata.url && urlYaProcesada(candidata.url, estado)) {
+        logger.info({ url: candidata.url }, "Scheduler: URL ya procesada, saltando");
+        continue;
       }
+      // 2. Descartar si la URL tiene fecha y es ≥3 días antigua
+      if (candidata.url && urlDemaisiadoVieja(candidata.url)) {
+        logger.info({ url: candidata.url, titulo: candidata.titulo }, "Scheduler: artículo demasiado viejo, saltando");
+        continue;
+      }
+      // 3. Descartar si el tema (por título) ya fue cubierto esta semana
+      const yaExistePorTitulo = await tituloYaProcesado(candidata.titulo);
+      if (yaExistePorTitulo) continue;
+
+      noticiaElegida = candidata;
+      break;
     }
 
     if (!noticiaElegida) {
-      logger.warn({ fuente }, "Scheduler: todos los temas disponibles ya fueron cubiertos esta semana, esperando próximo ciclo");
+      logger.warn({ fuente }, "Scheduler: todas las noticias disponibles ya fueron procesadas o son antiguas, esperando próximo ciclo");
       return;
     }
 
@@ -431,7 +477,13 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<void> {
         .where(eq(noticiasTable.id, savedNoticia.id));
     }
 
-    logger.info({ titulo, id: savedNoticia.id, fuente }, "Scheduler: ciclo completado correctamente");
+    // Marcar URL como procesada para no volver a enviarla aunque aparezca en scraping futuro
+    if (noticiaElegida.url) {
+      marcarUrlProcesada(noticiaElegida.url, estado);
+      guardarEstado(estado);
+    }
+
+    logger.info({ titulo, id: savedNoticia.id, fuente, url: noticiaElegida.url }, "Scheduler: ciclo completado correctamente");
 
   } catch (err) {
     logger.error({ err }, "Scheduler: error inesperado en ciclo automático");

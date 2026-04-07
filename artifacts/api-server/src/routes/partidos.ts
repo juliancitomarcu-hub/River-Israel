@@ -70,17 +70,37 @@ export interface Partido {
   estadio?: string;
 }
 
-function parsearFechaHora(startTime: string | undefined): { fecha: string; horaArgentina: string } {
-  if (!startTime) return { fecha: "", horaArgentina: "" };
-  // Format: "28-09-2025 17:00"
+// Convierte "DD-MM-YYYY HH:MM" (hora Argentina, UTC-3) a fecha e hora Israel (UTC+3 en verano)
+// Maneja correctamente el cruce de medianoche y el cambio de día.
+function convertirArgentinaAIsrael(startTime: string | undefined): { fecha: string; horaIsrael: string } {
+  if (!startTime) return { fecha: "", horaIsrael: "" };
   const partes = startTime.split(" ");
-  if (partes.length < 2) return { fecha: startTime, horaArgentina: "" };
-  const [dia, mes, anio] = partes[0].split("-");
-  const hora = partes[1];
-  const fecha = `${dia}/${mes}/${anio}`;
-  return { fecha, horaArgentina: hora };
+  if (partes.length < 2) return { fecha: startTime, horaIsrael: "" };
+  const [dia, mes, anio] = partes[0].split("-").map(Number);
+  const [h, m] = partes[1].split(":").map(Number);
+  if (!dia || !mes || !anio || isNaN(h) || isNaN(m)) return { fecha: "", horaIsrael: "" };
+
+  // Argentina = UTC-3 → sumar 3 horas para llegar a UTC
+  // Israel abril-oct = UTC+3 → sumar 3 horas más desde UTC
+  // Total: Argentina + 6h = Israel (pero calculamos via UTC para que el día sea correcto)
+  const utcMs = Date.UTC(anio, mes - 1, dia, h + 3, m); // AR → UTC
+  const israelMs = utcMs + 3 * 60 * 60 * 1000;           // UTC → Israel (verano UTC+3)
+  const d = new Date(israelMs);
+
+  const ilDia  = String(d.getUTCDate()).padStart(2, "0");
+  const ilMes  = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const ilAnio = d.getUTCFullYear();
+  const ilH    = String(d.getUTCHours()).padStart(2, "0");
+  const ilMin  = String(d.getUTCMinutes()).padStart(2, "0");
+
+  return {
+    fecha:     `${ilDia}/${ilMes}/${ilAnio}`,
+    horaIsrael: `${ilH}:${ilMin} 🕐 Israel`,
+  };
 }
 
+// Compatibilidad con código que llama horaArgentinaAIsrael con una hora sola (sin fecha)
+// Solo úsala cuando no tengás el start_time completo.
 function horaArgentinaAIsrael(horaAR: string): string {
   if (!horaAR) return "";
   const [h, m] = horaAR.split(":").map(Number);
@@ -100,9 +120,10 @@ function mapearPartido(row: PromediosRow, tipo: "proximo" | "resultado"): Partid
   const timeVal = row.values.find((v) => v.key === "time")?.value ?? "";
   const resultVal = row.values.find((v) => v.key === "result")?.value ?? null;
 
-  const { fecha, horaArgentina } = parsearFechaHora(game.start_time);
-  const fechaFinal = fecha || dateVal;
-  const horaIsrael = timeVal ? horaArgentinaAIsrael(timeVal) : (horaArgentina ? horaArgentinaAIsrael(horaArgentina) : "");
+  // Usar conversión correcta de timezone si tenemos start_time completo (incluye fecha)
+  const { fecha: fechaIsrael, horaIsrael: horaIsraelConvertida } = convertirArgentinaAIsrael(game.start_time);
+  const fechaFinal = fechaIsrael || dateVal;
+  const horaIsrael = horaIsraelConvertida || (timeVal ? horaArgentinaAIsrael(timeVal) : "");
 
   const statusEnum = game.status?.enum ?? -1;
   let estado: Partido["estado"] = "PROXIMO";
@@ -252,8 +273,7 @@ router.get("/partido-proximo", async (req, res) => {
     const game = baseRow.game;
     const teams = game.teams ?? [];
     const esLocalRiver = teams[0]?.id === RIVER_TEAM_ID;
-    const { fecha, horaArgentina } = parsearFechaHora(game.start_time);
-    const horaIsrael = horaArgentina ? horaArgentinaAIsrael(horaArgentina) : "";
+    const { fecha, horaIsrael } = convertirArgentinaAIsrael(game.start_time);
     const scores = game.scores ?? [];
     const statusEnum = game.status?.enum ?? -1;
     let estado: PartidoDetallado["estado"] = "PROXIMO";
