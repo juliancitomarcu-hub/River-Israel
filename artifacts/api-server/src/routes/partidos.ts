@@ -97,18 +97,41 @@ export interface Partido {
   estadio?: string;
 }
 
-// Convierte "DD-MM-YYYY HH:MM" (horario Promiedos, UTC-4) → hora Israel.
-// Usa Intl.DateTimeFormat con timezone "Asia/Jerusalem" para aplicar
-// IDT (verano UTC+3) o IST (invierno UTC+2) automáticamente según la fecha.
-const IL_FMT = new Intl.DateTimeFormat("es-IL", {
-  timeZone: "Asia/Jerusalem",
-  day:    "2-digit",
-  month:  "2-digit",
-  year:   "numeric",
-  hour:   "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
+// ─── ISRAEL DST ───────────────────────────────────────────────────────────────
+// Israel: verano IDT = UTC+3 / invierno IST = UTC+2.
+// Ley israelí desde 2013:
+//   • Empieza: último viernes de marzo a las 02:00 IST (= 00:00 UTC)
+//   • Termina:  último domingo de octubre a las 02:00 IDT (= 23:00 UTC del día anterior)
+//
+// Calculamos manualmente para que funcione en cualquier entorno Node.js
+// sin depender de datos ICU externos (Intl solo falla si la TZ database está incompleta).
+
+function ultimoDiaSemana(year: number, month: number, weekday: number): number {
+  // Devuelve el día del mes del último `weekday` (0=Dom…6=Sáb) del mes indicado.
+  // month: 0-indexed (0=ene, 2=mar, 9=oct)
+  const ultimoDia = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  for (let d = ultimoDia; d >= 1; d--) {
+    if (new Date(Date.UTC(year, month, d)).getUTCDay() === weekday) return d;
+  }
+  return ultimoDia;
+}
+
+function israelOffsetHoras(utcMs: number): number {
+  const d    = new Date(utcMs);
+  const year = d.getUTCFullYear();
+
+  // Inicio DST: último viernes (5) de marzo a las 00:00 UTC (= 02:00 IST)
+  const inicioIDT = Date.UTC(year, 2, ultimoDiaSemana(year, 2, 5), 0, 0, 0);
+
+  // Fin DST: último domingo (0) de octubre a las 23:00 UTC del viernes anterior
+  // (= 02:00 IDT del domingo)
+  const finIDT = Date.UTC(year, 9, ultimoDiaSemana(year, 9, 0), 23, 0, 0) - 24 * 3600_000;
+
+  return utcMs >= inicioIDT && utcMs < finIDT ? 3 : 2;  // IDT (+3) o IST (+2)
+}
+
+// ─── CONVERSIÓN PRINCIPAL ─────────────────────────────────────────────────────
+// Promiedos publica en UTC-4. Convertimos a hora de Israel respetando DST.
 
 function convertirArgentinaAIsrael(startTime: string | undefined): { fecha: string; horaIsrael: string } {
   if (!startTime) return { fecha: "", horaIsrael: "" };
@@ -118,22 +141,20 @@ function convertirArgentinaAIsrael(startTime: string | undefined): { fecha: stri
   const [h, m] = partes[1].split(":").map(Number);
   if (!dia || !mes || !anio || isNaN(h) || isNaN(m)) return { fecha: "", horaIsrael: "" };
 
-  // Promiedos UTC-4 → UTC: +4h
-  const utcMs = Date.UTC(anio, mes - 1, dia, h + 4, m);
-  const date  = new Date(utcMs);
+  // Promiedos UTC-4 → UTC (+4h)
+  const utcMs  = Date.UTC(anio, mes - 1, dia, h + 4, m);
+  const offset = israelOffsetHoras(utcMs);           // +3 (IDT) o +2 (IST)
+  const ilDate = new Date(utcMs + offset * 3_600_000);
 
-  // Intl aplica IDT (+3h, verano) o IST (+2h, invierno) según la fecha real del partido
-  const parts = IL_FMT.formatToParts(date);
-  const get   = (type: string) => parts.find(p => p.type === type)?.value ?? "00";
-
+  const pad    = (n: number) => String(n).padStart(2, "0");
   return {
-    fecha:      `${get("day")}/${get("month")}/${get("year")}`,
-    horaIsrael: `${get("hour")}:${get("minute")} 🕐 Israel`,
+    fecha:      `${pad(ilDate.getUTCDate())}/${pad(ilDate.getUTCMonth() + 1)}/${ilDate.getUTCFullYear()}`,
+    horaIsrael: `${pad(ilDate.getUTCHours())}:${pad(ilDate.getUTCMinutes())} 🕐 Israel`,
   };
 }
 
-// Fallback cuando no hay start_time con fecha (solo HH:MM sin día).
-// Sin fecha concreta no podemos saber si es IDT/IST: usamos +7h (IDT, la más común).
+// Fallback cuando Promiedos no envía fecha completa, solo HH:MM.
+// Sin fecha no se puede calcular DST → asumimos IDT (+7h desde UTC-4) en verano.
 function horaArgentinaAIsrael(horaAR: string): string {
   if (!horaAR) return "";
   const [h, m] = horaAR.split(":").map(Number);
