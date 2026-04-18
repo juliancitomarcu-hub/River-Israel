@@ -32,7 +32,7 @@ timeoutMs = 20000
 TELEGRAM_CHAT_ID = "8412389155"
 
 [userenv.production]
-TELEGRAM_WEBHOOK_DOMAIN = "riverplatisrael.replit.app"
+TELEGRAM_WEBHOOK_DOMAIN = "riverplateisrael.com"
 
 [nix]
 channel = "stable-25_05"

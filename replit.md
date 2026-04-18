@@ -107,6 +107,24 @@ Fan website en español para Club Atlético River Plate / Filial Ramat Gan, Isra
 ### Redactor IA (privado)
 Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galería
 
+### Dominio de Producción
+- **Sitio**: `https://riverplateisrael.com` (con 'e')
+- **Replit domain**: `riverplateisrael.replit.app` (con 'e') → sirve HTML + API completa via Google Frontend
+- **TELEGRAM_WEBHOOK_DOMAIN** (env var production): `riverplateisrael.com` — el webhook de Telegram y los links de edición apuntan a este dominio
+- El otro dominio `riverplatisrael.replit.app` (sin 'e') solo sirve el frontend estático, no la API
+
+### Timezone Israel (DST Manual)
+- `artifacts/api-server/src/routes/partidos.ts` usa `israelOffsetHoras()` — cálculo manual de DST, sin dependencia de ICU
+- IDT (verano israelí): último viernes de marzo → último domingo de octubre → UTC+3
+- IST (invierno israelí): noviembre → marzo → UTC+2
+- Promiedos devuelve `start_time` en UTC-4; se suma +4h para obtener UTC, luego offset Israel
+
+### Prompt IA Redactor
+- Módulo compartido: `artifacts/api-server/src/lib/prompt-maestro.ts`
+- Usado tanto por `scheduler.ts` como por `routes/redactor.ts`
+- 6 secciones obligatorias: EL IMPACTO, ANÁLISIS TÁCTICO, LA MÍSTICA, CITAS Y CONTEXTO, PREGUNTAS, LA SENTENCIA
+- DT actual: Eduardo Coudet. Gallardo solo como referencia histórica.
+
 ### API (`artifacts/api-server`)
 Rutas relevantes:
 - `GET /api/galeria` — listar fotos (auto-seed 12 fotos si vacío)

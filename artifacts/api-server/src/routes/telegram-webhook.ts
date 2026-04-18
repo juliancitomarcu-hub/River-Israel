@@ -419,8 +419,7 @@ async function procesarCallback(
       }, 10 * 60 * 1000);
 
       // Instrucciones para el usuario
-      const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
-      const editUrl = domain ? `\n\n🌐 O editá con foto en: https://${domain}/redactor?editar=${noticiaId}` : "";
+      const editUrl = `\n\n🌐 O editá con foto en: https://riverplateisrael.com/redactor?editar=${noticiaId}`;
 
       await enviarMensajeTelegram(
         token, chatId,
