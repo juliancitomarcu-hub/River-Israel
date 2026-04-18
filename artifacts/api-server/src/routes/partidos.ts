@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import * as fs from "fs";
 import * as path from "path";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -178,6 +179,11 @@ function mapearPartido(row: PromediosRow, tipo: "proximo" | "resultado"): Partid
   const { fecha: fechaIsrael, horaIsrael: horaIsraelConvertida } = convertirArgentinaAIsrael(game.start_time);
   const fechaFinal = fechaIsrael || dateVal;
   const horaIsrael = horaIsraelConvertida || (timeVal ? horaArgentinaAIsrael(timeVal) : "");
+
+  // LOG DIAGNÓSTICO: ver start_time crudo, timeVal y hora calculada (detectar diferencia prod vs dev)
+  if (tipo === "proximo") {
+    logger.info({ startTimeRaw: game.start_time, timeVal, fechaFinal, horaIsrael }, "DST-diag partido");
+  }
 
   const statusEnum = game.status?.enum ?? -1;
   let estado: Partido["estado"] = "PROXIMO";

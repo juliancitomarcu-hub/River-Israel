@@ -8,6 +8,10 @@ router.get("/healthz", (_req, res) => {
   res.json(data);
 });
 
+router.get("/build-version", (_req, res) => {
+  res.json({ version: "2026-04-18-DST-v3", node: process.version });
+});
+
 // Endpoint temporal de diagnóstico: verifica el cálculo de horario israelí
 router.get("/hora-debug", (_req, res) => {
   function ultimoDiaSemana(year: number, month: number, weekday: number): number {
