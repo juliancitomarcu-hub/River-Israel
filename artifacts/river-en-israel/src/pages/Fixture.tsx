@@ -116,27 +116,44 @@ function MatchCard({ match, index }: { match: MatchResult; index: number }) {
 
       <div className="flex items-center gap-3">
         {/* Local */}
-        <div className={cn(
-          "flex-1 text-right font-bold",
-          match.isRiverHome ? "text-river-black" : "text-gray-400"
-        )}>
-          {match.homeTeam}
+        <div className="flex-1 text-right">
+          <div className={cn(
+            "font-bold text-sm leading-tight",
+            match.isRiverHome ? "text-river-black" : "text-gray-400"
+          )}>
+            {match.homeTeam}
+          </div>
+          {(match.status === "FINISHED" || match.status === "LIVE") && (
+            <div className={cn(
+              "font-display text-3xl font-bold tabular-nums leading-none mt-0.5",
+              match.isRiverHome ? "text-river-black" : "text-gray-400"
+            )}>
+              {match.homeScore ?? 0}
+            </div>
+          )}
         </div>
 
-        {/* Marcador */}
-        <div className="font-display text-2xl font-bold bg-river-black text-white px-4 py-1 rounded-lg min-w-[80px] text-center">
-          {match.status === "UPCOMING"
-            ? <span className="text-sm text-gray-400">vs</span>
-            : <span>{match.homeScore} <span className="text-river-red/60">-</span> {match.awayScore}</span>
-          }
+        {/* Separador */}
+        <div className="flex-shrink-0 font-display font-bold text-gray-400 text-xl">
+          {match.status === "UPCOMING" ? "vs" : "—"}
         </div>
 
         {/* Visitante */}
-        <div className={cn(
-          "flex-1 font-bold",
-          !match.isRiverHome ? "text-river-black" : "text-gray-400"
-        )}>
-          {match.awayTeam}
+        <div className="flex-1">
+          <div className={cn(
+            "font-bold text-sm leading-tight",
+            !match.isRiverHome ? "text-river-black" : "text-gray-400"
+          )}>
+            {match.awayTeam}
+          </div>
+          {(match.status === "FINISHED" || match.status === "LIVE") && (
+            <div className={cn(
+              "font-display text-3xl font-bold tabular-nums leading-none mt-0.5",
+              !match.isRiverHome ? "text-river-black" : "text-gray-400"
+            )}>
+              {match.awayScore ?? 0}
+            </div>
+          )}
         </div>
       </div>
 

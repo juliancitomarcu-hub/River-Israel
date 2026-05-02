@@ -407,18 +407,32 @@ export default function Home() {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <span className={cn("flex-1 font-bold text-xs truncate", match.isRiverHome ? "text-white" : "text-gray-400")}>
-                          {match.homeTeam}
-                        </span>
-                        <div className="font-display text-sm bg-black/40 px-2 py-0.5 rounded tabular-nums flex-shrink-0">
-                          {match.status === 'FINISHED' || match.status === 'LIVE'
-                            ? <span>{match.homeScore} <span className="text-river-red/70">-</span> {match.awayScore}</span>
-                            : <span className="text-gray-400 text-xs">vs</span>
-                          }
+                        {/* Local */}
+                        <div className="flex-1 min-w-0">
+                          <div className={cn("font-bold text-xs truncate leading-tight", match.isRiverHome ? "text-white" : "text-gray-400")}>
+                            {match.homeTeam}
+                          </div>
+                          {(match.status === 'FINISHED' || match.status === 'LIVE') && (
+                            <div className={cn("font-display text-xl font-bold tabular-nums leading-none mt-0.5", match.isRiverHome ? "text-white" : "text-gray-400")}>
+                              {match.homeScore ?? 0}
+                            </div>
+                          )}
                         </div>
-                        <span className={cn("flex-1 font-bold text-xs text-right truncate", !match.isRiverHome ? "text-white" : "text-gray-400")}>
-                          {match.awayTeam}
-                        </span>
+                        {/* Separador */}
+                        <div className="flex-shrink-0 text-gray-500 text-xs font-bold">
+                          {match.status === 'FINISHED' || match.status === 'LIVE' ? '—' : 'vs'}
+                        </div>
+                        {/* Visitante */}
+                        <div className="flex-1 min-w-0 text-right">
+                          <div className={cn("font-bold text-xs truncate leading-tight", !match.isRiverHome ? "text-white" : "text-gray-400")}>
+                            {match.awayTeam}
+                          </div>
+                          {(match.status === 'FINISHED' || match.status === 'LIVE') && (
+                            <div className={cn("font-display text-xl font-bold tabular-nums leading-none mt-0.5", !match.isRiverHome ? "text-white" : "text-gray-400")}>
+                              {match.awayScore ?? 0}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {match.status === 'UPCOMING' && match.horaIsrael && (

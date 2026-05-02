@@ -579,20 +579,20 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
 
 export { ejecutarCiclo };
 
-// ─── INTERVALO: cada 15 minutos ───────────────────────────────────────────────
-// Primer ciclo a los 2 minutos de arrancar, luego cada 15 minutos exactos.
+// ─── INTERVALO: cada 2 horas ───────────────────────────────────────────────
+// Primer ciclo a los 2 minutos de arrancar, luego cada 2 horas exactas.
 
-const INTERVALO_MS   = 15 * 60 * 1000; // 15 minutos
+const INTERVALO_MS   = 2 * 60 * 60 * 1000; // 2 horas
 const PRIMER_CICLO_MS =  2 * 60 * 1000; // 2 minutos tras arrancar
 
 export function iniciarScheduler(): void {
-  logger.info({ primerCicloMinutos: 2, intervaloMinutos: 15 }, "Scheduler automático iniciado — primer ciclo en 2 min, luego cada 15 minutos");
+  logger.info({ primerCicloMinutos: 2, intervaloHoras: 2 }, "Scheduler automático iniciado — primer ciclo en 2 min, luego cada 2 horas");
 
   setTimeout(() => {
-    ejecutarCiclo(undefined, true).catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));
+    ejecutarCiclo(undefined, false).catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));
 
     setInterval(() => {
-      ejecutarCiclo(undefined, true).catch((err) => logger.error({ err }, "Scheduler: error no capturado"));
+      ejecutarCiclo(undefined, false).catch((err) => logger.error({ err }, "Scheduler: error no capturado"));
     }, INTERVALO_MS);
   }, PRIMER_CICLO_MS);
 }

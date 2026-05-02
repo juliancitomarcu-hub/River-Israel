@@ -132,7 +132,7 @@ function israelOffsetHoras(utcMs: number): number {
 }
 
 // ─── CONVERSIÓN PRINCIPAL ─────────────────────────────────────────────────────
-// Promiedos publica en UTC-4. Convertimos a hora de Israel respetando DST.
+// Promiedos publica en ART (UTC-3). Convertimos a hora de Israel respetando DST.
 
 function convertirArgentinaAIsrael(startTime: string | undefined): { fecha: string; horaIsrael: string } {
   if (!startTime) return { fecha: "", horaIsrael: "" };
@@ -142,8 +142,8 @@ function convertirArgentinaAIsrael(startTime: string | undefined): { fecha: stri
   const [h, m] = partes[1].split(":").map(Number);
   if (!dia || !mes || !anio || isNaN(h) || isNaN(m)) return { fecha: "", horaIsrael: "" };
 
-  // Promiedos UTC-4 → UTC (+4h)
-  const utcMs  = Date.UTC(anio, mes - 1, dia, h + 4, m);
+  // Promiedos usa ART (UTC-3) → UTC (+3h)
+  const utcMs  = Date.UTC(anio, mes - 1, dia, h + 3, m);
   const offset = israelOffsetHoras(utcMs);           // +3 (IDT) o +2 (IST)
   const ilDate = new Date(utcMs + offset * 3_600_000);
 
@@ -155,11 +155,11 @@ function convertirArgentinaAIsrael(startTime: string | undefined): { fecha: stri
 }
 
 // Fallback cuando Promiedos no envía fecha completa, solo HH:MM.
-// Sin fecha no se puede calcular DST → asumimos IDT (+7h desde UTC-4) en verano.
+// Sin fecha no se puede calcular DST → asumimos IDT (+6h desde ART/UTC-3) en verano.
 function horaArgentinaAIsrael(horaAR: string): string {
   if (!horaAR) return "";
   const [h, m] = horaAR.split(":").map(Number);
-  const horaIsrael = (h + 7) % 24;
+  const horaIsrael = (h + 6) % 24;
   return `${String(horaIsrael).padStart(2, "0")}:${String(m).padStart(2, "0")} 🕐 Israel`;
 }
 
