@@ -253,6 +253,7 @@ function extraerFechaDeHtml($: ReturnType<typeof cheerio.load>): Date | null {
 interface TextoArticulo {
   texto: string;
   fechaPublicacion: Date | null;
+  imagenUrl: string | null;
 }
 
 async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
@@ -261,11 +262,19 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
       headers: { "User-Agent": UA, "Accept-Language": "es-AR,es;q=0.9" },
       signal: AbortSignal.timeout(12000),
     });
-    if (!res.ok) return { texto: "", fechaPublicacion: null };
+    if (!res.ok) return { texto: "", fechaPublicacion: null, imagenUrl: null };
     const html = await res.text();
     const $ = cheerio.load(html);
 
     const fechaPublicacion = extraerFechaDeHtml($);
+
+    // Extraer imagen principal del artículo
+    const imagenUrl =
+      $('meta[property="og:image"]').attr("content") ??
+      $('meta[name="twitter:image"]').attr("content") ??
+      $('meta[property="og:image:url"]').attr("content") ??
+      $('meta[name="og:image"]').attr("content") ??
+      null;
 
     // Selectores en orden de prioridad; incluye cariverplate.com.ar (#wrappertext) y otros sitios
     const SELECTORES = [
@@ -294,9 +303,9 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
     }
 
     const texto = parrafos.slice(0, 20).join("\n\n");
-    return { texto: texto.length > 200 ? texto : "", fechaPublicacion };
+    return { texto: texto.length > 200 ? texto : "", fechaPublicacion, imagenUrl };
   } catch {
-    return { texto: "", fechaPublicacion: null };
+    return { texto: "", fechaPublicacion: null, imagenUrl: null };
   }
 }
 
@@ -314,7 +323,7 @@ export type EjecucionResultado =
 // ─── FLAG ANTI-CONCURRENCIA ───────────────────────────────────────────────────
 let enEjecucion = false;
 
-async function ejecutarCiclo(fuenteOverride?: string): Promise<EjecucionResultado> {
+async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Promise<EjecucionResultado> {
   if (enEjecucion) {
     logger.warn("Scheduler: ciclo anterior aún en ejecución, saltando este turno");
     return { tipo: "concurrente" };
@@ -381,8 +390,10 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<EjecucionResultad
 
     // ── EXTRAER TEXTO DEL ARTÍCULO + VALIDAR FECHA ────────────────────────
     let textoParaIA = noticiaElegida.titulo;
+    let imagenAutoUrl: string | null = null;
     if (noticiaElegida.url) {
-      const { texto, fechaPublicacion } = await obtenerTextoArticulo(noticiaElegida.url);
+      const { texto, fechaPublicacion, imagenUrl } = await obtenerTextoArticulo(noticiaElegida.url);
+      imagenAutoUrl = imagenUrl;
 
       // Si la fecha del artículo es detectable y tiene más de 3 días, descartar
       if (fechaPublicacion) {
@@ -442,7 +453,7 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<EjecucionResultad
         contents: [
           { role: "user",  parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] },
           { role: "model", parts: [{ text: resultado }] },
-          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta. Continuá desde donde se cortó: expandí el Análisis Táctico y la Comparativa Histórica, asegurate de incluir las 3 PREGUNTAS (❓ PREGUNTAS QUE QUEDAN EN EL AIRE) y terminá con el párrafo 🏆 LA SENTENCIA completo. La última palabra debe ser punto final, nunca puntos suspensivos." }] },
+          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 1848 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial Ramat Gan. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
         ],
         config: { systemInstruction: PROMPT_MAESTRO, maxOutputTokens: 3000 },
       });
@@ -455,7 +466,11 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<EjecucionResultad
     }
 
     const { titulo, contenido, tags } = parsed;
+    const fuenteNombre = noticiaElegida.fuente ?? fuente;
 
+    // ── GUARDAR EN DB ─────────────────────────────────────────────────────
+    // Modo automático: autopublicación directa + foto extraída automáticamente
+    // Modo manual (/buscar, /noticia): pendiente de aprobación
     const [savedNoticia] = await db
       .insert(noticiasTable)
       .values({
@@ -463,59 +478,12 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<EjecucionResultad
         contenido,
         tags,
         textoOriginal: textoParaIA.slice(0, 3000),
-        fuente: noticiaElegida.fuente ?? fuente,
-        publicada: false,
-        pendiente: true,
-        imagenPortada: "",
+        fuente: fuenteNombre,
+        publicada: esAutomatico,
+        pendiente: !esAutomatico,
+        imagenPortada: esAutomatico ? (imagenAutoUrl ?? "") : "",
       })
       .returning();
-
-    // ── ENVIAR A TELEGRAM ─────────────────────────────────────────────────
-    const token = process.env.TELEGRAM_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
-
-    if (!token || !chatId) {
-      logger.warn("Scheduler: Telegram no configurado, nota guardada sin enviar");
-      return { tipo: "ok", titulo, id: savedNoticia.id, fuente: noticiaElegida.fuente ?? fuente };
-    }
-
-    const replyMarkup = {
-      inline_keyboard: [[
-        { text: "✅ Publicar",      callback_data: `publicar_${savedNoticia.id}` },
-        { text: "✏️ Editar",        callback_data: `editar_${savedNoticia.id}` },
-        { text: "📸 Foto",          callback_data: `foto_${savedNoticia.id}` },
-        { text: "❌ Rechazar",      callback_data: `rechazar_${savedNoticia.id}` },
-      ]],
-    };
-
-    const TELEGRAM_MAX = 4096;
-    const encabezado = `🚨 *¡NUEVA INFO MILLONARIA DETECTADA!*\n\n📰 *${titulo}*\n\n`;
-    const pie        = `\n\n${tags}\n\n📡 _Fuente: ${noticiaElegida.fuente ?? fuente}_`;
-    const maxCuerpo  = TELEGRAM_MAX - encabezado.length - pie.length - 5;
-    const cuerpo     = contenido.length > maxCuerpo ? contenido.slice(0, maxCuerpo) + "…" : contenido;
-
-    const mensajeTexto = encabezado + cuerpo + pie;
-
-    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: mensajeTexto, parse_mode: "Markdown", reply_markup: replyMarkup }),
-    });
-
-    const tgData = await tgRes.json() as { ok: boolean; result?: { message_id: number } };
-
-    if (!tgRes.ok || !tgData.ok) {
-      logger.error({ tgData }, "Scheduler: error enviando a Telegram");
-      return { tipo: "telegram_error", fuente: noticiaElegida.fuente ?? fuente };
-    }
-
-    const messageId = String(tgData.result?.message_id ?? "");
-    if (messageId) {
-      await db
-        .update(noticiasTable)
-        .set({ telegramMessageId: messageId })
-        .where(eq(noticiasTable.id, savedNoticia.id));
-    }
 
     // Marcar URL como procesada para no volver a enviarla
     if (noticiaElegida.url) {
@@ -523,8 +491,82 @@ async function ejecutarCiclo(fuenteOverride?: string): Promise<EjecucionResultad
       guardarEstado(estado);
     }
 
-    logger.info({ titulo, id: savedNoticia.id, fuente, url: noticiaElegida.url }, "Scheduler: ciclo completado correctamente");
-    return { tipo: "ok", titulo, id: savedNoticia.id, fuente: noticiaElegida.fuente ?? fuente };
+    // ── ENVIAR A TELEGRAM ─────────────────────────────────────────────────
+    const token = process.env.TELEGRAM_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+
+    if (!token || !chatId) {
+      logger.warn("Scheduler: Telegram no configurado, nota guardada sin enviar");
+      return { tipo: "ok", titulo, id: savedNoticia.id, fuente: fuenteNombre };
+    }
+
+    const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+    const TELEGRAM_MAX = 4096;
+
+    if (esAutomatico) {
+      // ── MODO AUTOMÁTICO: FYI solo, ya está publicada ──────────────────
+      const fotoTexto = imagenAutoUrl ? "\n🖼 _Foto extraída automáticamente_" : "\n📷 _Sin foto (podés agregar desde el Redactor)_";
+      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n📡 _Fuente: ${fuenteNombre}_${fotoTexto}\n\n🔗 Editar: https://${dominioTelegram}/redactor`;
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: mensajeFIY,
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [[
+              { text: "✏️ Editar en Redactor", url: `https://${dominioTelegram}/redactor` },
+              { text: "❌ Despublicar", callback_data: `rechazar_${savedNoticia.id}` },
+            ]],
+          },
+        }),
+      });
+      logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl }, "Scheduler: nota autopublicada con foto automática");
+    } else {
+      // ── MODO MANUAL: pedir aprobación ────────────────────────────────
+      const replyMarkup = {
+        inline_keyboard: [[
+          { text: "✅ Publicar",  callback_data: `publicar_${savedNoticia.id}` },
+          { text: "✏️ Editar",    callback_data: `editar_${savedNoticia.id}` },
+          { text: "📸 Foto",      callback_data: `foto_${savedNoticia.id}` },
+          { text: "❌ Rechazar",  callback_data: `rechazar_${savedNoticia.id}` },
+        ]],
+      };
+
+      const encabezado = `🚨 *¡NUEVA INFO MILLONARIA!*\n\n📰 *${titulo}*\n\n`;
+      const pie        = `\n\n${tags}\n\n📡 _Fuente: ${fuenteNombre}_`;
+      const maxCuerpo  = TELEGRAM_MAX - encabezado.length - pie.length - 5;
+      const cuerpo     = contenido.length > maxCuerpo ? contenido.slice(0, maxCuerpo) + "…" : contenido;
+
+      const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: encabezado + cuerpo + pie,
+          parse_mode: "Markdown",
+          reply_markup: replyMarkup,
+        }),
+      });
+
+      const tgData = await tgRes.json() as { ok: boolean; result?: { message_id: number } };
+      if (!tgRes.ok || !tgData.ok) {
+        logger.error({ tgData }, "Scheduler: error enviando a Telegram");
+        return { tipo: "telegram_error", fuente: fuenteNombre };
+      }
+
+      const messageId = String(tgData.result?.message_id ?? "");
+      if (messageId) {
+        await db
+          .update(noticiasTable)
+          .set({ telegramMessageId: messageId })
+          .where(eq(noticiasTable.id, savedNoticia.id));
+      }
+    }
+
+    logger.info({ titulo, id: savedNoticia.id, fuente, esAutomatico, url: noticiaElegida.url }, "Scheduler: ciclo completado correctamente");
+    return { tipo: "ok", titulo, id: savedNoticia.id, fuente: fuenteNombre };
 
   } catch (err) {
     const mensaje = err instanceof Error ? err.message : String(err);
@@ -547,10 +589,10 @@ export function iniciarScheduler(): void {
   logger.info({ primerCicloMinutos: 2, intervaloMinutos: 15 }, "Scheduler automático iniciado — primer ciclo en 2 min, luego cada 15 minutos");
 
   setTimeout(() => {
-    ejecutarCiclo().catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));
+    ejecutarCiclo(undefined, true).catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));
 
     setInterval(() => {
-      ejecutarCiclo().catch((err) => logger.error({ err }, "Scheduler: error no capturado"));
+      ejecutarCiclo(undefined, true).catch((err) => logger.error({ err }, "Scheduler: error no capturado"));
     }, INTERVALO_MS);
   }, PRIMER_CICLO_MS);
 }

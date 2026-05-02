@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
+import { count as drizzleCount, desc, eq } from "drizzle-orm";
+import { sql as sqlRaw } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -159,20 +160,32 @@ router.get("/noticias-publicadas/:id", async (req, res) => {
 
 router.get("/noticias-publicadas", async (req, res) => {
   try {
+    const POR_PAGINA = 6;
+    const page  = Math.max(0, parseInt(req.query.page  as string ?? "0") || 0);
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit as string ?? String(POR_PAGINA)) || POR_PAGINA));
+    const offset = page * limit;
+
+    const [{ total }] = await db
+      .select({ total: sqlRaw<number>`cast(count(*) as int)` })
+      .from(noticiasTable)
+      .where(eq(noticiasTable.publicada, true));
+
     const noticias = await db
       .select()
       .from(noticiasTable)
       .where(eq(noticiasTable.publicada, true))
       .orderBy(desc(noticiasTable.createdAt))
-      .limit(20);
+      .limit(limit)
+      .offset(offset);
 
-    // Eliminar cabeceras condicionales para evitar respuestas 304 en caché
+    const totalPages = Math.max(1, Math.ceil(Number(total) / limit));
+
     delete req.headers["if-none-match"];
     delete req.headers["if-modified-since"];
     res.removeHeader("ETag");
     res.set("Cache-Control", "no-store, no-cache, must-revalidate");
     res.set("Pragma", "no-cache");
-    res.json({ noticias });
+    res.json({ noticias, total: Number(total), page, limit, totalPages });
   } catch (err) {
     req.log.error({ err }, "Error obteniendo noticias");
     res.status(500).json({ error: "Error al cargar noticias" });

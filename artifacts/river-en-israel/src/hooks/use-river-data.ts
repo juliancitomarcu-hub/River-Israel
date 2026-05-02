@@ -107,15 +107,27 @@ function noticiaANewsItem(n: NoticiaPublicada): NewsItem {
   };
 }
 
-export function useNews() {
+interface NewsPage {
+  items: NewsItem[];
+  total: number;
+  totalPages: number;
+  page: number;
+}
+
+export function useNews(page = 0) {
   return useQuery({
-    queryKey: ["noticias-publicadas"],
-    queryFn: async (): Promise<NewsItem[]> => {
-      const res = await fetch("/api/noticias-publicadas");
-      if (!res.ok) return MOCK_NEWS_FALLBACK;
-      const data = await res.json() as { noticias: NoticiaPublicada[] };
-      if (!data.noticias || data.noticias.length === 0) return MOCK_NEWS_FALLBACK;
-      return data.noticias.map(noticiaANewsItem);
+    queryKey: ["noticias-publicadas", page],
+    queryFn: async (): Promise<NewsPage> => {
+      const res = await fetch(`/api/noticias-publicadas?page=${page}&limit=6`);
+      if (!res.ok) return { items: MOCK_NEWS_FALLBACK, total: 1, totalPages: 1, page: 0 };
+      const data = await res.json() as { noticias: NoticiaPublicada[]; total: number; totalPages: number; page: number };
+      if (!data.noticias || data.noticias.length === 0) return { items: MOCK_NEWS_FALLBACK, total: 1, totalPages: 1, page: 0 };
+      return {
+        items: data.noticias.map(noticiaANewsItem),
+        total: data.total ?? data.noticias.length,
+        totalPages: data.totalPages ?? 1,
+        page: data.page ?? 0,
+      };
     },
     staleTime: 30_000,
   });

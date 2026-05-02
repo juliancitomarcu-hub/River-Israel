@@ -99,7 +99,10 @@ export default function Home() {
     return url;
   }
 
-  const { data: news } = useNews();
+  const [paginaActualidad, setPaginaActualidad] = useState(0);
+  const { data: newsData } = useNews(paginaActualidad);
+  const news = newsData?.items;
+  const totalPaginasNoticias = newsData?.totalPages ?? 1;
   const { data: matches } = useMatches();
   const { data: timeline } = useHistoryTimeline();
 
@@ -310,6 +313,43 @@ export default function Home() {
                   </div>
                 </motion.div>
               ))}
+
+              {/* ── Paginación Actualidad ── */}
+              {totalPaginasNoticias > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                  <button
+                    onClick={() => { setPaginaActualidad(p => Math.max(0, p - 1)); window.location.hash = "actualidad"; }}
+                    disabled={paginaActualidad === 0}
+                    className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:border-river-red hover:text-river-red disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-bold"
+                    aria-label="Página anterior"
+                  >
+                    ‹
+                  </button>
+
+                  {Array.from({ length: totalPaginasNoticias }, (_, i) => i).map(i => (
+                    <button
+                      key={i}
+                      onClick={() => { setPaginaActualidad(i); window.location.hash = "actualidad"; }}
+                      className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-all border ${
+                        i === paginaActualidad
+                          ? "bg-river-red text-white border-river-red shadow"
+                          : "border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => { setPaginaActualidad(p => Math.min(totalPaginasNoticias - 1, p + 1)); window.location.hash = "actualidad"; }}
+                    disabled={paginaActualidad === totalPaginasNoticias - 1}
+                    className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:border-river-red hover:text-river-red disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-bold"
+                    aria-label="Página siguiente"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Matches Sidebar */}
