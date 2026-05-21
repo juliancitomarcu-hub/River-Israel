@@ -73,14 +73,10 @@ async function obtenerUrlFoto(token: string, fileId: string): Promise<string | n
 
 function botonesAprobacion(noticiaId: number) {
   return {
-    inline_keyboard: [
-      [
-        { text: "✅ Publicar",  callback_data: `publicar_${noticiaId}` },
-        { text: "✏️ Editar",   callback_data: `editar_${noticiaId}` },
-        { text: "📸 Foto",     callback_data: `foto_${noticiaId}` },
-        { text: "❌ Rechazar", callback_data: `rechazar_${noticiaId}` },
-      ],
-    ],
+    inline_keyboard: [[
+      { text: "✅ Publicar", callback_data: `publicar_${noticiaId}` },
+      { text: "✏️ Editar",  callback_data: `editar_${noticiaId}` },
+    ]],
   };
 }
 
@@ -194,12 +190,29 @@ async function handleComandoNoticia(token: string, chatId: string) {
       .limit(1);
 
     if (notaPendiente) {
-      // Mostrar nota pendiente con botones de aprobación
-      const resumen = notaPendiente.contenido.slice(0, 500) + (notaPendiente.contenido.length > 500 ? "…" : "");
-      const fuenteTag = notaPendiente.fuente ? `\n📰 _${notaPendiente.fuente}_` : "";
-      const fotoTag = notaPendiente.imagenPortada ? "\n🖼 _Con foto de portada_" : "";
+      // Mostrar nota pendiente con artículo completo + 2 botones
+      // Si tiene foto de portada, enviarla primero
+      if (notaPendiente.imagenPortada) {
+        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: notaPendiente.imagenPortada,
+            caption: `🖼 _Foto de portada — ${notaPendiente.titulo}_`,
+            parse_mode: "Markdown",
+          }),
+        }).catch(() => {});
+      }
 
-      const texto = `📝 *NOTA PENDIENTE*\n\n*${notaPendiente.titulo}*\n\n${resumen}${fuenteTag}${fotoTag}`;
+      const fuenteTag = notaPendiente.fuente ? `\n\n📡 _Fuente: ${notaPendiente.fuente}_` : "";
+      const tagsTag = notaPendiente.tags ? `\n${notaPendiente.tags}` : "";
+      const encabezado = `📰 *${notaPendiente.titulo}*\n\n`;
+      const textoCompleto = encabezado + notaPendiente.contenido + tagsTag + fuenteTag;
+      const TELE_MAX = 4096;
+      const texto = textoCompleto.length > TELE_MAX
+        ? textoCompleto.slice(0, TELE_MAX - 1).replace(/[^.!?…]*$/, "") + "."
+        : textoCompleto;
 
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
@@ -350,7 +363,6 @@ async function procesarCallback(
       const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
       if (!actual) return;
       if (actual.publicada) {
-        // Ya publicada — avisar sin hacer nada (evita doble publicación)
         await responderCallback(token, callbackId, "⚠️ Esta nota ya fue publicada.");
         return;
       }
@@ -361,11 +373,14 @@ async function procesarCallback(
         .where(eq(noticiasTable.id, noticiaId))
         .returning();
 
+      const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
       const fotoTexto = noticia?.imagenPortada ? "\n🖼 _Publicada con foto de portada._" : "";
+      const linkSitio = `\n\n🌐 [Ver en el sitio](https://${dominioTelegram}/actualidad)`;
+
       if (messageId) {
         await editarMensajeTelegram(
           token, chatId, messageId,
-          `✅ *PUBLICADA* — ${noticia?.titulo ?? "Nota publicada"}\n\n_Ya está visible en la sección Actualidad del sitio web._${fotoTexto}`
+          `✅ *PUBLICADA* — ${noticia?.titulo ?? "Nota publicada"}${fotoTexto}${linkSitio}`
         );
       }
 

@@ -439,7 +439,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
 
     // ── CONTROL DE CALIDAD PRE-GUARDADO ───────────────────────────────────
     let parsed = parsearResultado(resultado);
-    const MINIMO_CHARS = 1848;
+    const MINIMO_CHARS = 2000;
     const cortada = /[…\.]{3,}\s*$/.test(parsed.contenido.trimEnd());
     const corta   = parsed.contenido.length < MINIMO_CHARS;
 
@@ -453,7 +453,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
         contents: [
           { role: "user",  parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] },
           { role: "model", parts: [{ text: resultado }] },
-          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 1848 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial Ramat Gan. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
+          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 2000 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial Ramat Gan. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
         ],
         config: { systemInstruction: PROMPT_MAESTRO, maxOutputTokens: 3000 },
       });
@@ -469,8 +469,9 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
     const fuenteNombre = noticiaElegida.fuente ?? fuente;
 
     // ── GUARDAR EN DB ─────────────────────────────────────────────────────
-    // Modo automático: autopublicación directa + foto extraída automáticamente
-    // Modo manual (/buscar, /noticia): pendiente de aprobación
+    // Siempre guardamos la imagen extraída automáticamente.
+    // Modo automático: autopublicación directa.
+    // Modo manual (/buscar, /noticia): pendiente de aprobación.
     const [savedNoticia] = await db
       .insert(noticiasTable)
       .values({
@@ -481,7 +482,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
         fuente: fuenteNombre,
         publicada: esAutomatico,
         pendiente: !esAutomatico,
-        imagenPortada: esAutomatico ? (imagenAutoUrl ?? "") : "",
+        imagenPortada: imagenAutoUrl ?? "",
       })
       .returning();
 
@@ -505,8 +506,8 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
 
     if (esAutomatico) {
       // ── MODO AUTOMÁTICO: FYI solo, ya está publicada ──────────────────
-      const fotoTexto = imagenAutoUrl ? "\n🖼 _Foto extraída automáticamente_" : "\n📷 _Sin foto (podés agregar desde el Redactor)_";
-      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n📡 _Fuente: ${fuenteNombre}_${fotoTexto}\n\n🔗 Editar: https://${dominioTelegram}/redactor`;
+      const fotoTexto = imagenAutoUrl ? "\n🖼 _Foto de portada incluida_" : "\n📷 _Sin foto (podés agregar desde el Redactor)_";
+      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n📡 _Fuente: ${fuenteNombre}_${fotoTexto}`;
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -517,34 +518,49 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
           reply_markup: {
             inline_keyboard: [[
               { text: "✏️ Editar en Redactor", url: `https://${dominioTelegram}/redactor` },
-              { text: "❌ Despublicar", callback_data: `rechazar_${savedNoticia.id}` },
             ]],
           },
         }),
       });
       logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl }, "Scheduler: nota autopublicada con foto automática");
     } else {
-      // ── MODO MANUAL: pedir aprobación ────────────────────────────────
+      // ── MODO MANUAL: artículo completo + 2 botones ────────────────────
+      // Si hay imagen, la enviamos primero como sendPhoto
+      if (imagenAutoUrl) {
+        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: imagenAutoUrl,
+            caption: `🖼 _Foto de portada — ${titulo}_`,
+            parse_mode: "Markdown",
+          }),
+        }).catch(() => { /* no bloquear si falla la foto */ });
+      }
+
+      // Artículo completo — sin truncar. El contenido redactado cabe dentro de 4096 chars.
       const replyMarkup = {
         inline_keyboard: [[
-          { text: "✅ Publicar",  callback_data: `publicar_${savedNoticia.id}` },
-          { text: "✏️ Editar",    callback_data: `editar_${savedNoticia.id}` },
-          { text: "📸 Foto",      callback_data: `foto_${savedNoticia.id}` },
-          { text: "❌ Rechazar",  callback_data: `rechazar_${savedNoticia.id}` },
+          { text: "✅ Publicar", callback_data: `publicar_${savedNoticia.id}` },
+          { text: "✏️ Editar",  callback_data: `editar_${savedNoticia.id}` },
         ]],
       };
 
-      const encabezado = `🚨 *¡NUEVA INFO MILLONARIA!*\n\n📰 *${titulo}*\n\n`;
+      const encabezado = `📰 *${titulo}*\n\n`;
       const pie        = `\n\n${tags}\n\n📡 _Fuente: ${fuenteNombre}_`;
-      const maxCuerpo  = TELEGRAM_MAX - encabezado.length - pie.length - 5;
-      const cuerpo     = contenido.length > maxCuerpo ? contenido.slice(0, maxCuerpo) + "…" : contenido;
+      const textoCompleto = encabezado + contenido + pie;
+      // Salvaguarda: si supera 4096 cortamos en oración completa
+      const texto = textoCompleto.length > TELEGRAM_MAX
+        ? textoCompleto.slice(0, TELEGRAM_MAX - 1).replace(/[^.!?…]*$/, "") + "."
+        : textoCompleto;
 
       const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: encabezado + cuerpo + pie,
+          text: texto,
           parse_mode: "Markdown",
           reply_markup: replyMarkup,
         }),
