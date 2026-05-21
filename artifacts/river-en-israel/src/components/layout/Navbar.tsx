@@ -11,8 +11,8 @@ const NAV_LINKS = [
   { name: "Plantel",       href: "/equipo" },
   { name: "Nuestra Filial",href: "#filial" },
   { name: "Galería",       href: "#galeria" },
-  { name: "Videos",        href: "#videos" },
-  { name: "Reacciones",    href: "#videos" },
+  { name: "Videos",          href: "#videos" },
+  { name: "Próximos Eventos",href: "#eventos" },
 ];
 
 export function Navbar() {

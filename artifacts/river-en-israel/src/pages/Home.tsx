@@ -542,7 +542,7 @@ export default function Home() {
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Reacciones, análisis, y noticias post partido</span>
+                  <span>Próximos eventos y encuentros de la filial</span>
                 </li>
               </ul>
 
@@ -874,6 +874,40 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ================= PRÓXIMOS EVENTOS SECTION ================= */}
+      <section id="eventos" className="py-16 bg-gradient-to-b from-river-black to-[#0a0a0a] text-white relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-river-red/10 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-10">
+            <span className="bg-river-red/20 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 inline-block mb-4">
+              Agenda de la Filial Ramat Gan
+            </span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-3">
+              Próximos <span className="text-river-red">Eventos</span>
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              Encuentros para ver partidos, asados millonarios, eventos sociales y todo lo que se viene para la familia riverplatense en Israel.
+            </p>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-10 md:p-14 text-center backdrop-blur">
+            <Calendar className="w-14 h-14 text-river-red mx-auto mb-5 opacity-80" />
+            <h3 className="text-2xl font-display font-bold mb-3">Próximamente publicaremos los eventos</h3>
+            <p className="text-gray-400 mb-8 max-w-xl mx-auto">
+              Estamos organizando los próximos encuentros de la filial. Sumate al grupo de WhatsApp para enterarte primero.
+            </p>
+            <a
+              href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-3 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-3 px-7 rounded-xl transition-all shadow-lg hover:-translate-y-1"
+            >
+              Unite al grupo de WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* ================= VIDEOS SECTION ================= */}
       <section id="videos" className="py-10 bg-river-black text-white relative">
