@@ -72,7 +72,7 @@ function renderContenido(texto: string) {
 function NoticiasRelacionadas({ currentId }: { currentId: number }) {
   const { data: allNews } = useNews();
 
-  const relacionadas: NewsItem[] = (allNews ?? [])
+  const relacionadas: NewsItem[] = (allNews?.items ?? [])
     .filter((n) => n.id !== String(currentId) && !n.id.startsWith("mock"))
     .slice(0, 3);
 
