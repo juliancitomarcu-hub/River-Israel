@@ -373,6 +373,9 @@ async function procesarCallback(
         .where(eq(noticiasTable.id, noticiaId))
         .returning();
 
+      // 🌐 Traducir al hebreo en background
+      traducirYGuardarHebreo(noticiaId).catch(() => {});
+
       const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
       const fotoTexto = noticia?.imagenPortada ? "\n🖼 _Publicada con foto de portada._" : "";
       const linkSitio = `\n\n🌐 [Ver en el sitio](https://${dominioTelegram}/actualidad)`;

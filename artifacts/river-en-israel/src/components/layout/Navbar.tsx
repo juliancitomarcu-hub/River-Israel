@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NAV_LINKS = [
-  { name: "Inicio",        href: "/" },
-  { name: "Actualidad",    href: "#actualidad" },
-  { name: "Historia",      href: "/historia" },
+  { name: "Inicio",          href: "/" },
+  { name: "Página en hebreo",href: "/hebreo" },
+  { name: "Historia",        href: "/historia" },
   { name: "Plantel",       href: "/equipo" },
   { name: "Nuestra Filial",href: "#filial" },
   { name: "Galería",       href: "#galeria" },

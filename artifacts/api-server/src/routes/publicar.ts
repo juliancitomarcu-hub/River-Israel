@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { count as drizzleCount, desc, eq } from "drizzle-orm";
+import { count as drizzleCount, desc, eq, and, sql } from "drizzle-orm";
 import { sql as sqlRaw } from "drizzle-orm";
+import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
 
 const router: IRouter = Router();
 
@@ -90,6 +91,9 @@ router.post("/publicar-noticia", async (req, res) => {
       })
       .returning();
 
+    // 🌐 Traducir al hebreo en background (fire-and-forget)
+    traducirYGuardarHebreo(noticia.id).catch(() => {});
+
     res.json({ ok: true, id: noticia.id, titulo: noticia.titulo });
   } catch (err) {
     req.log.error({ err }, "Error publicando noticia");
@@ -122,11 +126,20 @@ router.put("/noticia-pendiente/:id", async (req, res) => {
     if (imagenPortada && imagenPortada.startsWith("/objects/")) {
       updateData.imagenPortada = imagenPortada;
     }
+    // Si cambia el contenido, invalidar traducción anterior para que se regenere
+    updateData.tituloHe = "";
+    updateData.contenidoHe = "";
+    updateData.tagsHe = "";
+
     const [updated] = await db
       .update(noticiasTable)
       .set(updateData)
       .where(eq(noticiasTable.id, id))
       .returning();
+
+    // 🌐 Re-traducir al hebreo en background
+    traducirYGuardarHebreo(updated.id).catch(() => {});
+
     res.json({ ok: true, noticia: updated });
   } catch (err) {
     req.log.error({ err }, "Error actualizando noticia");
@@ -164,19 +177,36 @@ router.get("/noticias-publicadas", async (req, res) => {
     const page  = Math.max(0, parseInt(req.query.page  as string ?? "0") || 0);
     const limit = Math.min(20, Math.max(1, parseInt(req.query.limit as string ?? String(POR_PAGINA)) || POR_PAGINA));
     const offset = page * limit;
+    const lang = (req.query.lang as string ?? "es").toLowerCase();
+    const isHebreo = lang === "he";
+
+    // Para hebreo: solo notas con traducción completa
+    const whereClause = isHebreo
+      ? and(eq(noticiasTable.publicada, true), sql`length(coalesce(${noticiasTable.contenidoHe}, '')) > 100`)
+      : eq(noticiasTable.publicada, true);
 
     const [{ total }] = await db
       .select({ total: sqlRaw<number>`cast(count(*) as int)` })
       .from(noticiasTable)
-      .where(eq(noticiasTable.publicada, true));
+      .where(whereClause);
 
-    const noticias = await db
+    const rows = await db
       .select()
       .from(noticiasTable)
-      .where(eq(noticiasTable.publicada, true))
+      .where(whereClause)
       .orderBy(desc(noticiasTable.createdAt))
       .limit(limit)
       .offset(offset);
+
+    // Si es hebreo, mapear los campos *He a los nombres principales para que el frontend los consuma igual
+    const noticias = isHebreo
+      ? rows.map(n => ({
+          ...n,
+          titulo: n.tituloHe || n.titulo,
+          contenido: n.contenidoHe || n.contenido,
+          tags: n.tagsHe || n.tags,
+        }))
+      : rows;
 
     const totalPages = Math.max(1, Math.ceil(Number(total) / limit));
 
@@ -185,7 +215,7 @@ router.get("/noticias-publicadas", async (req, res) => {
     res.removeHeader("ETag");
     res.set("Cache-Control", "no-store, no-cache, must-revalidate");
     res.set("Pragma", "no-cache");
-    res.json({ noticias, total: Number(total), page, limit, totalPages });
+    res.json({ noticias, total: Number(total), page, limit, totalPages, lang });
   } catch (err) {
     req.log.error({ err }, "Error obteniendo noticias");
     res.status(500).json({ error: "Error al cargar noticias" });

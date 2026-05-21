@@ -11,6 +11,7 @@ import Fixture from "@/pages/Fixture";
 import Equipo from "@/pages/Equipo";
 import Historia from "@/pages/Historia";
 import Postulacion from "@/pages/Postulacion";
+import Hebreo from "@/pages/Hebreo";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -35,6 +36,7 @@ function Router() {
           <Route path="/equipo" component={Equipo} />
           <Route path="/historia" component={Historia} />
           <Route path="/postula" component={Postulacion} />
+          <Route path="/hebreo" component={Hebreo} />
           <Route component={NotFound} />
         </Switch>
       </main>

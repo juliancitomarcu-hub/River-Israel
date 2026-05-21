@@ -7,6 +7,7 @@ import { logger } from "./lib/logger";
 import * as fs from "fs";
 import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
+import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 
 // Fuentes en orden de prioridad — La Página Millonaria, sitio oficial y Olé primero
 const FUENTES = [
@@ -422,7 +423,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
       contents: [{ role: "user", parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] }],
       config: {
         systemInstruction: PROMPT_MAESTRO,
-        maxOutputTokens: 3000,
+        maxOutputTokens: 8000,
       },
     });
 
@@ -455,7 +456,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
           { role: "model", parts: [{ text: resultado }] },
           { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 2000 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial Ramat Gan. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
         ],
-        config: { systemInstruction: PROMPT_MAESTRO, maxOutputTokens: 3000 },
+        config: { systemInstruction: PROMPT_MAESTRO, maxOutputTokens: 8000 },
       });
       const resultadoExpandido = expansion.text ?? "";
       if (resultadoExpandido && resultadoExpandido.length > resultado.length) {
@@ -503,6 +504,11 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
 
     const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
     const TELEGRAM_MAX = 4096;
+
+    // 🌐 Si se publicó automáticamente, lanzar traducción al hebreo en background
+    if (esAutomatico && savedNoticia) {
+      traducirYGuardarHebreo(savedNoticia.id).catch(() => {});
+    }
 
     if (esAutomatico) {
       // ── MODO AUTOMÁTICO: FYI solo, ya está publicada ──────────────────
