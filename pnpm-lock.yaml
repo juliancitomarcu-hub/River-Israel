@@ -40,7 +40,7 @@ catalogs:
       specifier: 2.1.1
       version: 2.1.1
     drizzle-orm:
-      specifier: ^0.45.1
+      specifier: 0.45.1
       version: 0.45.1
     framer-motion:
       specifier: 12.35.1
@@ -709,6 +709,16 @@ importers:
         version: 19.2.14
 
   scripts:
+    dependencies:
+      '@google/genai':
+        specifier: ^1.47.0
+        version: 1.47.0
+      '@workspace/db':
+        specifier: workspace:*
+        version: link:../lib/db
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.1(@types/pg@8.18.0)(pg@8.20.0)
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

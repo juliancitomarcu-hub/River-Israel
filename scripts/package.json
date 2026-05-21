@@ -5,10 +5,16 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "backfill-hebreo": "tsx ./src/backfill-hebreo.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:"
+  },
+  "dependencies": {
+    "@google/genai": "^1.47.0",
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:"
   }
 }
