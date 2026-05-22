@@ -448,48 +448,104 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= HISTORIA SECTION ================= */}
-      <section id="historia" className="py-16 bg-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-[500px] bg-diagonal-red opacity-5 -skew-y-3 origin-top-left -z-10"></div>
-
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ================= PRÓXIMOS EVENTOS SECTION ================= */}
+      <section id="eventos" className="py-16 bg-gradient-to-b from-river-black to-[#0a0a0a] text-white relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-river-red/10 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-10">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">El Más <span className="text-river-red">Grande</span></h2>
-            <p className="text-gray-600">Un repaso por los momentos que forjaron nuestra gloriosa historia.</p>
+            <span className="bg-river-red/20 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 inline-block mb-4">
+              Agenda de la Filial Ramat Gan
+            </span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-3">
+              Próximos <span className="text-river-red">Eventos</span>
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              Encuentros para ver partidos, asados millonarios, eventos sociales y todo lo que se viene para la familia riverplatense en Israel.
+            </p>
           </div>
 
-          {/* Carousel deslizable — 3 tarjetas visibles */}
-          <div className="overflow-x-auto snap-x snap-mandatory -mx-2 px-2" style={{ scrollbarWidth: "none" }}>
-            <div className="flex gap-4" style={{ width: "max-content" }}>
-              {timeline?.map((item, index) => (
-                <motion.div
-                  key={item.year}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: index * 0.06 }}
-                  className="snap-start w-[300px] sm:w-[320px] flex-none"
-                >
-                  <div className="h-full bg-gray-50 p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-river-red/20 transition-all flex flex-col">
-                    <span className="font-display text-4xl font-bold text-river-red/20 block mb-1">{item.year}</span>
-                    <h3 className="text-base font-bold text-river-black mb-2 leading-snug">{item.title}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 flex-1">{item.description}</p>
-                  </div>
-                </motion.div>
-              ))}
+          <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-river-red/30 rounded-3xl overflow-hidden backdrop-blur shadow-2xl">
+            {/* Header del evento */}
+            <div className="bg-gradient-to-r from-river-red via-river-red to-[#a30000] p-6 md:p-7">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">Próximo evento</span>
+                <span className="text-white/80 text-xs font-semibold">Convocatoria oficial</span>
+              </div>
+              <h3 className="text-2xl md:text-3xl font-display font-bold text-white leading-tight">
+                River Plate vs. Belgrano de Córdoba
+              </h3>
+              <p className="text-white/90 text-sm mt-1">Vení a ver el partido con la Filial Ramat Gan ⚪️🔴</p>
             </div>
-          </div>
 
-          <div className="text-center mt-10">
-            <Link
-              href="/historia"
-              className="inline-flex items-center gap-2 border-2 border-river-red text-river-red hover:bg-river-red hover:text-white font-bold py-3 px-8 rounded-xl transition-all"
-            >
-              Historia completa <ChevronRight className="w-4 h-4" />
-            </Link>
+            {/* Detalles */}
+            <div className="p-6 md:p-8 grid sm:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Fecha</p>
+                  <p className="text-white font-semibold">Domingo 24 de Mayo de 2026</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Convocatoria</p>
+                  <p className="text-white font-semibold">21:00 hs (hora de Israel)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 sm:col-span-2">
+                <MapPin className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Lugar</p>
+                  <p className="text-white font-semibold">Meltzer Beer</p>
+                  <p className="text-gray-400 text-sm">Merkaz Ben Gurion · Ben Gurion 4, Rishon LeZion</p>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=Meltzer+Beer+Ben+Gurion+4+Rishon+LeZion"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 mt-1.5 text-river-red hover:text-white text-xs font-semibold transition-colors"
+                  >
+                    Ver en Google Maps <ChevronRight className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Car className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Beneficio</p>
+                  <p className="text-white font-semibold">Estacionamiento gratuito en el lugar</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Shirt className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Vestimenta</p>
+                  <p className="text-white font-semibold">Camisetas, banderas y distintivos Rojos y Blancos</p>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="px-6 pb-6 md:px-8 md:pb-8 flex flex-col sm:flex-row gap-3">
+              <a
+                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-3 px-5 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 text-sm"
+              >
+                Confirmar asistencia por WhatsApp
+              </a>
+              <a
+                href="#suscribite"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-bold py-3 px-5 rounded-xl transition-all border border-white/20 text-sm"
+              >
+                <Bell className="w-4 h-4" /> Recibir avisos
+              </a>
+            </div>
           </div>
         </div>
       </section>
+
       {/* ================= FILIAL RAMAT GAN SECTION ================= */}
       <section id="filial" className="py-24 bg-gray-50 relative overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-[0.03]">
@@ -645,7 +701,153 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================= FIXTURE SECTION ================= */}
+      <section id="fixture" className="py-16 bg-river-black text-white relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[200px] bg-river-red/15 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-8">
+            <span className="bg-river-red/20 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 inline-block mb-3">
+              <Trophy className="w-3 h-3 inline mr-1 -mt-0.5" /> Calendario River
+            </span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-2">
+              <span className="text-river-red">Fixture</span> y Resultados
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto text-sm">Los próximos partidos y los últimos resultados del Millonario.</p>
+          </div>
 
+          {!matches && (
+            <div className="flex justify-center py-10">
+              <div className="w-7 h-7 border-2 border-river-red border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+
+          {matches && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {(() => {
+                const proximos = matches.filter(m => m.status === 'UPCOMING').slice(0, 3);
+                const jugados = matches.filter(m => m.status === 'FINISHED' || m.status === 'LIVE').slice(0, 3);
+                return [...jugados, ...proximos];
+              })().map((match) => {
+                const [golesRiver, golesRival] = match.isRiverHome
+                  ? [match.homeScore, match.awayScore]
+                  : [match.awayScore, match.homeScore];
+                const ganamos = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver > golesRival;
+                const perdimos = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver < golesRival;
+                return (
+                  <div key={match.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] hover:border-river-red/30 transition-all">
+                    <div className="flex justify-between items-center text-[10px] text-gray-400 mb-2">
+                      <span className="font-semibold text-gray-300 truncate max-w-[140px]">{match.competition}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {match.status === 'LIVE' && (
+                          <span className="flex items-center gap-0.5 bg-green-500 text-white px-1.5 py-0.5 rounded text-[9px] font-bold animate-pulse">
+                            🔴 EN VIVO
+                          </span>
+                        )}
+                        {match.status === 'FINISHED' && (
+                          <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[9px] font-bold",
+                            ganamos ? "bg-green-600 text-white" : perdimos ? "bg-red-700 text-white" : "bg-gray-600 text-white"
+                          )}>
+                            {ganamos ? "✓ Ganamos" : perdimos ? "✗ Perdimos" : "= Empate"}
+                          </span>
+                        )}
+                        <span>{match.date}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className={cn("font-bold text-sm truncate leading-tight", match.isRiverHome ? "text-white" : "text-gray-400")}>
+                          {match.homeTeam}
+                        </div>
+                        {(match.status === 'FINISHED' || match.status === 'LIVE') && (
+                          <div className={cn("font-display text-2xl font-bold tabular-nums leading-none mt-1", match.isRiverHome ? "text-white" : "text-gray-400")}>
+                            {match.homeScore ?? 0}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0 text-gray-500 text-xs font-bold">
+                        {match.status === 'FINISHED' || match.status === 'LIVE' ? '—' : 'vs'}
+                      </div>
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className={cn("font-bold text-sm truncate leading-tight", !match.isRiverHome ? "text-white" : "text-gray-400")}>
+                          {match.awayTeam}
+                        </div>
+                        {(match.status === 'FINISHED' || match.status === 'LIVE') && (
+                          <div className={cn("font-display text-2xl font-bold tabular-nums leading-none mt-1", !match.isRiverHome ? "text-white" : "text-gray-400")}>
+                            {match.awayScore ?? 0}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {match.status === 'UPCOMING' && match.horaIsrael && (
+                      <p className="text-[11px] text-river-red font-semibold mt-2 text-center">
+                        ⏰ {match.horaIsrael}
+                      </p>
+                    )}
+                    {match.estadio && (
+                      <p className="text-[10px] text-gray-500 mt-1 text-center">
+                        🏟 {match.estadio}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="text-center mt-8">
+            <Link
+              href="/fixture"
+              className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold py-3 px-8 rounded-xl transition-all hover:-translate-y-0.5 shadow-lg"
+            >
+              Fixture completo <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= HISTORIA SECTION ================= */}
+      <section id="historia" className="py-16 bg-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-[500px] bg-diagonal-red opacity-5 -skew-y-3 origin-top-left -z-10"></div>
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">El Más <span className="text-river-red">Grande</span></h2>
+            <p className="text-gray-600">Un repaso por los momentos que forjaron nuestra gloriosa historia.</p>
+          </div>
+
+          {/* Carousel deslizable — 3 tarjetas visibles */}
+          <div className="overflow-x-auto snap-x snap-mandatory -mx-2 px-2" style={{ scrollbarWidth: "none" }}>
+            <div className="flex gap-4" style={{ width: "max-content" }}>
+              {timeline?.map((item, index) => (
+                <motion.div
+                  key={item.year}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.06 }}
+                  className="snap-start w-[300px] sm:w-[320px] flex-none"
+                >
+                  <div className="h-full bg-gray-50 p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-river-red/20 transition-all flex flex-col">
+                    <span className="font-display text-4xl font-bold text-river-red/20 block mb-1">{item.year}</span>
+                    <h3 className="text-base font-bold text-river-black mb-2 leading-snug">{item.title}</h3>
+                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 flex-1">{item.description}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-center mt-10">
+            <Link
+              href="/historia"
+              className="inline-flex items-center gap-2 border-2 border-river-red text-river-red hover:bg-river-red hover:text-white font-bold py-3 px-8 rounded-xl transition-all"
+            >
+              Historia completa <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
       {/* ================= GALERIA SECTION ================= */}
       <section id="galeria" className="py-24 bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -765,6 +967,71 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================= VIDEOS SECTION ================= */}
+      <section id="videos" className="py-10 bg-river-black text-white relative">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold">Videos <span className="text-river-red">& Goles</span></h2>
+              <p className="text-gray-400 mt-1 text-sm">Tocá un video para reproducirlo.</p>
+            </div>
+          </div>
+
+          {/* Columna scrollable de videos */}
+          {videos.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-600">
+              <Play className="w-10 h-10 mb-3 opacity-30" />
+              <p className="text-sm">Los videos se cargan desde el Redactor.</p>
+            </div>
+          )}
+          <div className="flex flex-col gap-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20">
+            {videos.map((vid, i) => {
+              const src = vid.url.startsWith("/objects/")
+                ? `/api/storage${vid.url}`
+                : `${import.meta.env.BASE_URL}${vid.url.replace(/^\//, "")}`;
+              return (
+                <button
+                  key={vid.id}
+                  onClick={() => setVideoAbierto(vid)}
+                  className="w-full flex items-center gap-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-river-red/50 rounded-2xl p-3 transition-all text-left group"
+                >
+                  {/* Miniatura */}
+                  <div className="relative w-36 shrink-0 aspect-video rounded-xl overflow-hidden bg-black">
+                    {vid.thumbnail ? (
+                      <img
+                        src={vid.thumbnail.startsWith("/objects/") ? `/api/storage${vid.thumbnail}` : `${import.meta.env.BASE_URL}${vid.thumbnail.replace(/^\//, "")}`}
+                        alt={vid.titulo}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <video
+                        src={src}
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                        muted
+                      />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-river-red flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Play className="w-5 h-5 text-white" fill="currentColor" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-white group-hover:text-river-red transition-colors truncate">
+                      {vid.titulo || `Video ${i + 1}`}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">Tap para reproducir</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-river-red shrink-0 transition-colors" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ================= LIGHTBOX ================= */}
       <AnimatePresence>
         {lightboxIdx !== null && galeriaFotos[lightboxIdx] && (
@@ -839,169 +1106,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* ================= PRÓXIMOS EVENTOS SECTION ================= */}
-      <section id="eventos" className="py-16 bg-gradient-to-b from-river-black to-[#0a0a0a] text-white relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-river-red/10 blur-[120px] rounded-full pointer-events-none"></div>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-10">
-            <span className="bg-river-red/20 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 inline-block mb-4">
-              Agenda de la Filial Ramat Gan
-            </span>
-            <h2 className="text-3xl md:text-5xl font-display font-bold mb-3">
-              Próximos <span className="text-river-red">Eventos</span>
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Encuentros para ver partidos, asados millonarios, eventos sociales y todo lo que se viene para la familia riverplatense en Israel.
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-river-red/30 rounded-3xl overflow-hidden backdrop-blur shadow-2xl">
-            {/* Header del evento */}
-            <div className="bg-gradient-to-r from-river-red via-river-red to-[#a30000] p-6 md:p-7">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">Próximo evento</span>
-                <span className="text-white/80 text-xs font-semibold">Convocatoria oficial</span>
-              </div>
-              <h3 className="text-2xl md:text-3xl font-display font-bold text-white leading-tight">
-                River Plate vs. Belgrano de Córdoba
-              </h3>
-              <p className="text-white/90 text-sm mt-1">Vení a ver el partido con la Filial Ramat Gan ⚪️🔴</p>
-            </div>
-
-            {/* Detalles */}
-            <div className="p-6 md:p-8 grid sm:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Fecha</p>
-                  <p className="text-white font-semibold">Domingo 24 de Mayo de 2026</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Convocatoria</p>
-                  <p className="text-white font-semibold">21:00 hs (hora de Israel)</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 sm:col-span-2">
-                <MapPin className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Lugar</p>
-                  <p className="text-white font-semibold">Meltzer Beer</p>
-                  <p className="text-gray-400 text-sm">Merkaz Ben Gurion · Ben Gurion 4, Rishon LeZion</p>
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=Meltzer+Beer+Ben+Gurion+4+Rishon+LeZion"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 mt-1.5 text-river-red hover:text-white text-xs font-semibold transition-colors"
-                  >
-                    Ver en Google Maps <ChevronRight className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Car className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Beneficio</p>
-                  <p className="text-white font-semibold">Estacionamiento gratuito en el lugar</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Shirt className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Vestimenta</p>
-                  <p className="text-white font-semibold">Camisetas, banderas y distintivos Rojos y Blancos</p>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="px-6 pb-6 md:px-8 md:pb-8 flex flex-col sm:flex-row gap-3">
-              <a
-                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-3 px-5 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 text-sm"
-              >
-                Confirmar asistencia por WhatsApp
-              </a>
-              <a
-                href="#suscribite"
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-bold py-3 px-5 rounded-xl transition-all border border-white/20 text-sm"
-              >
-                <Bell className="w-4 h-4" /> Recibir avisos
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= VIDEOS SECTION ================= */}
-      <section id="videos" className="py-10 bg-river-black text-white relative">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold">Videos <span className="text-river-red">& Goles</span></h2>
-              <p className="text-gray-400 mt-1 text-sm">Tocá un video para reproducirlo.</p>
-            </div>
-          </div>
-
-          {/* Columna scrollable de videos */}
-          {videos.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-              <Play className="w-10 h-10 mb-3 opacity-30" />
-              <p className="text-sm">Los videos se cargan desde el Redactor.</p>
-            </div>
-          )}
-          <div className="flex flex-col gap-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20">
-            {videos.map((vid, i) => {
-              const src = vid.url.startsWith("/objects/")
-                ? `/api/storage${vid.url}`
-                : `${import.meta.env.BASE_URL}${vid.url.replace(/^\//, "")}`;
-              return (
-                <button
-                  key={vid.id}
-                  onClick={() => setVideoAbierto(vid)}
-                  className="w-full flex items-center gap-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-river-red/50 rounded-2xl p-3 transition-all text-left group"
-                >
-                  {/* Miniatura */}
-                  <div className="relative w-36 shrink-0 aspect-video rounded-xl overflow-hidden bg-black">
-                    {vid.thumbnail ? (
-                      <img
-                        src={vid.thumbnail.startsWith("/objects/") ? `/api/storage${vid.thumbnail}` : `${import.meta.env.BASE_URL}${vid.thumbnail.replace(/^\//, "")}`}
-                        alt={vid.titulo}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <video
-                        src={src}
-                        preload="metadata"
-                        className="w-full h-full object-cover"
-                        muted
-                      />
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
-                      <div className="w-10 h-10 rounded-full bg-river-red flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <Play className="w-5 h-5 text-white" fill="currentColor" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-white group-hover:text-river-red transition-colors truncate">
-                      {vid.titulo || `Video ${i + 1}`}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">Tap para reproducir</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-river-red shrink-0 transition-colors" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* ── LIGHTBOX DE VIDEO ─────────────────────────────────────────── */}
       <AnimatePresence>

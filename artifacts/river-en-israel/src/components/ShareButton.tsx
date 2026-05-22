@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Share2, Link2, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,24 +40,63 @@ const TG_ICON = () => (
   </svg>
 );
 
+const MENU_WIDTH = 256;
+const MENU_HEIGHT_APPROX = 380;
+
 export default function ShareButton({ titulo, id, className, compact = false }: ShareButtonProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [igCopied, setIgCopied] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
-  const url = `${window.location.origin}/noticia/${id}`;
+  const url = typeof window !== "undefined" ? `${window.location.origin}/noticia/${id}` : `/noticia/${id}`;
   const texto = `${titulo} — River en Israel`;
 
+  const computePos = useCallback(() => {
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    const margin = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const enoughAbove = r.top >= MENU_HEIGHT_APPROX + margin;
+    const enoughBelow = vh - r.bottom >= MENU_HEIGHT_APPROX + margin;
+    const placeAbove = enoughAbove || !enoughBelow;
+    let left = r.right - MENU_WIDTH;
+    left = Math.max(margin, Math.min(vw - MENU_WIDTH - margin, left));
+    const top = placeAbove ? r.top - MENU_HEIGHT_APPROX - 6 : r.bottom + 6;
+    setPos({ top: Math.max(margin, top), left });
+  }, []);
+
+  const toggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!open) computePos();
+    setOpen((v) => !v);
+  };
+
   useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+    if (!open) return;
+    const onScrollOrResize = () => computePos();
+    const onOutside = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (menuRef.current && !menuRef.current.contains(t) && btnRef.current && !btnRef.current.contains(t)) {
         setOpen(false);
       }
-    }
-    if (open) document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [open]);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+    document.addEventListener("mousedown", onOutside);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+      document.removeEventListener("mousedown", onOutside);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, computePos]);
 
   const opciones: {
     label: string;
@@ -65,6 +105,7 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
     bg: string;
     fg: string;
     action: () => void;
+    keepOpen?: boolean;
   }[] = [
     {
       label: "WhatsApp",
@@ -86,8 +127,9 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
       icon: <IG_ICON />,
       bg: "hover:bg-pink-50",
       fg: "text-pink-600",
+      keepOpen: true,
       action: async () => {
-        await navigator.clipboard.writeText(url);
+        try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
         setIgCopied(true);
         setTimeout(() => setIgCopied(false), 3000);
       },
@@ -111,18 +153,74 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
       icon: copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />,
       bg: "hover:bg-gray-50",
       fg: copied ? "text-green-500" : "text-gray-400",
+      keepOpen: true,
       action: async () => {
-        await navigator.clipboard.writeText(url);
+        try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       },
     },
   ];
 
+  const menu = open && pos && typeof document !== "undefined" ? createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-[9998] bg-black/10 sm:bg-transparent"
+        onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+      />
+      <div
+        ref={menuRef}
+        role="menu"
+        style={{ position: "fixed", top: pos.top, left: pos.left, width: MENU_WIDTH }}
+        className="z-[9999] bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-bottom-1 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-1 pt-0.5">
+          Compartir en
+        </p>
+        {opciones.map((op) => (
+          <button
+            key={op.label}
+            onClick={(e) => {
+              e.stopPropagation();
+              op.action();
+              if (!op.keepOpen) setOpen(false);
+            }}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 transition-colors text-left",
+              op.bg
+            )}
+          >
+            <span className={cn("flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-gray-50", op.fg)}>
+              {op.icon}
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-gray-800 text-sm font-semibold leading-tight">{op.label}</span>
+              {op.sublabel && (
+                <span className="block text-gray-400 text-[10px] leading-tight mt-0.5 truncate">{op.sublabel}</span>
+              )}
+            </span>
+            {op.label === "¡Copiado!" && <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />}
+            {igCopied && op.label === "Instagram" && <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />}
+          </button>
+        ))}
+        <div className="border-t border-gray-100 mt-1" />
+        <button
+          onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+          className="w-full flex items-center justify-center gap-1 py-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-3 h-3" /> Cerrar
+        </button>
+      </div>
+    </>,
+    document.body
+  ) : null;
+
   return (
-    <div ref={ref} className={cn("relative", className)}>
+    <div className={cn("relative inline-block", className)}>
       <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
+        ref={btnRef}
+        onClick={toggle}
         onKeyDown={(e) => { if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); } }}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -139,52 +237,7 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
         <Share2 className="w-4 h-4" />
         {!compact && <span>Compartir</span>}
       </button>
-
-      {open && (
-        <div
-          className="absolute z-50 bottom-full mb-2 right-0 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150"
-          style={{ minWidth: "240px" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-1 pt-0.5">
-            Compartir en
-          </p>
-          {opciones.map((op) => (
-            <button
-              key={op.label}
-              onClick={(e) => {
-                e.stopPropagation();
-                op.action();
-                const noClose = ["Copiar enlace", "¡Copiado!", "Instagram", igCopied ? "Instagram" : ""].includes(op.label);
-                if (!noClose) setOpen(false);
-              }}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 transition-colors text-left",
-                op.bg
-              )}
-            >
-              <span className={cn("flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-gray-50", op.fg)}>
-                {op.icon}
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-gray-800 text-sm font-semibold leading-tight">{op.label}</span>
-                {op.sublabel && (
-                  <span className="block text-gray-400 text-[10px] leading-tight mt-0.5 truncate">{op.sublabel}</span>
-                )}
-              </span>
-              {op.label === "¡Copiado!" && <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />}
-              {igCopied && op.label === "Instagram" && <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />}
-            </button>
-          ))}
-          <div className="border-t border-gray-100 mt-1" />
-          <button
-            onClick={() => setOpen(false)}
-            className="w-full flex items-center justify-center gap-1 py-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-3 h-3" /> Cerrar
-          </button>
-        </div>
-      )}
+      {menu}
     </div>
   );
 }
