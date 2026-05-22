@@ -1,8 +1,12 @@
 import { Router, type IRouter } from "express";
 import { db, suscriptoresTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
+
+router.use("/suscriptores", requireAdmin);
+router.use("/suscriptores.csv", requireAdmin);
 
 router.get("/suscriptores", async (req, res) => {
   try {

@@ -2,8 +2,11 @@ import { Router, type IRouter } from "express";
 import { db, noticiasTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
+
+router.use("/noticias-hebreo", requireAdmin);
 
 router.get("/noticias-hebreo", async (req, res) => {
   try {

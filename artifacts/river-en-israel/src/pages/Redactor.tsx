@@ -725,6 +725,17 @@ function VideosTab() {
 
 export default function Redactor() {
   const [tab, setTab] = useState<Tab>("redactor");
+  const [adminToken, setAdminToken] = useState<string>(() => {
+    try { return localStorage.getItem("river_admin_token") ?? ""; } catch { return ""; }
+  });
+  const adminHeaders = (): Record<string, string> => adminToken ? { "x-admin-token": adminToken } : {};
+  const pedirAdminToken = () => {
+    const t = window.prompt("Token de admin (pedíselo al dueño del sitio):", adminToken);
+    if (t !== null) {
+      setAdminToken(t);
+      try { localStorage.setItem("river_admin_token", t); } catch { /* ignore */ }
+    }
+  };
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
@@ -799,7 +810,8 @@ export default function Redactor() {
     setCargandoSusc(true);
     setErrorSusc("");
     try {
-      const res = await fetch("/api/suscriptores");
+      const res = await fetch("/api/suscriptores", { headers: adminHeaders() });
+      if (res.status === 401) { setErrorSusc("Token de admin inválido"); pedirAdminToken(); return; }
       const data = await res.json() as { suscriptores?: Suscriptor[] };
       setSuscriptores(data.suscriptores ?? []);
     } catch {
@@ -812,7 +824,8 @@ export default function Redactor() {
   const eliminarSuscriptor = async (id: number) => {
     setEliminandoSusc(id);
     try {
-      const res = await fetch(`/api/suscriptores/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/suscriptores/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (res.status === 401) { pedirAdminToken(); return; }
       if (res.ok) {
         setSuscriptores(prev => prev.filter(s => s.id !== id));
         setConfirmEliminarSusc(null);
@@ -833,7 +846,8 @@ export default function Redactor() {
     setCargandoHebreo(true);
     setErrorHebreo("");
     try {
-      const res = await fetch("/api/noticias-hebreo");
+      const res = await fetch("/api/noticias-hebreo", { headers: adminHeaders() });
+      if (res.status === 401) { setErrorHebreo("Token de admin inválido"); pedirAdminToken(); return; }
       const data = await res.json() as { noticias?: NoticiaHebreo[] };
       setNoticiasHebreo(data.noticias ?? []);
     } catch {
@@ -846,7 +860,8 @@ export default function Redactor() {
   const traducirNoticia = async (id: number) => {
     setTraduciendoId(id);
     try {
-      const res = await fetch(`/api/noticias-hebreo/${id}/traducir`, { method: "POST" });
+      const res = await fetch(`/api/noticias-hebreo/${id}/traducir`, { method: "POST", headers: adminHeaders() });
+      if (res.status === 401) { pedirAdminToken(); return; }
       if (res.ok) {
         const data = await res.json() as { noticia?: { tituloHe: string; contenidoHe: string; tagsHe: string; estaTraducida: boolean } };
         if (data.noticia) {
@@ -863,7 +878,8 @@ export default function Redactor() {
     setTraduciendoMasivo(true);
     setMensajeMasivo("");
     try {
-      const res = await fetch("/api/noticias-hebreo/traducir-pendientes", { method: "POST" });
+      const res = await fetch("/api/noticias-hebreo/traducir-pendientes", { method: "POST", headers: adminHeaders() });
+      if (res.status === 401) { setMensajeMasivo("Token de admin inválido"); pedirAdminToken(); return; }
       const data = await res.json() as { total?: number; mensaje?: string };
       setMensajeMasivo(data.mensaje ?? `Traduciendo ${data.total ?? 0} noticias`);
       // Recargar después de un tiempo para reflejar el avance
@@ -2869,12 +2885,27 @@ export default function Redactor() {
                 <p className="text-xs text-gray-400 mt-0.5">{suscriptores.length} {suscriptores.length === 1 ? "persona suscrita" : "personas suscritas"}</p>
               </div>
               <div className="flex items-center gap-2">
-                <a
-                  href="/api/suscriptores.csv"
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/api/suscriptores.csv", { headers: adminHeaders() });
+                      if (res.status === 401) { pedirAdminToken(); return; }
+                      if (!res.ok) return;
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `suscriptores-${new Date().toISOString().slice(0,10)}.csv`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      URL.revokeObjectURL(url);
+                    } catch { /* ignore */ }
+                  }}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-river-red text-white text-xs font-semibold hover:bg-red-700 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" /> Exportar CSV
-                </a>
+                </button>
                 <button
                   onClick={cargarSuscriptores}
                   disabled={cargandoSusc}
