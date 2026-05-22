@@ -10,17 +10,22 @@ const PROMPT_TRADUCCION = `Sos traductor profesional español → hebreo moderno
 Tarea: traducir un artículo periodístico de fútbol (Club Atlético River Plate) al hebreo moderno actual, gramática perfecta, ortografía impecable, estilo periodístico israelí natural y fluido — como El País deportes pero en hebreo.
 
 Reglas estrictas:
-1. Nombres propios de jugadores, técnicos, clubes y lugares: transliterar al hebreo con la convención periodística israelí estándar.
+1. **PROHIBIDO USAR נְקֻדּוֹת (NIQQUD / vocalización)**. Bajo ninguna circunstancia uses diacríticos vocálicos hebreos (קָמַץ, פַּתַח, חִירִיק, צֵירֵי, סֶגוֹל, חוֹלָם, שׁוּרוּק, שְׁוָא, dagesh, etc.) ni signos cantilatorios. Solo letras planas del hebreo moderno (כתיב מלא, ktiv malé) — exactamente como escribe Ynet, Haaretz o Walla. Nunca uses caracteres Unicode del rango U+0591–U+05C7.
+2. **Ortografía impecable** (כתיב מלא moderno oficial de la Academia): yod y vav plenas donde corresponde. Revisá cada palabra antes de devolverla. Sin errores tipográficos. Sin transliteraciones inventadas: usá las grafías estándar del periodismo deportivo israelí.
+3. Nombres propios de jugadores, técnicos, clubes y lugares: transliterar al hebreo con la convención periodística israelí estándar, SIN niqqud.
    - "River Plate" → "ריבר פלאטה"
    - "Eduardo Coudet" / "El Chacho" → "אדוארדו קודה" / "אל צ׳אצ׳ו"
+   - "Marcelo Gallardo" → "מרסלו גאיארדו"
    - "Monumental" → "מונומנטל"
    - "Núñez" → "נוניס"
    - "Buenos Aires" → "בואנוס איירס"
    - "Ramat Gan" → "רמת גן"
    - "Filial" → "סניף"
-2. Mantené la estructura: bajada en negrita al inicio (con *asteriscos*), después párrafos.
-3. NO inventes información ni cambies hechos. Traducción literal del sentido, idiomática del idioma.
-4. Hashtags: traducidos al hebreo.
+   - "Superclásico" → "סופרקלאסיקו"
+   - "Copa Libertadores" → "קופה ליברטדורס"
+4. Mantené la estructura: bajada en negrita al inicio (con *asteriscos*), después párrafos.
+5. NO inventes información ni cambies hechos. Traducción literal del sentido, idiomática del idioma.
+6. Hashtags: traducidos al hebreo, sin niqqud.
 
 Devolvé EXACTAMENTE en este formato (sin agregar comentarios, sin texto antes/después):
 
@@ -61,10 +66,13 @@ export async function traducirAHebreo(input: {
       return null;
     }
 
+    // Seguridad extra: eliminar cualquier niqqud / cantilación que se haya colado
+    const stripNiqqud = (s: string) => s.replace(/[\u0591-\u05C7]/g, "");
+
     return {
-      tituloHe: mTit[1].trim(),
-      contenidoHe: mCon[1].trim(),
-      tagsHe: (mTag?.[1] ?? "#ריברפלאטה #ריברישראל #רמתגן #הגדולמכולם").trim(),
+      tituloHe: stripNiqqud(mTit[1].trim()),
+      contenidoHe: stripNiqqud(mCon[1].trim()),
+      tagsHe: stripNiqqud((mTag?.[1] ?? "#ריברפלאטה #ריברישראל #רמתגן #הגדולמכולם").trim()),
     };
   } catch (err) {
     logger.error({ err }, "Traductor hebreo: error en Gemini");
@@ -77,11 +85,14 @@ export async function traducirAHebreo(input: {
  * Pensado para ejecutarse fire-and-forget tras publicar.
  * Si ya tiene traducción (>100 chars), no la pisa.
  */
-export async function traducirYGuardarHebreo(noticiaId: number): Promise<void> {
+export async function traducirYGuardarHebreo(
+  noticiaId: number,
+  opts: { force?: boolean } = {},
+): Promise<void> {
   try {
     const [noticia] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
     if (!noticia) return;
-    if (noticia.contenidoHe && noticia.contenidoHe.length > 100) {
+    if (!opts.force && noticia.contenidoHe && noticia.contenidoHe.length > 100) {
       logger.info({ id: noticiaId }, "Noticia ya traducida al hebreo, salteando");
       return;
     }

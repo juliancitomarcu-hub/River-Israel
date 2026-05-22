@@ -16,6 +16,8 @@ import analyticsRouter from "./analytics";
 import publicacionLibreRouter from "./publicacion-libre";
 import visitasRouter from "./visitas";
 import suscribirRouter from "./suscribir";
+import suscriptoresRouter from "./suscriptores";
+import noticiasHebreoRouter from "./noticias-hebreo";
 
 const router: IRouter = Router();
 
@@ -36,5 +38,7 @@ router.use(analyticsRouter);
 router.use(publicacionLibreRouter);
 router.use(visitasRouter);
 router.use(suscribirRouter);
+router.use(suscriptoresRouter);
+router.use(noticiasHebreoRouter);
 
 export default router;

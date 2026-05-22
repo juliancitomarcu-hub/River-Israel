@@ -3,12 +3,36 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play
+  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "videos" | "analytics";
+type Tab = "redactor" | "publicaciones" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "videos" | "analytics" | "suscriptores" | "publicaciones-hebreo";
+
+interface Suscriptor {
+  id: number;
+  nombre: string;
+  email: string;
+  telefono: string;
+  ciudad: string;
+  canales: string;
+  createdAt: string;
+}
+
+interface NoticiaHebreo {
+  id: number;
+  titulo: string;
+  contenido: string;
+  tags: string;
+  fuente: string;
+  imagenPortada: string;
+  createdAt: string;
+  tituloHe: string;
+  contenidoHe: string;
+  tagsHe: string;
+  estaTraducida: boolean;
+}
 
 interface AnalyticsData {
   noticias: { total: number; publicadas: number; pendientes: number; rechazadas: number };
@@ -764,6 +788,93 @@ export default function Redactor() {
   const [cargandoAnalytics, setCargandoAnalytics] = useState(false);
   const [errorAnalytics, setErrorAnalytics] = useState("");
 
+  // Suscriptores
+  const [suscriptores, setSuscriptores] = useState<Suscriptor[]>([]);
+  const [cargandoSusc, setCargandoSusc] = useState(false);
+  const [errorSusc, setErrorSusc] = useState("");
+  const [confirmEliminarSusc, setConfirmEliminarSusc] = useState<number | null>(null);
+  const [eliminandoSusc, setEliminandoSusc] = useState<number | null>(null);
+
+  const cargarSuscriptores = async () => {
+    setCargandoSusc(true);
+    setErrorSusc("");
+    try {
+      const res = await fetch("/api/suscriptores");
+      const data = await res.json() as { suscriptores?: Suscriptor[] };
+      setSuscriptores(data.suscriptores ?? []);
+    } catch {
+      setErrorSusc("Error al cargar suscriptores");
+    } finally {
+      setCargandoSusc(false);
+    }
+  };
+
+  const eliminarSuscriptor = async (id: number) => {
+    setEliminandoSusc(id);
+    try {
+      const res = await fetch(`/api/suscriptores/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setSuscriptores(prev => prev.filter(s => s.id !== id));
+        setConfirmEliminarSusc(null);
+      }
+    } catch { /* ignore */ }
+    finally { setEliminandoSusc(null); }
+  };
+
+  // Publicaciones en Hebreo
+  const [noticiasHebreo, setNoticiasHebreo] = useState<NoticiaHebreo[]>([]);
+  const [cargandoHebreo, setCargandoHebreo] = useState(false);
+  const [errorHebreo, setErrorHebreo] = useState("");
+  const [traduciendoId, setTraduciendoId] = useState<number | null>(null);
+  const [traduciendoMasivo, setTraduciendoMasivo] = useState(false);
+  const [mensajeMasivo, setMensajeMasivo] = useState("");
+
+  const cargarNoticiasHebreo = async () => {
+    setCargandoHebreo(true);
+    setErrorHebreo("");
+    try {
+      const res = await fetch("/api/noticias-hebreo");
+      const data = await res.json() as { noticias?: NoticiaHebreo[] };
+      setNoticiasHebreo(data.noticias ?? []);
+    } catch {
+      setErrorHebreo("Error al cargar noticias");
+    } finally {
+      setCargandoHebreo(false);
+    }
+  };
+
+  const traducirNoticia = async (id: number) => {
+    setTraduciendoId(id);
+    try {
+      const res = await fetch(`/api/noticias-hebreo/${id}/traducir`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json() as { noticia?: { tituloHe: string; contenidoHe: string; tagsHe: string; estaTraducida: boolean } };
+        if (data.noticia) {
+          setNoticiasHebreo(prev => prev.map(n => n.id === id
+            ? { ...n, ...data.noticia! }
+            : n));
+        }
+      }
+    } catch { /* ignore */ }
+    finally { setTraduciendoId(null); }
+  };
+
+  const traducirPendientes = async () => {
+    setTraduciendoMasivo(true);
+    setMensajeMasivo("");
+    try {
+      const res = await fetch("/api/noticias-hebreo/traducir-pendientes", { method: "POST" });
+      const data = await res.json() as { total?: number; mensaje?: string };
+      setMensajeMasivo(data.mensaje ?? `Traduciendo ${data.total ?? 0} noticias`);
+      // Recargar después de un tiempo para reflejar el avance
+      setTimeout(() => { cargarNoticiasHebreo(); }, 8000);
+    } catch {
+      setMensajeMasivo("Error al iniciar traducción masiva");
+    } finally {
+      setTimeout(() => setTraduciendoMasivo(false), 3000);
+    }
+  };
+
   const cargarAnalytics = async (force = false) => {
     setCargandoAnalytics(true);
     setErrorAnalytics("");
@@ -1332,6 +1443,26 @@ export default function Redactor() {
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               Analytics
+            </button>
+            <button
+              onClick={() => { setTab("suscriptores"); cargarSuscriptores(); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "suscriptores"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <Users className="w-4 h-4" /> Suscriptores
+            </button>
+            <button
+              onClick={() => { setTab("publicaciones-hebreo"); cargarNoticiasHebreo(); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "publicaciones-hebreo"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <Languages className="w-4 h-4" /> Publicaciones en Hebreo
             </button>
           </div>
           {/* Fila 2 */}
@@ -2726,6 +2857,270 @@ export default function Redactor() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* ── SUSCRIPTORES ─────────────────────────────────────────────── */}
+        {tab === "suscriptores" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
+              <div>
+                <h2 className="font-display text-xl font-bold text-river-black">Suscriptores al Newsletter</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{suscriptores.length} {suscriptores.length === 1 ? "persona suscrita" : "personas suscritas"}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href="/api/suscriptores.csv"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-river-red text-white text-xs font-semibold hover:bg-red-700 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" /> Exportar CSV
+                </a>
+                <button
+                  onClick={cargarSuscriptores}
+                  disabled={cargandoSusc}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${cargandoSusc ? "animate-spin" : ""}`} />
+                  Actualizar
+                </button>
+              </div>
+            </div>
+
+            {errorSusc && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {errorSusc}
+              </div>
+            )}
+
+            {cargandoSusc && (
+              <div className="space-y-2">
+                {[1,2,3].map(i => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-2/3" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!cargandoSusc && suscriptores.length === 0 && !errorSusc && (
+              <div className="text-center py-16 text-gray-400">
+                <Users className="w-10 h-10 mx-auto mb-3 text-gray-200" />
+                <p className="font-medium">Todavía no hay suscriptores</p>
+                <p className="text-sm mt-1">Las suscripciones del sitio aparecerán acá</p>
+              </div>
+            )}
+
+            {!cargandoSusc && suscriptores.length > 0 && (
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-semibold">Nombre</th>
+                        <th className="text-left px-4 py-3 font-semibold">Email</th>
+                        <th className="text-left px-4 py-3 font-semibold">Teléfono</th>
+                        <th className="text-left px-4 py-3 font-semibold">Ciudad</th>
+                        <th className="text-left px-4 py-3 font-semibold">Canales</th>
+                        <th className="text-left px-4 py-3 font-semibold">Fecha</th>
+                        <th className="text-right px-4 py-3 font-semibold"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {suscriptores.map(s => (
+                        <React.Fragment key={s.id}>
+                          <tr className="border-t border-gray-100 hover:bg-gray-50/50">
+                            <td className="px-4 py-3 font-semibold text-river-black">{s.nombre}</td>
+                            <td className="px-4 py-3 text-gray-600">
+                              <a href={`mailto:${s.email}`} className="hover:text-river-red">{s.email}</a>
+                            </td>
+                            <td className="px-4 py-3 text-gray-600">{s.telefono || "—"}</td>
+                            <td className="px-4 py-3 text-gray-600">{s.ciudad || "—"}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-1">
+                                {(s.canales || "").split(",").filter(Boolean).map(c => (
+                                  <span key={c} className="bg-river-red/10 text-river-red text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">{c}</span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                              {new Date(s.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => setConfirmEliminarSusc(s.id)}
+                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                          {confirmEliminarSusc === s.id && (
+                            <tr className="bg-red-50">
+                              <td colSpan={7} className="px-4 py-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-sm text-red-600 font-medium">¿Eliminar a {s.nombre} ({s.email}) del newsletter?</p>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setConfirmEliminarSusc(null)}
+                                      className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button
+                                      onClick={() => eliminarSuscriptor(s.id)}
+                                      disabled={eliminandoSusc === s.id}
+                                      className="px-3 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-60"
+                                    >
+                                      {eliminandoSusc === s.id ? "Eliminando..." : "Sí, eliminar"}
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── PUBLICACIONES EN HEBREO ──────────────────────────────────── */}
+        {tab === "publicaciones-hebreo" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
+              <div>
+                <h2 className="font-display text-xl font-bold text-river-black">Publicaciones en Hebreo</h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {noticiasHebreo.filter(n => n.estaTraducida).length} traducidas · {noticiasHebreo.filter(n => !n.estaTraducida).length} pendientes
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={traducirPendientes}
+                  disabled={traduciendoMasivo || noticiasHebreo.filter(n => !n.estaTraducida).length === 0}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-river-red text-white text-xs font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {traduciendoMasivo ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
+                  Regenerar pendientes
+                </button>
+                <button
+                  onClick={cargarNoticiasHebreo}
+                  disabled={cargandoHebreo}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${cargandoHebreo ? "animate-spin" : ""}`} />
+                  Actualizar
+                </button>
+              </div>
+            </div>
+
+            {mensajeMasivo && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-blue-700 text-sm">
+                {mensajeMasivo}
+              </div>
+            )}
+
+            {errorHebreo && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {errorHebreo}
+              </div>
+            )}
+
+            {cargandoHebreo && (
+              <div className="space-y-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/4" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!cargandoHebreo && noticiasHebreo.length === 0 && !errorHebreo && (
+              <div className="text-center py-16 text-gray-400">
+                <Languages className="w-10 h-10 mx-auto mb-3 text-gray-200" />
+                <p className="font-medium">No hay publicaciones todavía</p>
+              </div>
+            )}
+
+            {!cargandoHebreo && noticiasHebreo.map(n => (
+              <motion.div
+                key={n.id}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
+              >
+                <div className="flex gap-4 p-4">
+                  {n.imagenPortada && (
+                    <img
+                      src={`/api/storage${n.imagenPortada}`}
+                      alt=""
+                      className="w-24 h-16 object-cover rounded-xl shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <p
+                        className="font-display font-bold text-river-black text-sm leading-snug line-clamp-2"
+                        dir={n.estaTraducida ? "rtl" : "ltr"}
+                        lang={n.estaTraducida ? "he" : "es"}
+                      >
+                        {n.estaTraducida ? n.tituloHe : n.titulo}
+                      </p>
+                      <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                        n.estaTraducida ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {n.estaTraducida ? "Traducida" : "Pendiente"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="w-3 h-3" />
+                        {new Date(n.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                      {n.fuente && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{n.fuente}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {n.estaTraducida && (
+                  <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/50">
+                    <p
+                      className="text-sm text-gray-700 leading-relaxed line-clamp-4 whitespace-pre-wrap"
+                      dir="rtl"
+                      lang="he"
+                    >
+                      {n.contenidoHe}
+                    </p>
+                    {n.tagsHe && (
+                      <p className="text-xs text-river-red mt-2" dir="rtl" lang="he">{n.tagsHe}</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="border-t border-gray-100 px-4 py-2.5 flex gap-2">
+                  <button
+                    onClick={() => traducirNoticia(n.id)}
+                    disabled={traduciendoId === n.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-river-red hover:text-river-red transition-colors disabled:opacity-60"
+                  >
+                    {traduciendoId === n.id ? (
+                      <><RefreshCw className="w-3 h-3 animate-spin" /> Traduciendo...</>
+                    ) : (
+                      <><Languages className="w-3 h-3" /> {n.estaTraducida ? "Regenerar traducción" : "Generar traducción"}</>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            ))}
           </div>
         )}
 
