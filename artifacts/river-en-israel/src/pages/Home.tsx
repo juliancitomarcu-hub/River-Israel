@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Mic, Video, Heart, Send, AlertCircle, Paperclip, X, ChevronLeft, Download, ZoomIn } from "lucide-react";
+import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Send, AlertCircle, X, ChevronLeft, Download, ZoomIn, Bell, Mail, Phone, MapPin, Car, Shirt, Clock } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline } from "@/hooks/use-river-data";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
@@ -29,26 +28,19 @@ interface VideoGaleria {
   orden: number;
 }
 
-const postulSchema = z.object({
+const suscripSchema = z.object({
   nombre: z.string().min(2, "Ingresá tu nombre"),
-  ciudad: z.string().min(2, "Ingresá tu ciudad"),
-  tipo: z.enum(["Periodista", "Creador", "Fanático"], { required_error: "Elegí un perfil" }),
-  texto: z.string().optional(),
-  link: z.string().url("URL inválida").or(z.literal("")).optional(),
+  email: z.string().email("Email inválido"),
+  telefono: z.string().optional(),
+  ciudad: z.string().optional(),
 });
-type PostulValues = z.infer<typeof postulSchema>;
-
-const TIPOS_PERFIL = [
-  { value: "Periodista" as const, icon: Mic, label: "Periodista" },
-  { value: "Creador" as const, icon: Video, label: "Creador" },
-  { value: "Fanático" as const, icon: Heart, label: "Fanático" },
-];
+type SuscripValues = z.infer<typeof suscripSchema>;
 
 export default function Home() {
   const [mostrarCredencial, setMostrarCredencial] = useState(false);
-  const [postulEstado, setPostulEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
-  const [postulError, setPostulError] = useState("");
-  const [archivo, setArchivo] = useState<File | null>(null);
+  const [suscripEstado, setSuscripEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
+  const [suscripError, setSuscripError] = useState("");
+  const [canales, setCanales] = useState<string[]>(["email", "whatsapp"]);
 
   // Videos
   const [videos, setVideos] = useState<VideoGaleria[]>([]);
@@ -106,34 +98,32 @@ export default function Home() {
   const { data: matches } = useMatches();
   const { data: timeline } = useHistoryTimeline();
 
-  const { register: regP, handleSubmit: handleP, setValue: setValP, watch: watchP, formState: { errors: errP } } = useForm<PostulValues>({
-    resolver: zodResolver(postulSchema),
+  const { register: regS, handleSubmit: handleS, formState: { errors: errS } } = useForm<SuscripValues>({
+    resolver: zodResolver(suscripSchema),
   });
-  const tipoSel = watchP("tipo");
 
-  async function onSubmitPostul(data: PostulValues) {
-    const textoValido = data.texto && data.texto.trim().length >= 50;
-    if (!textoValido && !archivo) {
-      setPostulError("Escribí tu nota (mínimo 50 caracteres) o adjuntá un archivo PDF/Word");
-      setPostulEstado("error");
+  function toggleCanal(c: string) {
+    setCanales(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
+  }
+
+  async function onSubmitSuscrip(data: SuscripValues) {
+    if (canales.length === 0) {
+      setSuscripError("Elegí al menos un canal para recibir noticias");
+      setSuscripEstado("error");
       return;
     }
-    setPostulEstado("enviando");
-    setPostulError("");
+    setSuscripEstado("enviando");
+    setSuscripError("");
     try {
-      const fd = new FormData();
-      fd.append("nombre", data.nombre);
-      fd.append("ciudad", data.ciudad);
-      fd.append("tipo", data.tipo);
-      if (data.texto?.trim()) fd.append("texto", data.texto.trim());
-      if (data.link) fd.append("link", data.link);
-      if (archivo) fd.append("archivo", archivo);
-
-      const res = await fetch("/api/postular-redactor", { method: "POST", body: fd });
+      const res = await fetch("/api/suscribir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, canales }),
+      });
       const json = await res.json() as { ok?: boolean; error?: string };
-      if (!res.ok || !json.ok) { setPostulError(json.error ?? "Error al enviar"); setPostulEstado("error"); }
-      else setPostulEstado("ok");
-    } catch { setPostulError("Error de conexión"); setPostulEstado("error"); }
+      if (!res.ok || !json.ok) { setSuscripError(json.error ?? "Error al enviar"); setSuscripEstado("error"); }
+      else setSuscripEstado("ok");
+    } catch { setSuscripError("Error de conexión"); setSuscripEstado("error"); }
   }
 
   const fadeIn = {
@@ -183,8 +173,8 @@ export default function Home() {
                 <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-river-red text-white font-bold rounded-full text-xs uppercase tracking-wide hover:bg-river-red-hover transition-all shadow-[0_0_12px_rgba(204,0,0,0.5)]">
                   Últimas Noticias
                 </a>
-                <a href="#escribi" className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all">
-                  Escribí en River Israel
+                <a href="#suscribite" className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all">
+                  Recibí Noticias
                 </a>
               </div>
             </div>
@@ -556,125 +546,100 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Form Side */}
-            <div id="escribi" className="lg:w-7/12 p-10 lg:p-16">
+            {/* Form Side — Suscripción */}
+            <div id="suscribite" className="lg:w-7/12 p-10 lg:p-16">
+              <div className="flex items-center gap-2 mb-2">
+                <Bell className="w-6 h-6 text-river-red" />
+                <span className="text-river-red text-xs font-bold uppercase tracking-wider">Newsletter River en Israel</span>
+              </div>
+              <h3 className="font-display text-3xl font-bold text-river-black mb-1">Recibí las noticias de River al instante</h3>
+              <p className="text-gray-500 mb-6 text-sm">Dejá tus datos y te avisamos primero — partidos, fichajes, eventos de la filial y novedades de la Banda.</p>
 
-              {/* Formulario: Escribí en el sitio */}
-              <>
-                  <h3 className="font-display text-3xl font-bold text-river-black mb-1">¡Escribí en River Israel!</h3>
-                  <p className="text-gray-500 mb-6 text-sm">Periodista, creador o fanático — tu voz merece llegar a toda la comunidad.</p>
+              {suscripEstado === "ok" ? (
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                  className="bg-green-50 border border-green-200 text-green-800 p-8 rounded-2xl text-center"
+                >
+                  <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <h4 className="text-2xl font-bold mb-2">¡Estás suscripto!</h4>
+                  <p>Te vamos a avisar cada vez que haya novedades de River. ¡Gracias por sumarte a la Banda!</p>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleS(onSubmitSuscrip)} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Nombre completo</label>
+                    <Input {...regS("nombre")} placeholder="Tu nombre y apellido" className={errS.nombre ? "border-red-500" : ""} />
+                    {errS.nombre && <span className="text-xs text-red-500">{errS.nombre.message}</span>}
+                  </div>
 
-                  {postulEstado === "ok" ? (
-                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                      className="bg-green-50 border border-green-200 text-green-800 p-8 rounded-2xl text-center"
-                    >
-                      <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                      <h4 className="text-2xl font-bold mb-2">¡Postulación enviada!</h4>
-                      <p>La revisamos y te contactamos. ¡Gracias por querer ser parte!</p>
-                    </motion.div>
-                  ) : (
-                    <form onSubmit={handleP(onSubmitPostul)} className="space-y-5">
-                      {/* Tipo de perfil */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">Soy...</label>
-                        <div className="flex gap-2">
-                          {TIPOS_PERFIL.map(({ value, icon: Icon, label }) => (
-                            <button key={value} type="button"
-                              onClick={() => setValP("tipo", value, { shouldValidate: true })}
-                              className={cn(
-                                "flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border text-xs font-bold transition-all",
-                                tipoSel === value
-                                  ? "bg-river-red/10 border-river-red text-river-red"
-                                  : "border-gray-200 text-gray-500 hover:border-gray-300"
-                              )}
-                            >
-                              <Icon className="w-4 h-4" />
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                        {errP.tipo && <span className="text-xs text-red-500">{errP.tipo.message}</span>}
-                      </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5" /> Correo electrónico
+                    </label>
+                    <Input {...regS("email")} type="email" placeholder="tu@email.com" className={errS.email ? "border-red-500" : ""} />
+                    {errS.email && <span className="text-xs text-red-500">{errS.email.message}</span>}
+                  </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-sm font-semibold text-gray-700">Nombre</label>
-                          <Input {...regP("nombre")} placeholder="Tu nombre" className={errP.nombre ? "border-red-500" : ""} />
-                          {errP.nombre && <span className="text-xs text-red-500">{errP.nombre.message}</span>}
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-sm font-semibold text-gray-700">Ciudad</label>
-                          <Input {...regP("ciudad")} placeholder="Tu ciudad" className={errP.ciudad ? "border-red-500" : ""} />
-                          {errP.ciudad && <span className="text-xs text-red-500">{errP.ciudad.message}</span>}
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5" /> Celular <span className="text-gray-400 font-normal text-xs">(WhatsApp)</span>
+                      </label>
+                      <Input {...regS("telefono")} placeholder="+972 50 123 4567" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" /> Ciudad <span className="text-gray-400 font-normal text-xs">(opcional)</span>
+                      </label>
+                      <Input {...regS("ciudad")} placeholder="Tu ciudad" />
+                    </div>
+                  </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-gray-700">Tu nota o propuesta</label>
-                        <p className="text-xs text-gray-400">Solo corregimos ortografía, nunca cambiamos tu voz.</p>
-                        <Textarea {...regP("texto")} placeholder="Escribí tu análisis, crónica o lo que quieras compartir..." rows={5} className={cn("text-sm resize-none", errP.texto ? "border-red-500" : "")} />
-                      </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">¿Cómo querés recibir las noticias?</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "email", label: "Email", icon: Mail },
+                        { id: "whatsapp", label: "WhatsApp", icon: Phone },
+                        { id: "telegram", label: "Telegram", icon: Send },
+                      ].map(({ id, label, icon: Icon }) => {
+                        const active = canales.includes(id);
+                        return (
+                          <button key={id} type="button" onClick={() => toggleCanal(id)}
+                            className={cn(
+                              "flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border text-xs font-bold transition-all",
+                              active
+                                ? "bg-river-red/10 border-river-red text-river-red"
+                                : "border-gray-200 text-gray-500 hover:border-gray-300"
+                            )}
+                          >
+                            <Icon className="w-4 h-4" />
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                      {/* Separador O */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-px bg-gray-200" />
-                        <span className="text-xs text-gray-400 font-semibold">O adjuntá un archivo</span>
-                        <div className="flex-1 h-px bg-gray-200" />
-                      </div>
-
-                      {/* Upload de archivo */}
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Adjuntar nota <span className="text-gray-400 font-normal">(PDF o Word — opcional)</span>
-                        </label>
-                        {archivo ? (
-                          <div className="flex items-center gap-2 bg-river-red/5 border border-river-red/20 rounded-lg px-3 py-2.5">
-                            <Paperclip className="w-4 h-4 text-river-red shrink-0" />
-                            <span className="text-sm text-river-black font-medium flex-1 truncate">{archivo.name}</span>
-                            <button type="button" onClick={() => setArchivo(null)} className="text-gray-400 hover:text-gray-600">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="flex items-center gap-2 border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 cursor-pointer hover:border-river-red/40 hover:bg-river-red/5 transition-colors">
-                            <Paperclip className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Seleccionar PDF o Word (.docx)</span>
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                              className="hidden"
-                              onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
-                            />
-                          </label>
-                        )}
-                        <p className="text-xs text-gray-400">Máximo 10 MB. La IA extrae el texto y corrige solo la ortografía.</p>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Link a tu canal / redes <span className="text-gray-400 font-normal">(opcional)</span>
-                        </label>
-                        <Input {...regP("link")} placeholder="https://youtube.com/@tucanal" className={errP.link ? "border-red-500" : ""} />
-                        {errP.link && <span className="text-xs text-red-500">{errP.link.message}</span>}
-                      </div>
-
-                      {postulEstado === "error" && (
-                        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                          <AlertCircle className="w-4 h-4 shrink-0" />
-                          {postulError}
-                        </div>
-                      )}
-
-                      <Button type="submit" className="w-full h-12 text-base bg-river-red hover:bg-river-red-hover flex items-center gap-2" disabled={postulEstado === "enviando"}>
-                        {postulEstado === "enviando" ? (
-                          <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Enviando...</>
-                        ) : (
-                          <><Send className="w-4 h-4" /> Enviar postulación</>
-                        )}
-                      </Button>
-                    </form>
+                  {suscripEstado === "error" && (
+                    <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      {suscripError}
+                    </div>
                   )}
-                </>
+
+                  <Button type="submit" className="w-full h-12 text-base bg-river-red hover:bg-river-red-hover flex items-center gap-2" disabled={suscripEstado === "enviando"}>
+                    {suscripEstado === "enviando" ? (
+                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Suscribiéndote...</>
+                    ) : (
+                      <><Bell className="w-4 h-4" /> Suscribirme a las noticias</>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-gray-400 text-center">
+                    ¿Querés escribir notas en River Israel? <Link href="/postula" className="text-river-red font-semibold hover:underline">Postulate acá</Link>
+                  </p>
+                </form>
+              )}
             </div>
           </div>
         </div>
@@ -891,20 +856,84 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-10 md:p-14 text-center backdrop-blur">
-            <Calendar className="w-14 h-14 text-river-red mx-auto mb-5 opacity-80" />
-            <h3 className="text-2xl font-display font-bold mb-3">Próximamente publicaremos los eventos</h3>
-            <p className="text-gray-400 mb-8 max-w-xl mx-auto">
-              Estamos organizando los próximos encuentros de la filial. Sumate al grupo de WhatsApp para enterarte primero.
-            </p>
-            <a
-              href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-3 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-3 px-7 rounded-xl transition-all shadow-lg hover:-translate-y-1"
-            >
-              Unite al grupo de WhatsApp
-            </a>
+          <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-river-red/30 rounded-3xl overflow-hidden backdrop-blur shadow-2xl">
+            {/* Header del evento */}
+            <div className="bg-gradient-to-r from-river-red via-river-red to-[#a30000] p-6 md:p-7">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">Próximo evento</span>
+                <span className="text-white/80 text-xs font-semibold">Convocatoria oficial</span>
+              </div>
+              <h3 className="text-2xl md:text-3xl font-display font-bold text-white leading-tight">
+                River Plate vs. Belgrano de Córdoba
+              </h3>
+              <p className="text-white/90 text-sm mt-1">Vení a ver el partido con la Filial Ramat Gan ⚪️🔴</p>
+            </div>
+
+            {/* Detalles */}
+            <div className="p-6 md:p-8 grid sm:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Fecha</p>
+                  <p className="text-white font-semibold">Domingo 24 de Mayo de 2026</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Convocatoria</p>
+                  <p className="text-white font-semibold">21:00 hs (hora de Israel)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 sm:col-span-2">
+                <MapPin className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Lugar</p>
+                  <p className="text-white font-semibold">Meltzer Beer</p>
+                  <p className="text-gray-400 text-sm">Merkaz Ben Gurion · Ben Gurion 4, Rishon LeZion</p>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=Meltzer+Beer+Ben+Gurion+4+Rishon+LeZion"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 mt-1.5 text-river-red hover:text-white text-xs font-semibold transition-colors"
+                  >
+                    Ver en Google Maps <ChevronRight className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Car className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Beneficio</p>
+                  <p className="text-white font-semibold">Estacionamiento gratuito en el lugar</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Shirt className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Vestimenta</p>
+                  <p className="text-white font-semibold">Camisetas, banderas y distintivos Rojos y Blancos</p>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="px-6 pb-6 md:px-8 md:pb-8 flex flex-col sm:flex-row gap-3">
+              <a
+                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-3 px-5 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 text-sm"
+              >
+                Confirmar asistencia por WhatsApp
+              </a>
+              <a
+                href="#suscribite"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-bold py-3 px-5 rounded-xl transition-all border border-white/20 text-sm"
+              >
+                <Bell className="w-4 h-4" /> Recibir avisos
+              </a>
+            </div>
           </div>
         </div>
       </section>

@@ -123,13 +123,18 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
     <div ref={ref} className={cn("relative", className)}>
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
+        onKeyDown={(e) => { if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); } }}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Compartir esta noticia"
+        title="Compartir esta noticia"
         className={cn(
-          "flex items-center gap-1.5 text-sm font-bold transition-colors rounded-lg px-2 py-1",
+          "inline-flex items-center gap-2 text-sm font-bold transition-all rounded-full shadow-md hover:shadow-lg active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-river-red focus-visible:ring-offset-2",
+          compact ? "p-2.5" : "px-4 py-2.5",
           open
-            ? "text-river-red bg-river-red/5"
-            : "text-gray-400 hover:text-river-red hover:bg-river-red/5"
+            ? "bg-river-red text-white shadow-river-red/30"
+            : "bg-river-red text-white hover:bg-river-red-hover hover:-translate-y-0.5",
         )}
-        title="Compartir"
       >
         <Share2 className="w-4 h-4" />
         {!compact && <span>Compartir</span>}
@@ -137,8 +142,8 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
 
       {open && (
         <div
-          className="absolute z-50 bottom-full mb-2 right-0 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 overflow-hidden"
-          style={{ minWidth: "200px" }}
+          className="absolute z-50 bottom-full mb-2 right-0 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150"
+          style={{ minWidth: "240px" }}
           onClick={(e) => e.stopPropagation()}
         >
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-1 pt-0.5">

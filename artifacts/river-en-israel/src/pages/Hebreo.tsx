@@ -198,6 +198,82 @@ export default function Hebreo() {
         </section>
       )}
 
+      {/* ============ PRÓXIMO EVENTO FILIAL (en hebreo) ============ */}
+      <section className="bg-gradient-to-b from-river-black to-[#0a0a0a] text-white py-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-6">
+            <span className="bg-river-red/20 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 inline-block mb-3">
+              סניף רמת גן · אירוע קרוב
+            </span>
+            <h2 className="text-3xl md:text-4xl font-display font-bold">האירוע <span className="text-river-red">הבא</span></h2>
+          </div>
+          <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-river-red/30 rounded-3xl overflow-hidden backdrop-blur shadow-2xl">
+            <div className="bg-gradient-to-r from-river-red to-[#a30000] p-6 md:p-7" dir="rtl">
+              <h3 className="text-2xl md:text-3xl font-display font-bold text-white leading-tight">
+                ריבר פלייט נגד בלגראנו דה קורדובה
+              </h3>
+              <p className="text-white/90 text-sm mt-1" dir="ltr">River Plate vs. Belgrano de Córdoba</p>
+            </div>
+            <div className="p-6 md:p-8 space-y-4" dir="rtl">
+              <div className="flex items-start gap-3">
+                <span className="text-river-red text-xl mt-0.5">📅</span>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">תאריך</p>
+                  <p className="text-white font-semibold">יום ראשון, 24 במאי 2026</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-river-red text-xl mt-0.5">⏰</span>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">שעת מפגש</p>
+                  <p className="text-white font-semibold">21:00 (שעון ישראל)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-river-red text-xl mt-0.5">📍</span>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">מיקום</p>
+                  <p className="text-white font-semibold">מלצר ביר – Meltzer Beer</p>
+                  <p className="text-gray-400 text-sm">מרכז בן גוריון · בן גוריון 4, ראשון לציון</p>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=Meltzer+Beer+Ben+Gurion+4+Rishon+LeZion"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 mt-1.5 text-river-red hover:text-white text-xs font-semibold transition-colors"
+                  >
+                    פתח ב-Google Maps
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-river-red text-xl mt-0.5">🚗</span>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">הטבה</p>
+                  <p className="text-white font-semibold">חניה חינם זמינה במקום</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-river-red text-xl mt-0.5">👕</span>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">קוד לבוש</p>
+                  <p className="text-white font-semibold">חולצות, דגלים וסמלים אדומים ולבנים</p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 pb-6 md:px-8 md:pb-8">
+              <a
+                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-3 px-5 rounded-xl transition-all shadow-lg text-sm"
+              >
+                אישור הגעה בוואטסאפ
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ============ ACTUALIDAD (en hebreo) ============ */}
       <section id="actualidad-he" className="bg-[#111] py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
