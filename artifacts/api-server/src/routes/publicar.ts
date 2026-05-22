@@ -130,6 +130,7 @@ router.put("/noticia-pendiente/:id", async (req, res) => {
     updateData.tituloHe = "";
     updateData.contenidoHe = "";
     updateData.tagsHe = "";
+    updateData.hebreoPublicada = false;
 
     const [updated] = await db
       .update(noticiasTable)
@@ -182,7 +183,11 @@ router.get("/noticias-publicadas", async (req, res) => {
 
     // Para hebreo: solo notas con traducción completa
     const whereClause = isHebreo
-      ? and(eq(noticiasTable.publicada, true), sql`length(coalesce(${noticiasTable.contenidoHe}, '')) > 100`)
+      ? and(
+          eq(noticiasTable.publicada, true),
+          eq(noticiasTable.hebreoPublicada, true),
+          sql`length(coalesce(${noticiasTable.contenidoHe}, '')) > 100`,
+        )
       : eq(noticiasTable.publicada, true);
 
     const [{ total }] = await db

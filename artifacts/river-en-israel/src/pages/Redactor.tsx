@@ -32,6 +32,7 @@ interface NoticiaHebreo {
   contenidoHe: string;
   tagsHe: string;
   estaTraducida: boolean;
+  hebreoPublicada: boolean;
 }
 
 interface AnalyticsData {
@@ -841,6 +842,67 @@ export default function Redactor() {
   const [traduciendoId, setTraduciendoId] = useState<number | null>(null);
   const [traduciendoMasivo, setTraduciendoMasivo] = useState(false);
   const [mensajeMasivo, setMensajeMasivo] = useState("");
+  const [editandoHebreoId, setEditandoHebreoId] = useState<number | null>(null);
+  const [editTituloHe, setEditTituloHe] = useState("");
+  const [editContenidoHe, setEditContenidoHe] = useState("");
+  const [editTagsHe, setEditTagsHe] = useState("");
+  const [guardandoEdicionHe, setGuardandoEdicionHe] = useState(false);
+  const [publicandoHebreoId, setPublicandoHebreoId] = useState<number | null>(null);
+
+  const abrirEdicionHebreo = (n: NoticiaHebreo) => {
+    setEditandoHebreoId(n.id);
+    setEditTituloHe(n.tituloHe);
+    setEditContenidoHe(n.contenidoHe);
+    setEditTagsHe(n.tagsHe);
+  };
+
+  const cerrarEdicionHebreo = () => {
+    setEditandoHebreoId(null);
+    setEditTituloHe("");
+    setEditContenidoHe("");
+    setEditTagsHe("");
+  };
+
+  const guardarEdicionHebreo = async () => {
+    if (editandoHebreoId == null) return;
+    setGuardandoEdicionHe(true);
+    try {
+      const res = await fetch(`/api/noticias-hebreo/${editandoHebreoId}`, {
+        method: "PUT",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tituloHe: editTituloHe,
+          contenidoHe: editContenidoHe,
+          tagsHe: editTagsHe,
+        }),
+      });
+      if (res.status === 401) { pedirAdminToken(); return; }
+      if (res.ok) {
+        const data = await res.json() as { noticia?: { tituloHe: string; contenidoHe: string; tagsHe: string; estaTraducida: boolean; hebreoPublicada: boolean } };
+        if (data.noticia) {
+          setNoticiasHebreo(prev => prev.map(n => n.id === editandoHebreoId ? { ...n, ...data.noticia! } : n));
+        }
+        cerrarEdicionHebreo();
+      }
+    } catch { /* ignore */ }
+    finally { setGuardandoEdicionHe(false); }
+  };
+
+  const togglePublicarHebreo = async (id: number, publicar: boolean) => {
+    setPublicandoHebreoId(id);
+    try {
+      const ruta = publicar ? "publicar" : "despublicar";
+      const res = await fetch(`/api/noticias-hebreo/${id}/${ruta}`, { method: "POST", headers: adminHeaders() });
+      if (res.status === 401) { pedirAdminToken(); return; }
+      if (res.ok) {
+        const data = await res.json() as { hebreoPublicada?: boolean };
+        setNoticiasHebreo(prev => prev.map(n => n.id === id
+          ? { ...n, hebreoPublicada: data.hebreoPublicada ?? publicar }
+          : n));
+      }
+    } catch { /* ignore */ }
+    finally { setPublicandoHebreoId(null); }
+  };
 
   const cargarNoticiasHebreo = async () => {
     setCargandoHebreo(true);
@@ -3028,7 +3090,7 @@ export default function Redactor() {
               <div>
                 <h2 className="font-display text-xl font-bold text-river-black">Publicaciones en Hebreo</h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {noticiasHebreo.filter(n => n.estaTraducida).length} traducidas · {noticiasHebreo.filter(n => !n.estaTraducida).length} pendientes
+                  {noticiasHebreo.filter(n => n.hebreoPublicada).length} publicadas · {noticiasHebreo.filter(n => n.estaTraducida && !n.hebreoPublicada).length} borradores · {noticiasHebreo.filter(n => !n.estaTraducida).length} sin traducir
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -3107,9 +3169,13 @@ export default function Redactor() {
                         {n.estaTraducida ? n.tituloHe : n.titulo}
                       </p>
                       <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                        n.estaTraducida ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                        !n.estaTraducida
+                          ? "bg-amber-100 text-amber-700"
+                          : n.hebreoPublicada
+                            ? "bg-green-100 text-green-700"
+                            : "bg-blue-100 text-blue-700"
                       }`}>
-                        {n.estaTraducida ? "Traducida" : "Pendiente"}
+                        {!n.estaTraducida ? "Sin traducir" : n.hebreoPublicada ? "Publicada" : "Borrador · revisar"}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-400">
@@ -3137,7 +3203,7 @@ export default function Redactor() {
                   </div>
                 )}
 
-                <div className="border-t border-gray-100 px-4 py-2.5 flex gap-2">
+                <div className="border-t border-gray-100 px-4 py-2.5 flex gap-2 flex-wrap">
                   <button
                     onClick={() => traducirNoticia(n.id)}
                     disabled={traduciendoId === n.id}
@@ -3149,9 +3215,102 @@ export default function Redactor() {
                       <><Languages className="w-3 h-3" /> {n.estaTraducida ? "Regenerar traducción" : "Generar traducción"}</>
                     )}
                   </button>
+                  {n.estaTraducida && (
+                    <button
+                      onClick={() => abrirEdicionHebreo(n)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-river-red hover:text-river-red transition-colors"
+                    >
+                      ✎ Editar traducción
+                    </button>
+                  )}
+                  {n.estaTraducida && !n.hebreoPublicada && (
+                    <button
+                      onClick={() => togglePublicarHebreo(n.id, true)}
+                      disabled={publicandoHebreoId === n.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60"
+                    >
+                      {publicandoHebreoId === n.id ? "Publicando..." : "Publicar en /he"}
+                    </button>
+                  )}
+                  {n.estaTraducida && n.hebreoPublicada && (
+                    <button
+                      onClick={() => togglePublicarHebreo(n.id, false)}
+                      disabled={publicandoHebreoId === n.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-amber-500 hover:text-amber-600 transition-colors disabled:opacity-60"
+                    >
+                      {publicandoHebreoId === n.id ? "..." : "Despublicar"}
+                    </button>
+                  )}
                 </div>
               </motion.div>
             ))}
+
+            {editandoHebreoId != null && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={cerrarEdicionHebreo}>
+                <div
+                  className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-display font-bold text-river-black">Editar traducción al hebreo</h3>
+                    <button onClick={cerrarEdicionHebreo} className="text-gray-400 hover:text-river-red text-xl leading-none">×</button>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Título (he)</label>
+                      <input
+                        type="text"
+                        value={editTituloHe}
+                        onChange={e => setEditTituloHe(e.target.value)}
+                        dir="rtl"
+                        lang="he"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-river-red"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Contenido (he)</label>
+                      <textarea
+                        value={editContenidoHe}
+                        onChange={e => setEditContenidoHe(e.target.value)}
+                        dir="rtl"
+                        lang="he"
+                        rows={14}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm leading-relaxed focus:outline-none focus:border-river-red"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Tags (he)</label>
+                      <input
+                        type="text"
+                        value={editTagsHe}
+                        onChange={e => setEditTagsHe(e.target.value)}
+                        dir="rtl"
+                        lang="he"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-river-red"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      Al guardar, la traducción vuelve a estado borrador. Hay que volver a publicarla para que aparezca en /he.
+                    </p>
+                  </div>
+                  <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+                    <button
+                      onClick={cerrarEdicionHebreo}
+                      className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={guardarEdicionHebreo}
+                      disabled={guardandoEdicionHe || editContenidoHe.trim().length < 10}
+                      className="px-4 py-2 text-sm font-semibold text-white bg-river-red rounded-lg hover:bg-red-700 disabled:opacity-60"
+                    >
+                      {guardandoEdicionHe ? "Guardando..." : "Guardar como borrador"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

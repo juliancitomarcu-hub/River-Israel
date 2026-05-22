@@ -28,6 +28,7 @@ router.get("/noticias-hebreo", async (req, res) => {
       contenidoHe: n.contenidoHe ?? "",
       tagsHe: n.tagsHe ?? "",
       estaTraducida: !!(n.contenidoHe && n.contenidoHe.length > 100),
+      hebreoPublicada: n.hebreoPublicada,
     }));
 
     res.set("Cache-Control", "no-store");
@@ -53,11 +54,93 @@ router.post("/noticias-hebreo/:id/traducir", async (req, res) => {
         contenidoHe: actualizada.contenidoHe ?? "",
         tagsHe: actualizada.tagsHe ?? "",
         estaTraducida: !!(actualizada.contenidoHe && actualizada.contenidoHe.length > 100),
+        hebreoPublicada: actualizada.hebreoPublicada,
       },
     });
   } catch (err) {
     req.log.error({ err, id }, "Error traduciendo noticia al hebreo");
     res.status(500).json({ error: "Error al traducir" });
+  }
+});
+
+router.put("/noticias-hebreo/:id", async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+  const { tituloHe, contenidoHe, tagsHe } = req.body as {
+    tituloHe?: string;
+    contenidoHe?: string;
+    tagsHe?: string;
+  };
+  if (typeof contenidoHe !== "string" || contenidoHe.trim().length < 10) {
+    res.status(400).json({ error: "Falta el contenido en hebreo" });
+    return;
+  }
+  try {
+    // Editar siempre devuelve la traducción a estado borrador para que se revise antes de mostrar.
+    const [updated] = await db
+      .update(noticiasTable)
+      .set({
+        tituloHe: (tituloHe ?? "").trim(),
+        contenidoHe: contenidoHe.trim(),
+        tagsHe: (tagsHe ?? "").trim(),
+        hebreoPublicada: false,
+      })
+      .where(eq(noticiasTable.id, id))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "Noticia no encontrada" }); return; }
+    res.json({
+      ok: true,
+      noticia: {
+        id: updated.id,
+        tituloHe: updated.tituloHe ?? "",
+        contenidoHe: updated.contenidoHe ?? "",
+        tagsHe: updated.tagsHe ?? "",
+        estaTraducida: !!(updated.contenidoHe && updated.contenidoHe.length > 100),
+        hebreoPublicada: updated.hebreoPublicada,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err, id }, "Error editando traducción hebrea");
+    res.status(500).json({ error: "Error al guardar la traducción" });
+  }
+});
+
+router.post("/noticias-hebreo/:id/publicar", async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+  try {
+    const [noticia] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, id)).limit(1);
+    if (!noticia) { res.status(404).json({ error: "Noticia no encontrada" }); return; }
+    if (!noticia.contenidoHe || noticia.contenidoHe.length <= 100) {
+      res.status(400).json({ error: "La traducción todavía no está lista" });
+      return;
+    }
+    const [updated] = await db
+      .update(noticiasTable)
+      .set({ hebreoPublicada: true })
+      .where(eq(noticiasTable.id, id))
+      .returning();
+    res.json({ ok: true, hebreoPublicada: updated.hebreoPublicada });
+  } catch (err) {
+    req.log.error({ err, id }, "Error publicando traducción hebrea");
+    res.status(500).json({ error: "Error al publicar la traducción" });
+  }
+});
+
+router.post("/noticias-hebreo/:id/despublicar", async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+  try {
+    const [updated] = await db
+      .update(noticiasTable)
+      .set({ hebreoPublicada: false })
+      .where(eq(noticiasTable.id, id))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "Noticia no encontrada" }); return; }
+    res.json({ ok: true, hebreoPublicada: updated.hebreoPublicada });
+  } catch (err) {
+    req.log.error({ err, id }, "Error despublicando traducción hebrea");
+    res.status(500).json({ error: "Error al despublicar la traducción" });
   }
 });
 

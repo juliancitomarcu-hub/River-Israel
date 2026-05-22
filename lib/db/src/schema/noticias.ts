@@ -16,6 +16,7 @@ export const noticiasTable = pgTable("noticias", {
   tituloHe: text("titulo_he").default(""),
   contenidoHe: text("contenido_he").default(""),
   tagsHe: text("tags_he").default(""),
+  hebreoPublicada: boolean("hebreo_publicada").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

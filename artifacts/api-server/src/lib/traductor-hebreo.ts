@@ -107,7 +107,7 @@ export async function traducirYGuardarHebreo(
       return;
     }
 
-    await db.update(noticiasTable).set(traduccion).where(eq(noticiasTable.id, noticiaId));
+    await db.update(noticiasTable).set({ ...traduccion, hebreoPublicada: false }).where(eq(noticiasTable.id, noticiaId));
     logger.info({ id: noticiaId, tituloHe: traduccion.tituloHe }, "✡ Traducción hebrea guardada");
   } catch (err) {
     logger.error({ err, noticiaId }, "Error en traducirYGuardarHebreo");
