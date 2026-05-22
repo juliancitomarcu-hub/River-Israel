@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "postgresql-16"]
+modules = ["nodejs-24", "postgresql-16", "python-3.11"]
 
 [[artifacts]]
 id = "artifacts/api-server"
@@ -30,7 +30,6 @@ timeoutMs = 20000
 
 [userenv.shared]
 TELEGRAM_CHAT_ID = "8412389155"
-ADMIN_TOKEN = "FjPuKQKfamJjdTbUJtuQk8l_z34DAYCM"
 
 [userenv.production]
 TELEGRAM_WEBHOOK_DOMAIN = "riverplateisrael.com"
