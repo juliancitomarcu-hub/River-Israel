@@ -321,6 +321,151 @@ async function scrapearGoogleNews(): Promise<NoticiaRaw[]> {
   return noticias.slice(0, 12);
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// ─── SELECCIÓN ARGENTINA ─────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+
+const PALABRAS_SELECCION = [
+  "seleccion argentina", "seleccion", "albiceleste", "argentina",
+  "scaloni", "scaloneta", "messi", "leo messi", "lionel messi",
+  "di maria", "dibu", "dibu martinez", "emiliano martinez",
+  "lautaro", "lautaro martinez", "julian alvarez", "dybala",
+  "de paul", "mac allister", "enzo fernandez", "paredes",
+  "molina", "tagliafico", "otamendi", "cuti romero", "cristian romero",
+  "lisandro martinez", "garnacho", "almada", "nico gonzalez",
+  "mundial", "mundial 2026", "copa america", "eliminatorias",
+  "afa", "campeon del mundo", "tricampeon"
+];
+
+// Para Selección descartamos noticias de clubes que distraen
+const PALABRAS_NEGATIVAS_SEL = [
+  "river plate", "millonario", "monumental",
+  "boca juniors", "boca jr", "bocajuniors", "xeneize",
+  "racing club", "independiente", "san lorenzo", "huracán",
+  "formula 1", "formula uno", "nba", "nfl", "rugby", "tenis",
+  "atletismo", "natacion", "boxeo", "ufc", "mma"
+];
+
+function esNoticiaDeSeleccion(titulo: string, url: string): boolean {
+  const textoLower = titulo.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const urlLower = url.toLowerCase();
+
+  for (const neg of PALABRAS_NEGATIVAS_SEL) {
+    const negNorm = neg.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (textoLower.includes(negNorm)) return false;
+  }
+
+  if (
+    urlLower.includes("/seleccion") ||
+    urlLower.includes("seleccion-argentina") ||
+    urlLower.includes("/argentina/") ||
+    urlLower.includes("tag/seleccion") ||
+    urlLower.includes("scaloneta")
+  ) return true;
+
+  return PALABRAS_SELECCION.some((p) =>
+    textoLower.includes(p.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))
+  );
+}
+
+async function scrapearSitioSeleccion(
+  url: string,
+  baseUrl: string,
+  fuente: string,
+): Promise<NoticiaRaw[]> {
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": UA,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "es-AR,es;q=0.9",
+    },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`${fuente} respondió ${res.status}`);
+  const html = await res.text();
+  const $ = cheerio.load(html);
+  const todas: NoticiaRaw[] = [];
+
+  $("h1, h2, h3, h4").each((_, el) => {
+    const texto = $(el).text().trim();
+    if (texto.length < 20 || texto.length > 250) return;
+    const link =
+      $(el).find("a").attr("href") ??
+      $(el).closest("a").attr("href") ??
+      $(el).parent().find("a").attr("href") ??
+      "";
+    const fullUrl = link.startsWith("http") ? link : link ? `${baseUrl}${link}` : "";
+    if (!todas.find((n) => n.titulo === texto)) {
+      todas.push({ titulo: texto, url: fullUrl, fuente });
+    }
+  });
+
+  const filtradas = todas.filter((n) => esNoticiaDeSeleccion(n.titulo, n.url));
+  return (filtradas.length >= 2 ? filtradas : todas).slice(0, 10);
+}
+
+async function scrapearOleSeleccion(): Promise<NoticiaRaw[]> {
+  return scrapearSitioSeleccion(
+    "https://www.ole.com.ar/seleccion-argentina/",
+    "https://www.ole.com.ar",
+    "Olé Selección",
+  );
+}
+
+async function scrapearTyCSeleccion(): Promise<NoticiaRaw[]> {
+  return scrapearSitioSeleccion(
+    "https://www.tycsports.com/seleccion-argentina",
+    "https://www.tycsports.com",
+    "TyC Sports Selección",
+  );
+}
+
+async function scrapearGoogleNewsSeleccion(): Promise<NoticiaRaw[]> {
+  const url = "https://news.google.com/rss/search?q=%22seleccion+argentina%22+OR+%22scaloni%22+OR+%22scaloneta%22+when:24h&hl=es-419&gl=AR&ceid=AR:es-419";
+  const res = await fetch(url, {
+    headers: { "User-Agent": UA, "Accept": "application/rss+xml, text/xml, */*" },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`Google News Selección respondió ${res.status}`);
+  const xml = await res.text();
+  const $ = cheerio.load(xml, { xmlMode: true });
+  const noticias: NoticiaRaw[] = [];
+  $("item").each((_, el) => {
+    const titulo = $(el).find("title").text().trim();
+    const link = $(el).find("link").text().trim() || $(el).find("guid").text().trim();
+    const fuente = $(el).find("source").text().trim() || "Google News";
+    if (titulo && titulo.length > 20 && titulo.length < 250 && esNoticiaDeSeleccion(titulo, link)) {
+      if (!noticias.find((n) => n.titulo === titulo)) {
+        noticias.push({ titulo, url: link, fuente });
+      }
+    }
+  });
+  return noticias.slice(0, 12);
+}
+
+const FUENTES_SELECCION: Record<string, () => Promise<NoticiaRaw[]>> = {
+  ole: scrapearOleSeleccion,
+  tyc: scrapearTyCSeleccion,
+  google: scrapearGoogleNewsSeleccion,
+};
+
+router.get("/noticias-seleccion", async (req, res) => {
+  const fuente = (req.query.fuente as string) ?? "ole";
+  const scraper = FUENTES_SELECCION[fuente] ?? scrapearOleSeleccion;
+  try {
+    const noticias = await scraper();
+    if (noticias.length === 0) {
+      res.status(404).json({ error: "No se encontraron noticias de la Selección." });
+      return;
+    }
+    res.json({ noticias });
+  } catch (err) {
+    req.log.error({ err }, "Error scrapeando noticias selección");
+    res.status(500).json({ error: "No se pudo conectar con la fuente de Selección" });
+  }
+});
+
 // ─── MAP fuente ───────────────────────────────────────────────────────────────
 
 const FUENTES: Record<string, () => Promise<NoticiaRaw[]>> = {

@@ -15,9 +15,11 @@ router.use("/scheduler/audit", requireAdmin);
 
 router.post("/scheduler/trigger", async (req, res) => {
   const fuente = typeof req.query.fuente === "string" ? req.query.fuente : undefined;
-  logger.info({ fuente: fuente ?? "auto" }, "Trigger manual del scheduler recibido");
-  res.json({ ok: true, mensaje: "Ciclo iniciado en background", fuente: fuente ?? "auto" });
-  ejecutarCiclo(fuente).catch((err) =>
+  const categoriaRaw = typeof req.query.categoria === "string" ? req.query.categoria : undefined;
+  const categoria = categoriaRaw === "seleccion" ? "seleccion" : categoriaRaw === "river" ? "river" : undefined;
+  logger.info({ fuente: fuente ?? "auto", categoria: categoria ?? "auto" }, "Trigger manual del scheduler recibido");
+  res.json({ ok: true, mensaje: "Ciclo iniciado en background", fuente: fuente ?? "auto", categoria: categoria ?? "auto" });
+  ejecutarCiclo(fuente, false, categoria).catch((err) =>
     logger.error({ err }, "Trigger manual: error en ciclo")
   );
 });

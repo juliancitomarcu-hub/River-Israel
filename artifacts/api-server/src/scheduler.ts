@@ -8,7 +8,10 @@ import { logger } from "./lib/logger";
 import * as fs from "fs";
 import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
+import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
+
+export type Categoria = "river" | "seleccion";
 
 // Fuentes en orden de prioridad — La Página Millonaria, sitio oficial y Olé primero
 const FUENTES = [
@@ -17,12 +20,16 @@ const FUENTES = [
   "bolavip", "as", "superdeportivo"
 ] as const;
 
+const FUENTES_SELECCION = ["ole", "tyc", "google"] as const;
+
 // ─── ESTADO PERSISTENTE ───────────────────────────────────────────────────────
 
 const STATE_FILE = path.resolve("./scheduler_state.json");
 
 interface SchedulerState {
   fuenteIndex: number;
+  fuenteIndexSel: number;
+  categoriaFlip: number; // alterna 0/1 entre river y seleccion en cada ciclo automático
   urlsProcesadas: string[];  // URLs ya enviadas a Telegram (cap 1000)
 }
 
@@ -31,10 +38,12 @@ function leerEstado(): SchedulerState {
     const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf-8")) as Partial<SchedulerState>;
     return {
       fuenteIndex:    typeof raw.fuenteIndex === "number" ? raw.fuenteIndex : 0,
+      fuenteIndexSel: typeof raw.fuenteIndexSel === "number" ? raw.fuenteIndexSel : 0,
+      categoriaFlip:  typeof raw.categoriaFlip === "number" ? raw.categoriaFlip : 0,
       urlsProcesadas: Array.isArray(raw.urlsProcesadas) ? raw.urlsProcesadas : [],
     };
   } catch {
-    return { fuenteIndex: 0, urlsProcesadas: [] };
+    return { fuenteIndex: 0, fuenteIndexSel: 0, categoriaFlip: 0, urlsProcesadas: [] };
   }
 }
 
@@ -325,7 +334,7 @@ export type EjecucionResultado =
 // ─── FLAG ANTI-CONCURRENCIA ───────────────────────────────────────────────────
 let enEjecucion = false;
 
-async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Promise<EjecucionResultado> {
+async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, categoriaOverride?: Categoria): Promise<EjecucionResultado> {
   if (enEjecucion) {
     logger.warn("Scheduler: ciclo anterior aún en ejecución, saltando este turno");
     return { tipo: "concurrente" };
@@ -334,17 +343,35 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
 
   try {
     const estado = leerEstado();
-    const fuente = fuenteOverride ?? FUENTES[estado.fuenteIndex % FUENTES.length];
+
+    // Elegir categoría: override > alternancia automática
+    let categoria: Categoria;
+    if (categoriaOverride) {
+      categoria = categoriaOverride;
+    } else if (esAutomatico) {
+      categoria = estado.categoriaFlip % 2 === 0 ? "river" : "seleccion";
+      estado.categoriaFlip += 1;
+    } else {
+      categoria = "river";
+    }
+
+    const fuentesList = categoria === "seleccion" ? FUENTES_SELECCION : FUENTES;
+    const indexKey = categoria === "seleccion" ? "fuenteIndexSel" : "fuenteIndex";
+    const fuente = fuenteOverride ?? fuentesList[estado[indexKey] % fuentesList.length];
 
     if (!fuenteOverride) {
-      estado.fuenteIndex += 1;
+      estado[indexKey] += 1;
+      guardarEstado(estado);
+    } else if (categoriaOverride && esAutomatico === false) {
+      // Si vino override con categoria, persistimos el flip igual
       guardarEstado(estado);
     }
 
-    logger.info({ fuente, siguiente: FUENTES[estado.fuenteIndex % FUENTES.length] }, "Scheduler: iniciando ciclo");
+    logger.info({ categoria, fuente, siguiente: fuentesList[estado[indexKey] % fuentesList.length] }, "Scheduler: iniciando ciclo");
 
     const port = process.env.PORT;
-    const noticiasRes = await fetch(`http://localhost:${port}/api/noticias-river?fuente=${fuente}`, {
+    const endpoint = categoria === "seleccion" ? "noticias-seleccion" : "noticias-river";
+    const noticiasRes = await fetch(`http://localhost:${port}/api/${endpoint}?fuente=${fuente}`, {
       signal: AbortSignal.timeout(35000),
     });
 
@@ -419,11 +446,19 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
     }
 
     // ── GENERAR CON IA (Gemini Flash) ─────────────────────────────────────
+    const promptSistema = categoria === "seleccion" ? PROMPT_SELECCION : PROMPT_MAESTRO;
+    const contextoSitio = categoria === "seleccion"
+      ? "Transformá esta noticia para el sitio La Scaloneta en Israel"
+      : "Transformá esta noticia para el sitio River en Israel";
+    const tagsFallback = categoria === "seleccion"
+      ? "#Argentina #Scaloneta #Mundial2026 #LaScaloneta"
+      : "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
+
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] }],
+      contents: [{ role: "user", parts: [{ text: `${contextoSitio}:\n\n${textoParaIA}` }] }],
       config: {
-        systemInstruction: PROMPT_MAESTRO,
+        systemInstruction: promptSistema,
         maxOutputTokens: 8000,
       },
     });
@@ -453,11 +488,11 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
       const expansion = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [
-          { role: "user",  parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${textoParaIA}` }] },
+          { role: "user",  parts: [{ text: `${contextoSitio}:\n\n${textoParaIA}` }] },
           { role: "model", parts: [{ text: resultado }] },
           { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 2000 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial Ramat Gan. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
         ],
-        config: { systemInstruction: PROMPT_MAESTRO, maxOutputTokens: 8000 },
+        config: { systemInstruction: promptSistema, maxOutputTokens: 8000 },
       });
       const resultadoExpandido = expansion.text ?? "";
       if (resultadoExpandido && resultadoExpandido.length > resultado.length) {
@@ -467,7 +502,13 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
       }
     }
 
-    const { titulo, contenido, tags } = parsed;
+    const { titulo, contenido } = parsed;
+    // Si la IA dejó el fallback de River para una nota de Selección (raro pero posible),
+    // sustituimos por los tags correctos de la categoría.
+    let { tags } = parsed;
+    if (categoria === "seleccion" && /^#RiverPlate/.test(tags.trim())) {
+      tags = tagsFallback;
+    }
     const fuenteNombre = noticiaElegida.fuente ?? fuente;
 
     // ── GUARDAR EN DB ─────────────────────────────────────────────────────
@@ -482,6 +523,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
         tags,
         textoOriginal: textoParaIA.slice(0, 3000),
         fuente: fuenteNombre,
+        categoria,
         publicada: esAutomatico,
         pendiente: !esAutomatico,
         imagenPortada: imagenAutoUrl ?? "",
@@ -514,7 +556,8 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
     if (esAutomatico) {
       // ── MODO AUTOMÁTICO: FYI solo, ya está publicada ──────────────────
       const fotoTexto = imagenAutoUrl ? "\n🖼 _Foto de portada incluida_" : "\n📷 _Sin foto (podés agregar desde el Redactor)_";
-      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n📡 _Fuente: ${fuenteNombre}_${fotoTexto}`;
+      const etiquetaCat = categoria === "seleccion" ? "🇦🇷 _Categoría: Selección Argentina_\n" : "⚪️🔴 _Categoría: River_\n";
+      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n${etiquetaCat}📡 _Fuente: ${fuenteNombre}_${fotoTexto}`;
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -547,7 +590,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
       }
 
       // Foto 1:1 generada por Gemini para Instagram (siempre, además de la scrapeada)
-      const imagenIG = await generarImagenIG(titulo, "river");
+      const imagenIG = await generarImagenIG(titulo, categoria);
       if (imagenIG) {
         try {
           const form = new FormData();
@@ -580,7 +623,8 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
         ]],
       };
 
-      const encabezado = `📰 *${titulo}*\n\n`;
+      const etiquetaCatMan = categoria === "seleccion" ? "🇦🇷 _Selección Argentina_\n\n" : "";
+      const encabezado = `${etiquetaCatMan}📰 *${titulo}*\n\n`;
       const pie        = `\n\n${tags}\n\n📡 _Fuente: ${fuenteNombre}_`;
       const textoCompleto = encabezado + contenido + pie;
       // Salvaguarda: si supera 4096 cortamos en oración completa

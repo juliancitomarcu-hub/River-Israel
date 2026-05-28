@@ -186,15 +186,23 @@ router.get("/noticias-publicadas", async (req, res) => {
     const offset = page * limit;
     const lang = (req.query.lang as string ?? "es").toLowerCase();
     const isHebreo = lang === "he";
+    const categoriaRaw = (req.query.categoria as string ?? "").toLowerCase();
+    const categoria: "river" | "seleccion" | null =
+      categoriaRaw === "seleccion" ? "seleccion" :
+      categoriaRaw === "river" ? "river" : null;
 
     // Para hebreo: solo notas con traducción completa
-    const whereClause = isHebreo
+    const baseClause = isHebreo
       ? and(
           eq(noticiasTable.publicada, true),
           eq(noticiasTable.hebreoPublicada, true),
           sql`length(coalesce(${noticiasTable.contenidoHe}, '')) > 100`,
         )
       : eq(noticiasTable.publicada, true);
+
+    const whereClause = categoria
+      ? and(baseClause, eq(noticiasTable.categoria, categoria))
+      : baseClause;
 
     const [{ total }] = await db
       .select({ total: sqlRaw<number>`cast(count(*) as int)` })

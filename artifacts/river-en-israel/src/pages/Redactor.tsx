@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "videos" | "analytics" | "suscriptores" | "publicaciones-hebreo";
+type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "videos" | "analytics" | "suscriptores" | "publicaciones-hebreo";
 
 interface Suscriptor {
   id: number;
@@ -874,6 +874,11 @@ export default function Redactor() {
   const [eliminandoId, setEliminandoId] = useState<number | null>(null);
   const [confirmEliminarId, setConfirmEliminarId] = useState<number | null>(null);
 
+  // Mis publicaciones — Selección Argentina
+  const [misPublicacionesSel, setMisPublicacionesSel] = useState<NoticiaPublicada[]>([]);
+  const [cargandoPublicacionesSel, setCargandoPublicacionesSel] = useState(false);
+  const [errorPublicacionesSel, setErrorPublicacionesSel] = useState("");
+
   // Historia
   const [historiaHitos, setHistoriaHitos] = useState<HitoEdit[]>([]);
   const [cargandoHistoria, setCargandoHistoria] = useState(false);
@@ -1127,13 +1132,27 @@ export default function Redactor() {
     setCargandoPublicaciones(true);
     setErrorPublicaciones("");
     try {
-      const res = await fetch("/api/noticias-publicadas");
+      const res = await fetch("/api/noticias-publicadas?categoria=river&limit=20");
       const data = await res.json() as { noticias?: NoticiaPublicada[] };
       setMisPublicaciones(data.noticias ?? []);
     } catch {
       setErrorPublicaciones("No se pudieron cargar las publicaciones");
     } finally {
       setCargandoPublicaciones(false);
+    }
+  };
+
+  const cargarPublicacionesSel = async () => {
+    setCargandoPublicacionesSel(true);
+    setErrorPublicacionesSel("");
+    try {
+      const res = await fetch("/api/noticias-publicadas?categoria=seleccion&limit=20");
+      const data = await res.json() as { noticias?: NoticiaPublicada[] };
+      setMisPublicacionesSel(data.noticias ?? []);
+    } catch {
+      setErrorPublicacionesSel("No se pudieron cargar las publicaciones");
+    } finally {
+      setCargandoPublicacionesSel(false);
     }
   };
 
@@ -1399,7 +1418,7 @@ export default function Redactor() {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     const tabsValidos: Tab[] = [
-      "redactor", "publicaciones", "publicaciones-libres", "historia",
+      "redactor", "publicaciones", "publicaciones-seleccion", "publicaciones-libres", "historia",
       "postulantes", "galeria", "videos", "analytics", "suscriptores",
       "publicaciones-hebreo",
     ];
@@ -1408,6 +1427,7 @@ export default function Redactor() {
       setTab(t);
       if (t === "publicaciones-hebreo") cargarNoticiasHebreo();
       else if (t === "publicaciones") cargarPublicaciones();
+      else if (t === "publicaciones-seleccion") cargarPublicacionesSel();
       else if (t === "historia") cargarHistoria();
       else if (t === "postulantes") cargarPostulaciones();
       else if (t === "suscriptores") cargarSuscriptores();
@@ -1691,6 +1711,16 @@ export default function Redactor() {
               }`}
             >
               <BookOpen className="w-4 h-4" /> Mis publicaciones
+            </button>
+            <button
+              onClick={() => { setTab("publicaciones-seleccion"); cargarPublicacionesSel(); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "publicaciones-seleccion"
+                  ? "bg-sky-500 text-white shadow-sm"
+                  : "text-gray-500 hover:text-sky-500"
+              }`}
+            >
+              <span className="text-base leading-none">🇦🇷</span> Noticias Selección
             </button>
             <button
               onClick={() => { setTab("publicaciones-libres"); setPlEstado("idle"); }}
@@ -1991,6 +2021,127 @@ export default function Redactor() {
                     <button
                       onClick={() => editarPublicacion(n.id)}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-river-red hover:text-river-red transition-colors"
+                    >
+                      <Pencil className="w-3 h-3" /> Editar
+                    </button>
+                    <button
+                      onClick={() => setConfirmEliminarId(n.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-red-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" /> Eliminar
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* ── PUBLICACIONES SELECCIÓN ARGENTINA ─────────────────────────── */}
+        {tab === "publicaciones-seleccion" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-display text-xl font-bold text-river-black flex items-center gap-2">
+                <span className="text-2xl leading-none">🇦🇷</span>
+                Noticias de la Selección Argentina
+              </h2>
+              <button
+                onClick={cargarPublicacionesSel}
+                disabled={cargandoPublicacionesSel}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-sky-500 transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${cargandoPublicacionesSel ? "animate-spin" : ""}`} />
+                Actualizar
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 -mt-1">
+              Notas generadas y publicadas por el bot sobre la Scaloneta. Llegan también por Telegram.
+            </p>
+
+            {errorPublicacionesSel && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {errorPublicacionesSel}
+              </div>
+            )}
+
+            {cargandoPublicacionesSel && (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/4" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!cargandoPublicacionesSel && misPublicacionesSel.length === 0 && !errorPublicacionesSel && (
+              <div className="text-center py-16 text-gray-400">
+                <span className="text-4xl block mb-3">🇦🇷</span>
+                <p className="font-medium">Todavía no hay noticias de la Selección</p>
+                <p className="text-sm mt-1">El bot las irá publicando alternadas con las de River</p>
+              </div>
+            )}
+
+            {!cargandoPublicacionesSel && misPublicacionesSel.map((n) => (
+              <motion.div
+                key={n.id}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                className="bg-white border border-sky-200 rounded-2xl overflow-hidden shadow-sm"
+              >
+                <div className="flex gap-4 p-4">
+                  {n.imagenPortada && (
+                    <img
+                      src={`/api/storage${n.imagenPortada}`}
+                      alt=""
+                      className="w-24 h-16 object-cover rounded-xl shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold text-river-black text-sm leading-snug line-clamp-2 mb-1">
+                      {n.titulo}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
+                      <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />
+                        {new Date(n.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                      {n.fuente && <span className="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full">{n.fuente}</span>}
+                      <span className="bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-semibold">🇦🇷 Selección</span>
+                    </div>
+                  </div>
+                </div>
+
+                {confirmEliminarId === n.id ? (
+                  <div className="border-t border-gray-100 bg-red-50 px-4 py-3 flex items-center justify-between gap-3">
+                    <p className="text-sm text-red-600 font-medium">¿Eliminar esta nota del sitio?</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setConfirmEliminarId(null)}
+                        className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await eliminarPublicacion(n.id);
+                          setMisPublicacionesSel(prev => prev.filter(x => x.id !== n.id));
+                        }}
+                        disabled={eliminandoId === n.id}
+                        className="px-3 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-60"
+                      >
+                        {eliminandoId === n.id ? "Eliminando..." : "Sí, eliminar"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-t border-gray-100 px-4 py-2.5 flex gap-2">
+                    <button
+                      onClick={() => editarPublicacion(n.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:border-sky-500 hover:text-sky-600 transition-colors"
                     >
                       <Pencil className="w-3 h-3" /> Editar
                     </button>
