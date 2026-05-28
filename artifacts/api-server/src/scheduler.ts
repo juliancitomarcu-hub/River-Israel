@@ -2,7 +2,7 @@ import { ai } from "@workspace/integrations-gemini-ai";
 import { generarImagenIG } from "./lib/generar-imagen-ig";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { eq, sql as sqlRaw } from "drizzle-orm";
+import { and, desc, eq, sql as sqlRaw } from "drizzle-orm";
 import * as cheerio from "cheerio";
 import { logger } from "./lib/logger";
 import * as fs from "fs";
@@ -672,6 +672,133 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
 
 export { ejecutarCiclo };
 
+// ─── RESUMEN DIARIO DE TRADUCCIONES AL HEBREO EN BORRADOR ─────────────────────
+// Una vez al día (09:00 hora Israel) cuenta las noticias con `hebreoPublicada=false`
+// y `contenidoHe` no vacío, y manda al admin un Telegram con el listado de títulos
+// en español y un link a /redactor?tab=publicaciones-hebreo.
+// Se desactiva con `RESUMEN_HEBREO_DIARIO=0`.
+
+function ultimoDiaSemanaUtil(year: number, month: number, weekday: number): number {
+  const ultimoDia = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  for (let d = ultimoDia; d > 0; d--) {
+    if (new Date(Date.UTC(year, month, d)).getUTCDay() === weekday) return d;
+  }
+  return ultimoDia;
+}
+
+function israelOffsetHorasInterno(utcMs: number): number {
+  const d = new Date(utcMs);
+  const year = d.getUTCFullYear();
+  const inicioIDT = Date.UTC(year, 2, ultimoDiaSemanaUtil(year, 2, 5), 0, 0, 0);
+  const finIDT = Date.UTC(year, 9, ultimoDiaSemanaUtil(year, 9, 0), 23, 0, 0) - 24 * 3600_000;
+  return utcMs >= inicioIDT && utcMs < finIDT ? 3 : 2;
+}
+
+function msHastaProximaHoraIsrael(horaIsrael: number): number {
+  const ahoraUtc = Date.now();
+  const offset = israelOffsetHorasInterno(ahoraUtc);
+  // Hora actual en Israel
+  const ilNowMs = ahoraUtc + offset * 3600_000;
+  const ilNow = new Date(ilNowMs);
+  // Próximo "horaIsrael":00 en Israel
+  const objetivoIl = new Date(Date.UTC(
+    ilNow.getUTCFullYear(), ilNow.getUTCMonth(), ilNow.getUTCDate(),
+    horaIsrael, 0, 0, 0,
+  ));
+  if (objetivoIl.getTime() <= ilNowMs) {
+    objetivoIl.setUTCDate(objetivoIl.getUTCDate() + 1);
+  }
+  // Convertir el objetivo (expresado como ms "en Israel") a ms UTC reales
+  const objetivoUtcMs = objetivoIl.getTime() - offset * 3600_000;
+  return Math.max(1000, objetivoUtcMs - ahoraUtc);
+}
+
+export async function enviarResumenHebreoDiario(): Promise<void> {
+  if (process.env.RESUMEN_HEBREO_DIARIO === "0") {
+    logger.info("Resumen hebreo diario desactivado por RESUMEN_HEBREO_DIARIO=0");
+    return;
+  }
+  const token = process.env.TELEGRAM_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) {
+    logger.warn("Resumen hebreo diario: Telegram no configurado, saltando");
+    return;
+  }
+
+  const pendientes = await db
+    .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
+    .from(noticiasTable)
+    .where(and(
+      eq(noticiasTable.hebreoPublicada, false),
+      sqlRaw`char_length(coalesce(${noticiasTable.contenidoHe}, '')) > 0`,
+    ))
+    .orderBy(desc(noticiasTable.id));
+
+  if (pendientes.length === 0) {
+    logger.info("Resumen hebreo diario: no hay traducciones pendientes, no se envía mensaje");
+    return;
+  }
+
+  const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+  const link = `https://${dominio}/redactor?tab=publicaciones-hebreo`;
+
+  const escape = (s: string) => s.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+
+  const MAX_LISTADO = 15;
+  const listado = pendientes.slice(0, MAX_LISTADO)
+    .map((n) => `• ${escape(n.titulo)}`)
+    .join("\n");
+  const resto = pendientes.length - MAX_LISTADO;
+  const sufijo = resto > 0 ? `\n_…y ${resto} más_` : "";
+
+  const cuerpo =
+    `✡ *Resumen diario — traducciones al hebreo pendientes*\n\n` +
+    `Hay *${pendientes.length}* ${pendientes.length === 1 ? "traducción" : "traducciones"} en borrador esperando revisión:\n\n` +
+    `${listado}${sufijo}\n\n` +
+    `[Revisar y publicar en /redactor](${link})`;
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: cuerpo,
+      parse_mode: "MarkdownV2",
+      disable_web_page_preview: true,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    logger.warn({ status: res.status, body }, "Resumen hebreo diario: Telegram sendMessage falló");
+    return;
+  }
+  logger.info({ cantidad: pendientes.length }, "Resumen hebreo diario enviado");
+}
+
+function iniciarResumenHebreoDiario(): void {
+  if (process.env.RESUMEN_HEBREO_DIARIO === "0") {
+    logger.info("Resumen hebreo diario desactivado (RESUMEN_HEBREO_DIARIO=0), no se programa");
+    return;
+  }
+  const HORA_ISRAEL = 9;
+  const UN_DIA_MS = 24 * 60 * 60 * 1000;
+  const delay = msHastaProximaHoraIsrael(HORA_ISRAEL);
+  logger.info(
+    { horaIsrael: HORA_ISRAEL, minutosHastaPrimerEnvio: Math.round(delay / 60000) },
+    "Resumen hebreo diario programado",
+  );
+  setTimeout(() => {
+    enviarResumenHebreoDiario().catch((err) =>
+      logger.error({ err }, "Resumen hebreo diario: error inesperado"),
+    );
+    setInterval(() => {
+      enviarResumenHebreoDiario().catch((err) =>
+        logger.error({ err }, "Resumen hebreo diario: error inesperado"),
+      );
+    }, UN_DIA_MS);
+  }, delay);
+}
+
 // ─── INTERVALO: cada 2 horas ───────────────────────────────────────────────
 // Primer ciclo a los 2 minutos de arrancar, luego cada 2 horas exactas.
 
@@ -680,6 +807,8 @@ const PRIMER_CICLO_MS =  2 * 60 * 1000; // 2 minutos tras arrancar
 
 export function iniciarScheduler(): void {
   logger.info({ primerCicloMinutos: 2, intervaloHoras: 2 }, "Scheduler automático iniciado — primer ciclo en 2 min, luego cada 2 horas");
+
+  iniciarResumenHebreoDiario();
 
   setTimeout(() => {
     ejecutarCiclo(undefined, false).catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));
