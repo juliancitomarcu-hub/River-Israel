@@ -10,6 +10,7 @@ import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
+import { createEditToken } from "./lib/edit-tokens";
 
 export type Categoria = "river" | "seleccion";
 
@@ -567,7 +568,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
           parse_mode: "Markdown",
           reply_markup: {
             inline_keyboard: [[
-              { text: "✏️ Editar en Redactor", url: `https://${dominioTelegram}/redactor` },
+              { text: "✏️ Editar en Redactor", url: `https://${dominioTelegram}/redactor?editar=${savedNoticia.id}&edit_token=${createEditToken(savedNoticia.id)}` },
             ]],
           },
         }),
@@ -740,7 +741,11 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
   }
 
   const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
-  const link = `https://${dominio}/redactor?tab=publicaciones-hebreo`;
+  // Token de un solo uso para que el admin entre directo al redactor sin tipear
+  // la contraseña. Como el resumen abarca varias notas, el token no está scoped
+  // a ninguna en particular: al canjearse genera una sesión admin corta.
+  const editToken = createEditToken(null);
+  const link = `https://${dominio}/redactor?tab=publicaciones-hebreo&edit_token=${editToken}`;
 
   const escape = (s: string) => s.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
 

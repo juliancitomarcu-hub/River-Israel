@@ -97,6 +97,17 @@ router.post("/admin/exchange-edit-token", (req, res) => {
     res.status(401).json({ error: "Token inválido o expirado" });
     return;
   }
+  // Si el token estaba scoped a una noticia → sesión efímera scoped a esa nota.
+  // Si no (ej: link del resumen diario de hebreo) → sesión admin completa corta.
+  if (consumed.noticiaId === null) {
+    const session = createAdminSession();
+    res.json({
+      sessionToken: session.token,
+      expiresAt: session.expiresAt,
+      noticiaId: null,
+    });
+    return;
+  }
   const session = createNoticiaSession(consumed.noticiaId);
   res.json({
     sessionToken: session.token,

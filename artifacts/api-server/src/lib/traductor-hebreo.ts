@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { db, noticiasTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
+import { createEditToken } from "./edit-tokens";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? "" });
 
@@ -111,6 +112,7 @@ export async function traducirYGuardarHebreo(
     logger.info({ id: noticiaId, tituloHe: traduccion.tituloHe }, "✡ Traducción hebrea guardada");
 
     await avisarTraduccionBorrador({
+      noticiaId,
       tituloEs: noticia.titulo,
       tituloHe: traduccion.tituloHe,
     }).catch((err) => logger.warn({ err, noticiaId }, "Aviso Telegram traducción hebrea falló"));
@@ -126,6 +128,7 @@ export async function traducirYGuardarHebreo(
  * Se puede desactivar seteando AVISAR_HEBREO_BORRADOR=0.
  */
 async function avisarTraduccionBorrador(input: {
+  noticiaId: number;
   tituloEs: string;
   tituloHe: string;
 }): Promise<void> {
@@ -136,7 +139,13 @@ async function avisarTraduccionBorrador(input: {
   if (!token || !chatId) return;
 
   const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
-  const link = `https://${dominio}/redactor?tab=publicaciones-hebreo`;
+  // Token de un solo uso para que el admin entre directo al redactor sin
+  // tipear la contraseña. Apunta al tab "publicaciones-hebreo" (que lista
+  // todas las traducciones pendientes), así que el token no se ata a esta
+  // nota: al canjearse crea una sesión admin corta y el admin puede revisar
+  // y publicar cualquiera de las traducciones que tenga en borrador.
+  const editToken = createEditToken(null);
+  const link = `https://${dominio}/redactor?tab=publicaciones-hebreo&edit_token=${editToken}`;
 
   const escape = (s: string) =>
     s.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");

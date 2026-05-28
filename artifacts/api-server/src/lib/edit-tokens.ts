@@ -8,7 +8,10 @@ const SESSION_TTL_MS = 30 * 60 * 1000;
 export const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 interface EditTokenEntry {
-  noticiaId: number;
+  // null = token "admin grade" (links del bot que no apuntan a una nota
+  // específica, ej: resumen diario de traducciones). Al canjearse crea una
+  // sesión admin corta en vez de una sesión scoped a una noticia.
+  noticiaId: number | null;
   expiresAt: number;
 }
 
@@ -32,14 +35,14 @@ function purgeExpired(): void {
   for (const [k, v] of adminSessions) if (v.expiresAt <= now) adminSessions.delete(k);
 }
 
-export function createEditToken(noticiaId: number): string {
+export function createEditToken(noticiaId: number | null): string {
   purgeExpired();
   const token = randomBytes(24).toString("base64url");
   editTokens.set(token, { noticiaId, expiresAt: Date.now() + EDIT_TOKEN_TTL_MS });
   return token;
 }
 
-export function consumeEditToken(token: string): { noticiaId: number } | null {
+export function consumeEditToken(token: string): { noticiaId: number | null } | null {
   purgeExpired();
   const entry = editTokens.get(token);
   if (!entry) return null;
