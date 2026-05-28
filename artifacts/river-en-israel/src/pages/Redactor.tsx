@@ -914,6 +914,8 @@ export default function Redactor() {
   const [editTituloHe, setEditTituloHe] = useState("");
   const [editContenidoHe, setEditContenidoHe] = useState("");
   const [editTagsHe, setEditTagsHe] = useState("");
+  const [editTituloEs, setEditTituloEs] = useState("");
+  const [editContenidoEs, setEditContenidoEs] = useState("");
   const [guardandoEdicionHe, setGuardandoEdicionHe] = useState(false);
   const [publicandoHebreoId, setPublicandoHebreoId] = useState<number | null>(null);
 
@@ -922,6 +924,8 @@ export default function Redactor() {
     setEditTituloHe(n.tituloHe);
     setEditContenidoHe(n.contenidoHe);
     setEditTagsHe(n.tagsHe);
+    setEditTituloEs(n.titulo);
+    setEditContenidoEs(n.contenido);
   };
 
   const cerrarEdicionHebreo = () => {
@@ -929,6 +933,13 @@ export default function Redactor() {
     setEditTituloHe("");
     setEditContenidoHe("");
     setEditTagsHe("");
+    setEditTituloEs("");
+    setEditContenidoEs("");
+  };
+
+  const copiarEsAHe = () => {
+    setEditTituloHe(editTituloEs);
+    setEditContenidoHe(editContenidoEs);
   };
 
   const guardarEdicionHebreo = async () => {
@@ -3423,7 +3434,7 @@ export default function Redactor() {
             {editandoHebreoId != null && (
               <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={cerrarEdicionHebreo}>
                 <div
-                  className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                  className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
                   onClick={e => e.stopPropagation()}
                 >
                   <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -3431,27 +3442,69 @@ export default function Redactor() {
                     <button onClick={cerrarEdicionHebreo} className="text-gray-400 hover:text-river-red text-xl leading-none">×</button>
                   </div>
                   <div className="p-5 space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Título (he)</label>
-                      <input
-                        type="text"
-                        value={editTituloHe}
-                        onChange={e => setEditTituloHe(e.target.value)}
-                        dir="rtl"
-                        lang="he"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-river-red"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Contenido (he)</label>
-                      <textarea
-                        value={editContenidoHe}
-                        onChange={e => setEditContenidoHe(e.target.value)}
-                        dir="rtl"
-                        lang="he"
-                        rows={14}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm leading-relaxed focus:outline-none focus:border-river-red"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Columna español (read-only) */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Original (es)</span>
+                          <button
+                            type="button"
+                            onClick={copiarEsAHe}
+                            className="text-xs font-semibold text-river-red hover:text-red-700"
+                            title="Copia el título y contenido en español a los campos hebreos"
+                          >
+                            Copiar párrafo al hebreo →
+                          </button>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Título (es)</label>
+                          <input
+                            type="text"
+                            value={editTituloEs}
+                            readOnly
+                            lang="es"
+                            className="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm text-gray-700 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Contenido (es)</label>
+                          <textarea
+                            value={editContenidoEs}
+                            readOnly
+                            lang="es"
+                            rows={14}
+                            className="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm leading-relaxed text-gray-700 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      {/* Columna hebreo (editable) */}
+                      <div className="space-y-4">
+                        <div className="flex items-center">
+                          <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Traducción (he)</span>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Título (he)</label>
+                          <input
+                            type="text"
+                            value={editTituloHe}
+                            onChange={e => setEditTituloHe(e.target.value)}
+                            dir="rtl"
+                            lang="he"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-river-red"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Contenido (he)</label>
+                          <textarea
+                            value={editContenidoHe}
+                            onChange={e => setEditContenidoHe(e.target.value)}
+                            dir="rtl"
+                            lang="he"
+                            rows={14}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm leading-relaxed focus:outline-none focus:border-river-red"
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Tags (he)</label>
