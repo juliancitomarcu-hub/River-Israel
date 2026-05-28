@@ -21,7 +21,9 @@ const upload = multer({
 });
 
 router.post("/publicacion-libre", requireAdmin, upload.single("imagen"), async (req, res) => {
-  const { titulo, contenido } = req.body as { titulo?: string; contenido?: string };
+  const { titulo, contenido, categoria: categoriaRaw } = req.body as { titulo?: string; contenido?: string; categoria?: string };
+  const categoria = categoriaRaw === "seleccion" ? "seleccion" : "river";
+  const esSel = categoria === "seleccion";
 
   if (!titulo?.trim() || titulo.trim().length < 3) {
     res.status(400).json({ error: "El título es obligatorio (mínimo 3 caracteres)" });
@@ -56,12 +58,13 @@ router.post("/publicacion-libre", requireAdmin, upload.single("imagen"), async (
       .values({
         titulo: titulo.trim(),
         contenido: contenido.trim(),
-        tags: "#RiverEnIsrael #PublicacionLibre",
+        tags: esSel ? "#SeleccionArgentina #PublicacionLibre" : "#RiverEnIsrael #PublicacionLibre",
         textoOriginal: contenido.trim(),
-        fuente: "Publicación Libre",
+        fuente: esSel ? "Publicación Libre Selección" : "Publicación Libre",
         publicada: true,
         pendiente: false,
         imagenPortada,
+        categoria,
       });
 
     // Notificación a Telegram (sin botones, solo aviso)
@@ -70,7 +73,7 @@ router.post("/publicacion-libre", requireAdmin, upload.single("imagen"), async (
     if (token && chatId) {
       const preview = contenido.trim().slice(0, 600) + (contenido.trim().length > 600 ? "..." : "");
       const mensajeTg =
-        `✅ *PUBLICACIÓN LIBRE — PUBLICADA*\n\n` +
+        `✅ *PUBLICACIÓN LIBRE${esSel ? " 🇦🇷 SELECCIÓN" : ""} — PUBLICADA*\n\n` +
         `*${titulo.trim()}*\n\n` +
         `${preview}` +
         `${imagenPortada ? "\n\n📷 _Con imagen de portada_" : ""}`;

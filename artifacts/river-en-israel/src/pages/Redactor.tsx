@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
+type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "publicaciones-libres-seleccion" | "historia" | "postulantes" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
 
 interface Suscriptor {
   id: number;
@@ -1322,6 +1322,7 @@ export default function Redactor() {
       fd.append("titulo", plTitulo.trim());
       fd.append("contenido", plContenido.trim());
       if (plImagen) fd.append("imagen", plImagen);
+      fd.append("categoria", tab === "publicaciones-libres-seleccion" ? "seleccion" : "river");
       const res = await fetch("/api/publicacion-libre", { method: "POST", body: fd });
       const json = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok || !json.ok) {
@@ -1558,7 +1559,7 @@ export default function Redactor() {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     const tabsValidos: Tab[] = [
-      "redactor", "publicaciones", "publicaciones-seleccion", "publicaciones-libres", "historia",
+      "redactor", "publicaciones", "publicaciones-seleccion", "publicaciones-libres", "publicaciones-libres-seleccion", "historia",
       "postulantes", "galeria", "galeria-seleccion", "videos", "videos-seleccion", "analytics", "suscriptores",
       "publicaciones-hebreo",
     ];
@@ -1911,6 +1912,16 @@ export default function Redactor() {
               <Pencil className="w-4 h-4" /> Publicaciones Libres
             </button>
             <button
+              onClick={() => { setTab("publicaciones-libres-seleccion"); setPlEstado("idle"); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "publicaciones-libres-seleccion"
+                  ? "bg-sky-500 text-white shadow-sm"
+                  : "text-gray-500 hover:text-sky-500"
+              }`}
+            >
+              <Pencil className="w-4 h-4" /> Publicaciones Libres Selección 🇦🇷
+            </button>
+            <button
               onClick={() => { setTab("historia"); cargarHistoria(); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "historia"
@@ -2012,13 +2023,25 @@ export default function Redactor() {
           </div>
         </div>
 
-        {/* ── PUBLICACIONES LIBRES ──────────────────────────────────────── */}
-        {tab === "publicaciones-libres" && (
+        {/* ── PUBLICACIONES LIBRES (River + Selección) ─────────────────── */}
+        {(tab === "publicaciones-libres" || tab === "publicaciones-libres-seleccion") && (() => {
+          const esSel = tab === "publicaciones-libres-seleccion";
+          const accBg = esSel ? "bg-sky-500" : "bg-river-red";
+          const accHoverBg = esSel ? "hover:bg-sky-600" : "hover:bg-red-700";
+          const accText = esSel ? "text-sky-500" : "text-river-red";
+          const accHoverText = esSel ? "hover:text-sky-500" : "hover:text-river-red";
+          const accHoverBorder = esSel ? "hover:border-sky-500" : "hover:border-river-red";
+          const accRing = esSel ? "focus:ring-sky-500/30 focus:border-sky-500" : "focus:ring-river-red/30 focus:border-river-red";
+          return (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
               <div>
-                <h2 className="font-display text-xl font-bold text-river-black mb-1">Publicación Libre</h2>
-                <p className="text-sm text-gray-500">Escribí la nota, agregá una foto de portada y publicala directamente en la sección Noticias.</p>
+                <h2 className="font-display text-xl font-bold text-river-black mb-1">
+                  Publicación Libre {esSel && <span className="text-sky-500">🇦🇷 Selección</span>}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Escribí la nota, agregá una foto de portada y publicala directamente en la sección Noticias{esSel ? " de la Selección" : ""}.
+                </p>
               </div>
 
               {plEstado === "ok" ? (
@@ -2027,7 +2050,7 @@ export default function Redactor() {
                   <p className="font-semibold text-gray-800 text-center">¡Nota publicada! Ya aparece en la sección Noticias del sitio.</p>
                   <button
                     onClick={() => { setPlEstado("idle"); setPlTitulo(""); setPlContenido(""); setPlImagen(null); setPlImagenPreview(""); }}
-                    className="mt-2 px-5 py-2 rounded-xl bg-river-red text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+                    className={`mt-2 px-5 py-2 rounded-xl ${accBg} text-white text-sm font-semibold ${accHoverBg} transition-colors`}
                   >
                     Escribir otra nota
                   </button>
@@ -2036,26 +2059,26 @@ export default function Redactor() {
                 <>
                   {/* Título */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Título de la nota <span className="text-river-red">*</span></label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Título de la nota <span className={accText}>*</span></label>
                     <input
                       type="text"
                       value={plTitulo}
                       onChange={(e) => setPlTitulo(e.target.value)}
-                      placeholder="Ej: River aplastó a Boca en el Superclásico"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-river-red/30 focus:border-river-red transition-colors"
+                      placeholder={esSel ? "Ej: Argentina goleó a Brasil en el debut del Mundial" : "Ej: River aplastó a Boca en el Superclásico"}
+                      className={`w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${accRing} transition-colors`}
                       disabled={plEstado === "enviando"}
                     />
                   </div>
 
                   {/* Contenido */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contenido <span className="text-river-red">*</span></label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contenido <span className={accText}>*</span></label>
                     <Textarea
                       value={plContenido}
                       onChange={(e) => setPlContenido(e.target.value)}
                       placeholder="Escribí el cuerpo de la nota acá..."
                       rows={10}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-river-red/30 focus:border-river-red transition-colors resize-y"
+                      className={`w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${accRing} transition-colors resize-y`}
                       disabled={plEstado === "enviando"}
                     />
                     <p className="text-xs text-gray-400 mt-1 text-right">{plContenido.length} caracteres</p>
@@ -2079,7 +2102,7 @@ export default function Redactor() {
                       <button
                         onClick={() => plInputRef.current?.click()}
                         disabled={plEstado === "enviando"}
-                        className="w-full border-2 border-dashed border-gray-200 rounded-xl py-8 flex flex-col items-center gap-2 text-gray-400 hover:border-river-red hover:text-river-red transition-colors"
+                        className={`w-full border-2 border-dashed border-gray-200 rounded-xl py-8 flex flex-col items-center gap-2 text-gray-400 ${accHoverBorder} ${accHoverText} transition-colors`}
                       >
                         <Upload className="w-6 h-6" />
                         <span className="text-sm font-medium">Subir foto de portada</span>
@@ -2111,7 +2134,7 @@ export default function Redactor() {
                   <Button
                     onClick={enviarPublicacionLibre}
                     disabled={plEstado === "enviando" || !plTitulo.trim() || !plContenido.trim()}
-                    className="w-full bg-river-red hover:bg-red-700 text-white font-semibold rounded-xl py-2.5 flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                    className={`w-full ${accBg} ${accHoverBg} text-white font-semibold rounded-xl py-2.5 flex items-center justify-center gap-2 disabled:opacity-50 transition-colors`}
                   >
                     {plEstado === "enviando" ? (
                       <><RefreshCw className="w-4 h-4 animate-spin" /> Enviando...</>
@@ -2123,7 +2146,8 @@ export default function Redactor() {
               )}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ── MIS PUBLICACIONES ─────────────────────────────────────────── */}
         {tab === "publicaciones" && (
