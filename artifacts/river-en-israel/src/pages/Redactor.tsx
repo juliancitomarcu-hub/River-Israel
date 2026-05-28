@@ -921,6 +921,44 @@ export default function Redactor() {
     }
   };
 
+  const [renovandoSesion, setRenovandoSesion] = useState(false);
+  const [errorRenovar, setErrorRenovar] = useState("");
+  const renovarSesion = async () => {
+    if (!adminToken || renovandoSesion) return;
+    setRenovandoSesion(true);
+    setErrorRenovar("");
+    try {
+      const res = await fetch("/api/admin/renew", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": adminToken },
+        body: JSON.stringify({ token: adminToken }),
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          // Sesión ya muerta → al login normal.
+          limpiarSesion();
+          setAuthStatus("needed");
+          setLoginError("Tu sesión caducó. Volvé a ingresar la contraseña.");
+        } else {
+          setErrorRenovar("No se pudo renovar la sesión");
+        }
+        return;
+      }
+      const data = await res.json() as { expiresAt?: number | null };
+      const nuevoExp = typeof data.expiresAt === "number" ? data.expiresAt : null;
+      setSessionExpiresAt(nuevoExp);
+      try {
+        if (nuevoExp != null) sessionStorage.setItem("river_admin_token_expires", String(nuevoExp));
+        else sessionStorage.removeItem("river_admin_token_expires");
+      } catch { /* ignore */ }
+      setNow(Date.now());
+    } catch {
+      setErrorRenovar("Error de conexión");
+    } finally {
+      setRenovandoSesion(false);
+    }
+  };
+
   const handleLogout = () => {
     const t = adminToken;
     limpiarSesion();
@@ -1832,13 +1870,24 @@ export default function Redactor() {
             <div className="flex-1">
               <p className="font-semibold">Tu sesión está por caducar</p>
               <p className="text-xs text-amber-700 mt-0.5">
-                Quedan <strong>{formatRestante(msRestantes)}</strong>. Guardá lo que estés editando y volvé a entrar para extenderla.
+                Quedan <strong>{formatRestante(msRestantes)}</strong>. Apretá "Seguir conectado" para extenderla sin volver a escribir la contraseña.
               </p>
+              {errorRenovar && (
+                <p className="text-xs text-red-600 mt-1">{errorRenovar}</p>
+              )}
             </div>
             <button
               type="button"
+              onClick={renovarSesion}
+              disabled={renovandoSesion}
+              className="text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg disabled:opacity-60 shrink-0"
+            >
+              {renovandoSesion ? "Renovando..." : "Seguir conectado 8 h más"}
+            </button>
+            <button
+              type="button"
               onClick={handleLogout}
-              className="text-xs font-bold underline opacity-80 hover:opacity-100"
+              className="text-xs font-bold underline opacity-80 hover:opacity-100 shrink-0"
             >
               Salir
             </button>

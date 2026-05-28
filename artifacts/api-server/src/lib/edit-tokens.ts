@@ -123,3 +123,33 @@ export function getAdminSession(token: string): { expiresAt: number } | null {
 export function revokeAdminSession(token: string): void {
   adminSessions.delete(token);
 }
+
+// Renueva una sesión admin viva: empuja el expiresAt hasta ahora + TTL completo.
+// No emite un token nuevo (la UI ya lo tiene guardado). Si la sesión no existe
+// o ya caducó devuelve null y la UI tiene que mandar al login.
+export function extendAdminSession(token: string): { expiresAt: number } | null {
+  purgeExpiredSessions();
+  const entry = adminSessions.get(token);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    adminSessions.delete(token);
+    return null;
+  }
+  const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
+  entry.expiresAt = expiresAt;
+  return { expiresAt };
+}
+
+// Mismo concepto para sesiones scoped a una noticia (links de Telegram).
+export function extendNoticiaSession(token: string): { expiresAt: number } | null {
+  purgeExpiredSessions();
+  const entry = sessions.get(token);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    sessions.delete(token);
+    return null;
+  }
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  entry.expiresAt = expiresAt;
+  return { expiresAt };
+}

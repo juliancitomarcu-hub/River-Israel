@@ -3,6 +3,8 @@ import {
   consumeEditToken,
   createAdminSession,
   createNoticiaSession,
+  extendAdminSession,
+  extendNoticiaSession,
   getAdminSession,
   getNoticiaSession,
   revokeAdminSession,
@@ -74,6 +76,43 @@ router.post("/admin/logout", (req, res) => {
   const provided = header ?? (typeof body.token === "string" ? body.token : "");
   if (provided) revokeAdminSession(provided);
   res.json({ ok: true });
+});
+
+// Renueva la sesión actual sin pedir la contraseña: empuja el expiresAt
+// hasta ahora + TTL completo. Sirve para el botón "Seguir conectado" del
+// aviso amarillo en el Redactor, así el editor no pierde lo que está
+// escribiendo. Sólo funciona con sesiones efímeras (admin o noticia); el
+// ADMIN_TOKEN permanente no tiene caducidad y devuelve expiresAt=null.
+router.post("/admin/renew", (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const header = req.header("x-admin-token");
+  const body = (req.body ?? {}) as { token?: unknown };
+  const provided = header ?? (typeof body.token === "string" ? body.token : "");
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  if (provided === expected) {
+    // Token permanente: no hay nada que extender, pero respondemos ok para
+    // que la UI esconda el aviso sin romper.
+    res.json({ ok: true, scope: "admin", expiresAt: null });
+    return;
+  }
+  const renewedAdmin = extendAdminSession(provided);
+  if (renewedAdmin) {
+    res.json({ ok: true, scope: "admin", expiresAt: renewedAdmin.expiresAt });
+    return;
+  }
+  const renewedNoticia = extendNoticiaSession(provided);
+  if (renewedNoticia) {
+    res.json({ ok: true, scope: "noticia", expiresAt: renewedNoticia.expiresAt });
+    return;
+  }
+  res.status(401).json({ error: "Sesión inválida o caducada" });
 });
 
 // Canjea un edit_token de un solo uso (enviado por Telegram al admin) por una
