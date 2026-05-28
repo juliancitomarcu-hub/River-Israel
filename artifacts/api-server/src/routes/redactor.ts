@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { PROMPT_MAESTRO } from "../lib/prompt-maestro";
 import { PROMPT_MAESTRO_SELECCION } from "../lib/prompt-maestro-seleccion";
 import { requireAdmin } from "../middleware/requireAdmin";
-import { generarImagenIG, type CategoriaImagen } from "../lib/generar-imagen-ig";
+import { type CategoriaImagen } from "../lib/generar-imagen-ig";
 
 function elegirPrompt(categoria: CategoriaImagen): string {
   return categoria === "seleccion" ? PROMPT_MAESTRO_SELECCION : PROMPT_MAESTRO;
@@ -109,9 +109,6 @@ router.post("/enviar-telegram", async (req, res) => {
   try {
     const { titulo, contenido, tags } = parsearResultado(texto);
 
-    // Generar imagen 1:1 para Instagram con Gemini. Si falla, seguimos sin foto IG.
-    const imagenIG = await generarImagenIG(titulo, categoriaFinal);
-
     const [noticia] = await db
       .insert(noticiasTable)
       .values({
@@ -123,30 +120,25 @@ router.post("/enviar-telegram", async (req, res) => {
         publicada: false,
         pendiente: true,
         imagenPortada: imagenPortada ?? "",
-        imagenInstagram: imagenIG?.url ?? "",
         categoria: categoriaFinal,
       })
       .returning();
 
-    // Mandar la foto IG como PRIMER mensaje (multipart) — para que el editor
-    // la pueda descargar directo desde Telegram y subir al feed sin pasar por la web.
-    if (imagenIG) {
+    // Mandar primero la foto de portada (si hay) para previsualización en Telegram.
+    if (imagenPortada) {
       try {
-        const form = new FormData();
-        form.append("chat_id", chatId);
-        form.append("caption", `📸 *Foto 1:1 para Instagram*\n_${titulo}_`);
-        form.append("parse_mode", "Markdown");
-        form.append(
-          "photo",
-          new Blob([new Uint8Array(imagenIG.buffer)], { type: imagenIG.mimeType }),
-          `ig-${noticia.id}.${imagenIG.mimeType.includes("jpeg") ? "jpg" : "png"}`,
-        );
         await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
           method: "POST",
-          body: form,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: imagenPortada,
+            caption: `🖼 _Foto de portada — ${titulo}_`,
+            parse_mode: "Markdown",
+          }),
         });
       } catch (err) {
-        req.log.warn({ err }, "No se pudo mandar la foto IG por Telegram, sigo con el texto");
+        req.log.warn({ err }, "No se pudo mandar la foto de portada por Telegram, sigo con el texto");
       }
     }
 

@@ -1,5 +1,4 @@
 import { ai } from "@workspace/integrations-gemini-ai";
-import { generarImagenIG } from "./lib/generar-imagen-ig";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { and, desc, eq, sql as sqlRaw } from "drizzle-orm";
@@ -588,32 +587,6 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
             parse_mode: "Markdown",
           }),
         }).catch(() => { /* no bloquear si falla la foto */ });
-      }
-
-      // Foto 1:1 generada por Gemini para Instagram (siempre, además de la scrapeada)
-      const imagenIG = await generarImagenIG(titulo, categoria);
-      if (imagenIG) {
-        try {
-          const form = new FormData();
-          form.append("chat_id", chatId);
-          form.append("caption", `📸 *Foto 1:1 para Instagram*\n_${titulo}_`);
-          form.append("parse_mode", "Markdown");
-          form.append(
-            "photo",
-            new Blob([new Uint8Array(imagenIG.buffer)], { type: imagenIG.mimeType }),
-            `ig-${savedNoticia.id}.${imagenIG.mimeType.includes("jpeg") ? "jpg" : "png"}`,
-          );
-          await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-            method: "POST",
-            body: form,
-          });
-          await db
-            .update(noticiasTable)
-            .set({ imagenInstagram: imagenIG.url })
-            .where(eq(noticiasTable.id, savedNoticia.id));
-        } catch (err) {
-          logger.warn({ err }, "Scheduler: no se pudo mandar foto IG por Telegram");
-        }
       }
 
       // Artículo completo — sin truncar. El contenido redactado cabe dentro de 4096 chars.
