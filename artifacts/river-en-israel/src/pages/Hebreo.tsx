@@ -102,7 +102,7 @@ export default function Hebreo() {
 
   // Galería
   useEffect(() => {
-    fetch("/api/galeria", { cache: "no-store" })
+    fetch("/api/galeria?categoria=river", { cache: "no-store" })
       .then(r => r.json())
       .then((d: { fotos?: GaleriaFoto[] }) => setGaleria((d.fotos ?? []).slice(0, 8)))
       .catch(() => {});

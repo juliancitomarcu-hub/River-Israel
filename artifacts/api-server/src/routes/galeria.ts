@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import multer from "multer";
 import { db } from "@workspace/db";
 import { galeriaTable } from "@workspace/db";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { requireAdmin } from "../middleware/requireAdmin";
 
@@ -36,10 +36,20 @@ async function seedGaleriaIfEmpty() {
   }
 }
 
+function parseCategoria(raw: unknown): "river" | "seleccion" | null {
+  const v = typeof raw === "string" ? raw.toLowerCase() : "";
+  if (v === "seleccion") return "seleccion";
+  if (v === "river") return "river";
+  return null;
+}
+
 router.get("/galeria", async (req, res) => {
   try {
     await seedGaleriaIfEmpty();
-    const fotos = await db.select().from(galeriaTable).orderBy(asc(galeriaTable.orden));
+    const categoria = parseCategoria(req.query.categoria);
+    const fotos = categoria
+      ? await db.select().from(galeriaTable).where(eq(galeriaTable.categoria, categoria)).orderBy(asc(galeriaTable.orden))
+      : await db.select().from(galeriaTable).orderBy(asc(galeriaTable.orden));
     res.set("Cache-Control", "no-store, no-cache").json({ fotos });
   } catch (err) {
     req.log.error({ err }, "Error listando galería");
@@ -49,7 +59,9 @@ router.get("/galeria", async (req, res) => {
 
 router.post("/galeria", requireAdmin, upload.single("foto"), async (req, res) => {
   try {
-    const caption = (req.body as { caption?: string }).caption ?? "";
+    const body = req.body as { caption?: string; categoria?: string };
+    const caption = body.caption ?? "";
+    const categoria = parseCategoria(body.categoria) ?? "river";
     const file = req.file;
     if (!file) {
       res.status(400).json({ error: "Falta la foto" });
@@ -58,9 +70,16 @@ router.post("/galeria", requireAdmin, upload.single("foto"), async (req, res) =>
     const ext = file.originalname.split(".").pop()?.toLowerCase() ?? "jpg";
     const subPath = `galeria/${Date.now()}.${ext}`;
     const objectPath = await storageService.uploadBuffer(subPath, file.buffer, file.mimetype ?? "image/jpeg");
-    const existentes = await db.select({ orden: galeriaTable.orden }).from(galeriaTable).orderBy(asc(galeriaTable.orden));
+    const existentes = await db
+      .select({ orden: galeriaTable.orden })
+      .from(galeriaTable)
+      .where(eq(galeriaTable.categoria, categoria))
+      .orderBy(asc(galeriaTable.orden));
     const nextOrden = (existentes[existentes.length - 1]?.orden ?? 0) + 1;
-    const [foto] = await db.insert(galeriaTable).values({ url: objectPath, caption, orden: nextOrden }).returning();
+    const [foto] = await db
+      .insert(galeriaTable)
+      .values({ url: objectPath, caption, orden: nextOrden, categoria })
+      .returning();
     res.json({ ok: true, foto });
   } catch (err) {
     req.log.error({ err }, "Error subiendo foto");

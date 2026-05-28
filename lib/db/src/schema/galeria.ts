@@ -7,6 +7,7 @@ export const galeriaTable = pgTable("galeria", {
   url: text("url").notNull(),
   caption: text("caption").notNull().default(""),
   orden: integer("orden").notNull().default(0),
+  categoria: text("categoria").notNull().default("river"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

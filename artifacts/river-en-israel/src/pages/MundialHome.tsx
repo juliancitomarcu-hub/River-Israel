@@ -54,7 +54,7 @@ export default function MundialHome() {
   useEffect(() => {
     fetch("/api/videos", { cache: "no-store" }).then(r => r.json())
       .then((d: { videos?: VideoGaleria[] }) => setVideos(d.videos ?? [])).catch(() => {});
-    fetch("/api/galeria", { cache: "no-store" }).then(r => r.json())
+    fetch("/api/galeria?categoria=seleccion", { cache: "no-store" }).then(r => r.json())
       .then((d: { fotos?: GaleriaFoto[] }) => setGaleriaFotos(d.fotos ?? [])).catch(() => {});
   }, []);
 

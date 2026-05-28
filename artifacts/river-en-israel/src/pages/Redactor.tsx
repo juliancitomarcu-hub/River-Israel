@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "videos" | "analytics" | "suscriptores" | "publicaciones-hebreo";
+type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "galeria-seleccion" | "videos" | "analytics" | "suscriptores" | "publicaciones-hebreo";
 
 interface Suscriptor {
   id: number;
@@ -117,7 +117,15 @@ function resolverUrlGaleria(url: string) {
   return url;
 }
 
-function GaleriaTab() {
+function GaleriaTab({ categoria = "river" }: { categoria?: "river" | "seleccion" } = {}) {
+  const esSeleccion = categoria === "seleccion";
+  const accentBg = esSeleccion ? "bg-sky-500" : "bg-river-red";
+  const accentBgHover = esSeleccion ? "hover:bg-sky-500/90" : "hover:bg-river-red/90";
+  const accentText = esSeleccion ? "text-sky-500" : "text-river-red";
+  const accentBorder = esSeleccion ? "hover:border-sky-500" : "hover:border-river-red";
+  const accentFocus = esSeleccion ? "focus:border-sky-500" : "focus:border-river-red";
+  const accentHoverText = esSeleccion ? "hover:text-sky-500" : "hover:text-river-red";
+  const titulo = esSeleccion ? "Fotos de la Selección 🇦🇷" : "Galería de Fotos";
   const [fotos, setFotos] = useState<GaleriaFoto[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -136,7 +144,7 @@ function GaleriaTab() {
     setCargando(true);
     setError("");
     try {
-      const res = await fetch("/api/galeria", { cache: "no-store" });
+      const res = await fetch(`/api/galeria?categoria=${categoria}`, { cache: "no-store" });
       const data = await res.json() as { fotos?: GaleriaFoto[] };
       setFotos(data.fotos ?? []);
     } catch {
@@ -146,7 +154,7 @@ function GaleriaTab() {
     }
   };
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [categoria]);
 
   const guardarCaption = async (id: number) => {
     setGuardando(true);
@@ -184,6 +192,7 @@ function GaleriaTab() {
       const fd = new FormData();
       fd.append("foto", nuevoFile);
       fd.append("caption", nuevoCaption);
+      fd.append("categoria", categoria);
       const res = await fetch("/api/galeria", { method: "POST", body: fd });
       const data = await res.json() as { ok?: boolean; foto?: GaleriaFoto; error?: string };
       if (data.ok && data.foto) {
@@ -206,12 +215,12 @@ function GaleriaTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-river-black flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-river-red" /> Galería de Fotos
+            <ImageIcon className={`w-5 h-5 ${accentText}`} /> {titulo}
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">{fotos.length} fotos · Editá el pie de foto, eliminá o agregá nuevas</p>
         </div>
         <button onClick={cargar} disabled={cargando}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors">
+          className={`flex items-center gap-1.5 text-xs text-gray-400 ${accentHoverText} transition-colors`}>
           <RefreshCw className={`w-3.5 h-3.5 ${cargando ? "animate-spin" : ""}`} /> Actualizar
         </button>
       </div>
@@ -225,10 +234,10 @@ function GaleriaTab() {
       {/* Subir nueva foto */}
       <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
         <p className="font-semibold text-sm text-river-black mb-3 flex items-center gap-2">
-          <Upload className="w-4 h-4 text-river-red" /> Agregar nueva foto
+          <Upload className={`w-4 h-4 ${accentText}`} /> Agregar nueva foto
         </p>
         <div className="flex flex-col md:flex-row gap-4 items-start">
-          <label className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-river-red rounded-xl w-32 h-32 shrink-0 overflow-hidden transition-colors bg-white">
+          <label className={`cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 ${accentBorder} rounded-xl w-32 h-32 shrink-0 overflow-hidden transition-colors bg-white`}>
             {nuevoPreview ? (
               <img src={nuevoPreview} className="w-full h-full object-cover" alt="Preview" />
             ) : (
@@ -252,18 +261,18 @@ function GaleriaTab() {
               <input
                 value={nuevoCaption}
                 onChange={e => setNuevoCaption(e.target.value)}
-                placeholder="Ej: El Monumental en la noche mágica"
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-river-red bg-white"
+                placeholder={esSeleccion ? "Ej: Messi levantando la copa" : "Ej: El Monumental en la noche mágica"}
+                className={`w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none ${accentFocus} bg-white`}
               />
             </div>
             {errorSubida && <p className="text-red-500 text-xs">{errorSubida}</p>}
             <Button
               onClick={subir}
               disabled={!nuevoFile || subiendoFoto}
-              className="bg-river-red hover:bg-river-red/90 text-white text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+              className={`${accentBg} ${accentBgHover} text-white text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50`}
             >
               {subiendoFoto ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
-              {subiendoFoto ? "Subiendo..." : "Subir foto"}
+              {subiendoFoto ? "Subiendo..." : `Subir foto a ${esSeleccion ? "Selección" : "River"}`}
             </Button>
           </div>
         </div>
@@ -1963,7 +1972,17 @@ export default function Redactor() {
                   : "text-gray-500 hover:text-river-red"
               }`}
             >
-              <ImageIcon className="w-4 h-4" /> Fotos de Galería
+              <ImageIcon className="w-4 h-4" /> Fotos River
+            </button>
+            <button
+              onClick={() => setTab("galeria-seleccion")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "galeria-seleccion"
+                  ? "bg-sky-500 text-white shadow-sm"
+                  : "text-gray-500 hover:text-sky-500"
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" /> Fotos Selección 🇦🇷
             </button>
             <button
               onClick={() => setTab("videos")}
@@ -2221,6 +2240,9 @@ export default function Redactor() {
 
             <p className="text-xs text-gray-500 -mt-1">
               Notas generadas y publicadas por el bot sobre la Scaloneta. Llegan también por Telegram.
+            </p>
+            <p className="text-[11px] text-sky-700 bg-sky-50 border border-sky-200 rounded-lg px-3 py-2">
+              💡 Tocá <strong>Editar</strong> en cualquier nota para cambiar el texto o <strong>subir / reemplazar la foto de portada</strong>.
             </p>
 
             {errorPublicacionesSel && (
@@ -3943,7 +3965,8 @@ export default function Redactor() {
         )}
 
         {/* ── FOTOS DE GALERÍA ─────────────────────────────────────────── */}
-        {tab === "galeria" && <GaleriaTab />}
+        {tab === "galeria" && <GaleriaTab categoria="river" />}
+        {tab === "galeria-seleccion" && <GaleriaTab categoria="seleccion" />}
 
         {/* ── VIDEOS DE GALERÍA ────────────────────────────────────────── */}
         {tab === "videos" && <VideosTab />}
