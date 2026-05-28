@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
@@ -1039,6 +1039,53 @@ export default function Redactor() {
   const [editContenidoEs, setEditContenidoEs] = useState("");
   const [guardandoEdicionHe, setGuardandoEdicionHe] = useState(false);
   const [publicandoHebreoId, setPublicandoHebreoId] = useState<number | null>(null);
+  const [parrafoActivoIdx, setParrafoActivoIdx] = useState<number | null>(null);
+  const esParrafosScrollRef = useRef<HTMLDivElement | null>(null);
+  const heParrafosScrollRef = useRef<HTMLDivElement | null>(null);
+  const esParrafoRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const heParrafoRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Separador de párrafos: línea en blanco. Si no hay, una sola línea por párrafo.
+  const splitParrafos = (s: string): string[] => {
+    if (!s) return [""];
+    if (/\n\s*\n/.test(s)) return s.split(/\n\s*\n/);
+    if (s.includes("\n")) return s.split(/\n/);
+    return [s];
+  };
+  const joinParrafosHe = (arr: string[]): string => {
+    // Reconstruimos con separador de línea en blanco si el original ya tenía
+    // estructura multi-párrafo; de lo contrario, una línea por párrafo.
+    if (/\n\s*\n/.test(editContenidoHe) || arr.length > 1) return arr.join("\n\n");
+    return arr.join("\n");
+  };
+  const parrafosEs = useMemo(() => splitParrafos(editContenidoEs), [editContenidoEs]);
+  const parrafosHe = useMemo(() => splitParrafos(editContenidoHe), [editContenidoHe]);
+
+  const scrollParrafoEnContenedor = (container: HTMLElement | null, target: HTMLElement | null) => {
+    if (!container || !target) return;
+    const cRect = container.getBoundingClientRect();
+    const tRect = target.getBoundingClientRect();
+    const delta = tRect.top - cRect.top;
+    container.scrollTo({ top: container.scrollTop + delta - 12, behavior: "smooth" });
+  };
+
+  const activarParrafo = (idx: number, origen: "es" | "he") => {
+    setParrafoActivoIdx(idx);
+    // Hacer scroll del panel contrario hacia el párrafo equivalente (best effort por índice)
+    if (origen === "es") {
+      const otherIdx = Math.min(idx, parrafosHe.length - 1);
+      if (otherIdx >= 0) scrollParrafoEnContenedor(heParrafosScrollRef.current, heParrafoRefs.current[otherIdx]);
+    } else {
+      const otherIdx = Math.min(idx, parrafosEs.length - 1);
+      if (otherIdx >= 0) scrollParrafoEnContenedor(esParrafosScrollRef.current, esParrafoRefs.current[otherIdx]);
+    }
+  };
+
+  const actualizarParrafoHe = (idx: number, valor: string) => {
+    const nuevos = [...parrafosHe];
+    nuevos[idx] = valor;
+    setEditContenidoHe(joinParrafosHe(nuevos));
+  };
 
   const abrirEdicionHebreo = (n: NoticiaHebreo) => {
     setEditandoHebreoId(n.id);
@@ -1056,6 +1103,7 @@ export default function Redactor() {
     setEditTagsHe("");
     setEditTituloEs("");
     setEditContenidoEs("");
+    setParrafoActivoIdx(null);
   };
 
   const copiarEsAHe = () => {
@@ -3783,14 +3831,29 @@ export default function Redactor() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">Contenido (es)</label>
-                          <textarea
-                            value={editContenidoEs}
-                            readOnly
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">
+                            Contenido (es) <span className="font-normal text-gray-400">— click en un párrafo para alinear con el hebreo</span>
+                          </label>
+                          <div
+                            ref={esParrafosScrollRef}
                             lang="es"
-                            rows={14}
-                            className="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm leading-relaxed text-gray-700 focus:outline-none"
-                          />
+                            className="w-full px-2 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm leading-relaxed text-gray-700 max-h-[420px] overflow-y-auto space-y-1"
+                          >
+                            {parrafosEs.map((p, idx) => (
+                              <div
+                                key={idx}
+                                ref={el => { esParrafoRefs.current[idx] = el; }}
+                                onClick={() => activarParrafo(idx, "es")}
+                                className={`px-2 py-1.5 rounded cursor-pointer whitespace-pre-wrap transition-colors ${
+                                  parrafoActivoIdx === idx
+                                    ? "bg-yellow-100 ring-1 ring-yellow-300"
+                                    : "hover:bg-gray-100"
+                                }`}
+                              >
+                                {p || <span className="text-gray-300 italic">(párrafo vacío)</span>}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                       {/* Columna hebreo (editable) */}
@@ -3810,15 +3873,36 @@ export default function Redactor() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">Contenido (he)</label>
-                          <textarea
-                            value={editContenidoHe}
-                            onChange={e => setEditContenidoHe(e.target.value)}
-                            dir="rtl"
-                            lang="he"
-                            rows={14}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm leading-relaxed focus:outline-none focus:border-river-red"
-                          />
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">
+                            Contenido (he) <span className="font-normal text-gray-400">— click en un párrafo para alinear con el español</span>
+                          </label>
+                          <div
+                            ref={heParrafosScrollRef}
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm leading-relaxed max-h-[420px] overflow-y-auto space-y-1"
+                          >
+                            {parrafosHe.map((p, idx) => (
+                              <div
+                                key={idx}
+                                ref={el => { heParrafoRefs.current[idx] = el; }}
+                                onClick={() => activarParrafo(idx, "he")}
+                                className={`rounded transition-colors ${
+                                  parrafoActivoIdx === idx
+                                    ? "bg-yellow-100 ring-1 ring-yellow-300"
+                                    : ""
+                                }`}
+                              >
+                                <textarea
+                                  value={p}
+                                  onChange={e => actualizarParrafoHe(idx, e.target.value)}
+                                  onFocus={() => activarParrafo(idx, "he")}
+                                  dir="rtl"
+                                  lang="he"
+                                  rows={Math.max(2, Math.min(12, (p.match(/\n/g)?.length ?? 0) + Math.ceil((p.length || 1) / 60)))}
+                                  className="w-full px-2 py-1.5 bg-transparent rounded text-sm leading-relaxed focus:outline-none resize-y"
+                                />
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
