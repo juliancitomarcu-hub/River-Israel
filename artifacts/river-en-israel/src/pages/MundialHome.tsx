@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MapPin, Trophy, Calendar, ChevronRight } from "lucide-react";
 import { CountdownArgentina } from "@/components/CountdownArgentina";
 import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ } from "@/lib/mundial-data";
+import { setMundialOverride } from "@/lib/mundial-mode";
 
 const PAISES_COLORS: Record<string, string> = {
   USA: "from-blue-600 to-red-500",
@@ -196,11 +197,27 @@ export default function MundialHome() {
         </div>
       </section>
 
-      {/* Footer leve recordando River */}
-      <div className="text-center py-6 bg-[#0a1628] border-t border-white/5">
-        <p className="text-white/40 text-xs">
-          🔴⚪ <span className="font-semibold">River en Israel</span> · Modo Mundial activo · Volvemos al rojo y blanco después de la final
-        </p>
+      {/* Footer — recordatorio + acceso al sitio de River */}
+      <div className="bg-[#0a1628] border-t border-white/5 py-10">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <p className="text-white/50 text-sm mb-4">
+            ¿Buscás contenido de <span className="font-semibold text-white/80">Club Atlético River Plate</span>?
+            Durante el Mundial mantenemos toda la historia y noticias millonarias intactas.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setMundialOverride("off");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red/90 text-white font-bold px-6 py-3 rounded-full uppercase tracking-wide text-sm transition-all shadow-lg hover:-translate-y-0.5"
+          >
+            🔴⚪ Visitar River en Israel <ChevronRight className="w-4 h-4" />
+          </button>
+          <p className="text-white/30 text-[11px] mt-4">
+            Modo Mundial vuelve solo después · Reverte al rojo y blanco automáticamente el 21/07
+          </p>
+        </div>
       </div>
     </div>
   );

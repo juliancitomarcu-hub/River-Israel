@@ -816,6 +816,7 @@ export default function Redactor() {
   const [buscando, setBuscando] = useState(false);
   const [errorBusqueda, setErrorBusqueda] = useState("");
   const [fuente, setFuente] = useState<FuenteNoticias>("tyc");
+  const [categoria, setCategoria] = useState<"river" | "seleccion">("river");
   const resultadoRef = useRef<HTMLDivElement>(null);
   const [editando, setEditando] = useState(false);
   const [resultadoEditado, setResultadoEditado] = useState("");
@@ -1473,6 +1474,7 @@ export default function Redactor() {
           textoOriginal,
           fuente: noticiaSeleccionada?.fuente ?? fuente,
           imagenPortada,
+          categoria,
         }),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
@@ -2208,6 +2210,40 @@ export default function Redactor() {
             <Search className="w-5 h-5 text-river-red" />
             Paso 1 — Buscar última noticia
           </h2>
+
+          {/* Selector de categoría — define el prompt de IA y la imagen IG generada */}
+          <div className="mb-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">🏷️ Categoría de la nota</p>
+            <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setCategoria("river")}
+                className={`px-4 py-2 text-sm font-semibold transition-colors ${
+                  categoria === "river"
+                    ? "bg-river-red text-white"
+                    : "bg-white text-gray-500 hover:text-river-red"
+                }`}
+              >
+                🔴⚪ River
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoria("seleccion")}
+                className={`px-4 py-2 text-sm font-semibold transition-colors border-l border-gray-200 ${
+                  categoria === "seleccion"
+                    ? "bg-[#74ACDF] text-white"
+                    : "bg-white text-gray-500 hover:text-[#74ACDF]"
+                }`}
+              >
+                🇦🇷 Selección
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              {categoria === "seleccion"
+                ? "La imagen 1:1 para IG saldrá con paleta celeste/dorado, sin marcas FIFA."
+                : "La imagen 1:1 para IG saldrá con paleta River."}
+            </p>
+          </div>
 
           <div className="mb-4">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><Globe className="w-3 h-3" /> Elegí el medio</p>
