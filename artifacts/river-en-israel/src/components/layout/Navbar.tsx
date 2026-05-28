@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, MapPin } from "lucide-react";
+import { Menu, X, MapPin, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMundialMode } from "@/lib/mundial-mode";
@@ -9,28 +9,30 @@ import { SolDeMayo } from "@/components/SolDeMayo";
 type NavLink = { name: string; href: string };
 
 const NAV_LINKS_RIVER: NavLink[] = [
-  { name: "Inicio",           href: "/" },
+  { name: "Inicio",           href: "/river" },
   { name: "Página en hebreo", href: "/hebreo" },
   { name: "Historia",         href: "/historia" },
   { name: "Plantel",          href: "/equipo" },
-  { name: "Nuestra Filial",   href: "#filial" },
-  { name: "Galería",          href: "#galeria" },
-  { name: "Videos",           href: "#videos" },
-  { name: "Próximos Eventos", href: "#eventos" },
+  { name: "Nuestra Filial",   href: "/river#filial" },
+  { name: "Galería",          href: "/river#galeria" },
+  { name: "Videos",           href: "/river#videos" },
+  { name: "Próximos Eventos", href: "/river#eventos" },
 ];
 
 const NAV_LINKS_SCALONETA: NavLink[] = [
-  { name: "Inicio",           href: "/scaloneta" },
-  { name: "Grupos",           href: "/scaloneta#grupos" },
-  { name: "Plantel",          href: "/scaloneta#plantel" },
-  { name: "Estadios",         href: "/scaloneta#estadios" },
-  { name: "Galería y Videos", href: "/scaloneta#galeria-videos" },
+  { name: "Inicio",           href: "/" },
+  { name: "Grupos",           href: "/#grupos" },
+  { name: "Plantel",          href: "/#plantel" },
+  { name: "Estadios",         href: "/#estadios" },
+  { name: "Galería y Videos", href: "/#galeria-videos" },
   { name: "Fixture Mundial",  href: "/mundial/fixture" },
 ];
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [siteMenuOpen, setSiteMenuOpen] = useState(false);
+  const siteMenuRef = useRef<HTMLDivElement>(null);
   const [location] = useLocation();
   const mundialActivo = useMundialMode();
   const navLinks = mundialActivo ? NAV_LINKS_SCALONETA : NAV_LINKS_RIVER;
@@ -40,6 +42,22 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!siteMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (siteMenuRef.current && !siteMenuRef.current.contains(e.target as Node)) {
+        setSiteMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSiteMenuOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [siteMenuOpen]);
 
   // Scroll to anchor if href has hash (and we're already on the right page)
   const handleNavClick = (href: string) => {
@@ -62,7 +80,7 @@ export function Navbar() {
     }
   };
 
-  const logoHref = mundialActivo ? "/scaloneta" : "/";
+  const logoHref = mundialActivo ? "/" : "/river";
 
   return (
     <nav
@@ -114,19 +132,58 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Cross-link: River ↔ Scaloneta (siempre visible, escala según pantalla) */}
-          <Link
-            href={mundialActivo ? "/" : "/scaloneta"}
-            title={mundialActivo ? "Ir a River en Israel" : "Ir a La Scaloneta en Israel"}
-            className={cn(
-              "hidden sm:inline-flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md transition-all hover:-translate-y-0.5 whitespace-nowrap shrink-0",
-              mundialActivo
-                ? "bg-gradient-to-r from-river-red to-[#a00000] text-white hover:brightness-110"
-                : "bg-gradient-to-r from-[#74ACDF] to-[#F1B82D] text-[#0a1628] hover:brightness-110"
-            )}
-          >
-            {mundialActivo ? "⚪️🔴 River en Israel" : "🇦🇷 La Scaloneta"}
-          </Link>
+          {/* Dropdown desplegable: alternar entre sitios */}
+          <div ref={siteMenuRef} className="hidden sm:block relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setSiteMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={siteMenuOpen}
+              title="Cambiar de sitio"
+              className={cn(
+                "inline-flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md transition-all hover:-translate-y-0.5 whitespace-nowrap",
+                mundialActivo
+                  ? "bg-gradient-to-r from-[#74ACDF] to-[#F1B82D] text-[#0a1628] hover:brightness-110"
+                  : "bg-gradient-to-r from-river-red to-[#a00000] text-white hover:brightness-110"
+              )}
+            >
+              {mundialActivo ? "🇦🇷 La Scaloneta" : "⚪️🔴 River en Israel"}
+              <ChevronDown className={cn("w-3 h-3 transition-transform", siteMenuOpen && "rotate-180")} />
+            </button>
+            <AnimatePresence>
+              {siteMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  role="menu"
+                  className="absolute right-0 mt-2 min-w-[220px] rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-[#0a1628]/95 backdrop-blur-md z-50"
+                >
+                  <Link
+                    href="/"
+                    onClick={() => setSiteMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-colors",
+                      mundialActivo ? "text-arg-dorado" : "text-white"
+                    )}
+                  >
+                    🇦🇷 La Scaloneta en Israel
+                  </Link>
+                  <Link
+                    href="/river"
+                    onClick={() => setSiteMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-colors border-t border-white/10",
+                      !mundialActivo ? "text-river-red" : "text-white"
+                    )}
+                  >
+                    ⚪️🔴 River en Israel
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-2 lg:gap-4">
@@ -208,18 +265,20 @@ export function Navbar() {
             )}
           >
             <div className="flex flex-col px-4 pt-2 pb-6 space-y-2">
-              {/* Cross-link prominente arriba en mobile */}
+              {/* Cross-links prominentes arriba en mobile: ambos sitios */}
               <Link
-                href={mundialActivo ? "/" : "/scaloneta"}
+                href="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center",
-                  mundialActivo
-                    ? "bg-gradient-to-r from-river-red to-[#a00000] text-white"
-                    : "bg-gradient-to-r from-[#74ACDF] to-[#F1B82D] text-[#0a1628]"
-                )}
+                className="px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center bg-gradient-to-r from-[#74ACDF] to-[#F1B82D] text-[#0a1628]"
               >
-                {mundialActivo ? "⚪️🔴 Ir a River en Israel" : "🇦🇷 Ir a La Scaloneta"}
+                🇦🇷 La Scaloneta en Israel
+              </Link>
+              <Link
+                href="/river"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center bg-gradient-to-r from-river-red to-[#a00000] text-white"
+              >
+                ⚪️🔴 River en Israel
               </Link>
 
               {navLinks.map((link) =>

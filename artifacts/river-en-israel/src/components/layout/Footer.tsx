@@ -122,7 +122,7 @@ export function Footer() {
                 : <>La filial oficial del Club Atlético River Plate en Medio Oriente. Viviendo la pasión por La Banda del Millonario desde la Tierra Santa. 🇦🇷 ❤️ 🇮🇱</>}
             </p>
             <Link
-              href={mundialActivo ? "/" : "/scaloneta"}
+              href={mundialActivo ? "/river" : "/"}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
                 mundialActivo
                   ? "bg-river-red hover:bg-river-red/90 text-white"

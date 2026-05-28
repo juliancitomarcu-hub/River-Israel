@@ -31,8 +31,9 @@ function Router() {
       <Navbar />
       <main className="flex-grow">
         <Switch>
-          <Route path="/" component={Home} />
+          <Route path="/" component={MundialHome} />
           <Route path="/scaloneta" component={MundialHome} />
+          <Route path="/river" component={Home} />
           <Route path="/redactor" component={Redactor} />
           <Route path="/noticia/:id" component={Noticia} />
           <Route path="/fixture" component={Fixture} />

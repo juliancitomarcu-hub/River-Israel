@@ -2,20 +2,22 @@ import { useLocation } from "wouter";
 import { useEffect } from "react";
 
 /**
- * Modo Mundial = el usuario está navegando dentro de /scaloneta.
- * Antes era automático por fecha; ahora son dos sitios paralelos:
- *   /           → River en Israel
- *   /scaloneta  → La Scaloneta en Israel
+ * Modo Mundial = el usuario está en La Scaloneta (home por defecto).
+ * Dos sitios paralelos:
+ *   /         → La Scaloneta en Israel (default)
+ *   /river    → River en Israel
+ *   /scaloneta (legacy) → mismo home que /
  *
- * Cada uno con su navbar/home/footer; el usuario alterna con los
- * botones de "Cruzar al otro sitio" que están en navbar y footer.
+ * El usuario alterna entre sitios desde el menú desplegable arriba a la derecha.
  */
 
-const SCALONETA_PREFIX = "/scaloneta";
+const RIVER_PREFIX = "/river";
 
 export function useMundialMode(): boolean {
   const [location] = useLocation();
-  const active = location === SCALONETA_PREFIX || location.startsWith(`${SCALONETA_PREFIX}/`);
+  // Activo en todas las rutas excepto las que viven bajo /river.
+  const enRiver = location === RIVER_PREFIX || location.startsWith(`${RIVER_PREFIX}/`);
+  const active = !enRiver;
 
   useEffect(() => {
     const root = document.documentElement;
