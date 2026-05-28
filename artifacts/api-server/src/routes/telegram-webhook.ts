@@ -440,7 +440,7 @@ async function procesarCallback(
 
       // Instrucciones para el usuario — token de un solo uso para entrar directo al redactor
       const dominioEdit = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
-      const editToken = createEditToken(noticiaId);
+      const editToken = await createEditToken(noticiaId);
       const editUrl = `\n\n🌐 O editá con foto en: https://${dominioEdit}/redactor?editar=${noticiaId}&edit_token=${editToken}`;
 
       await enviarMensajeTelegram(

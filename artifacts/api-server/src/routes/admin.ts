@@ -79,7 +79,7 @@ router.post("/admin/logout", (req, res) => {
 // Canjea un edit_token de un solo uso (enviado por Telegram al admin) por una
 // sesión admin EFÍMERA. No devolvemos nunca el ADMIN_TOKEN permanente: si el
 // link se filtra, lo peor que pueden obtener es una sesión corta y revocable.
-router.post("/admin/exchange-edit-token", (req, res) => {
+router.post("/admin/exchange-edit-token", async (req, res) => {
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) {
     req.log.error("ADMIN_TOKEN no está configurado — rechazando exchange");
@@ -92,7 +92,7 @@ router.post("/admin/exchange-edit-token", (req, res) => {
     res.status(400).json({ error: "Falta token" });
     return;
   }
-  const consumed = consumeEditToken(token);
+  const consumed = await consumeEditToken(token);
   if (!consumed) {
     res.status(401).json({ error: "Token inválido o expirado" });
     return;

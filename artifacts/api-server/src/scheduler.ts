@@ -10,7 +10,7 @@ import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
-import { createEditToken } from "./lib/edit-tokens";
+import { createEditToken, purgeExpiredEditTokens } from "./lib/edit-tokens";
 
 export type Categoria = "river" | "seleccion";
 
@@ -568,7 +568,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
           parse_mode: "Markdown",
           reply_markup: {
             inline_keyboard: [[
-              { text: "✏️ Editar en Redactor", url: `https://${dominioTelegram}/redactor?editar=${savedNoticia.id}&edit_token=${createEditToken(savedNoticia.id)}` },
+              { text: "✏️ Editar en Redactor", url: `https://${dominioTelegram}/redactor?editar=${savedNoticia.id}&edit_token=${await createEditToken(savedNoticia.id)}` },
             ]],
           },
         }),
@@ -744,7 +744,7 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
   // Token de un solo uso para que el admin entre directo al redactor sin tipear
   // la contraseña. Como el resumen abarca varias notas, el token no está scoped
   // a ninguna en particular: al canjearse genera una sesión admin corta.
-  const editToken = createEditToken(null);
+  const editToken = await createEditToken(null);
   const link = `https://${dominio}/redactor?tab=publicaciones-hebreo&edit_token=${editToken}`;
 
   const escape = (s: string) => s.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
@@ -814,6 +814,17 @@ export function iniciarScheduler(): void {
   logger.info({ primerCicloMinutos: 2, intervaloHoras: 2 }, "Scheduler automático iniciado — primer ciclo en 2 min, luego cada 2 horas");
 
   iniciarResumenHebreoDiario();
+
+  // Limpieza de edit_tokens expirados/usados — corre cada hora.
+  const UNA_HORA_MS = 60 * 60 * 1000;
+  purgeExpiredEditTokens().catch((err) =>
+    logger.error({ err }, "purgeExpiredEditTokens: error inicial"),
+  );
+  setInterval(() => {
+    purgeExpiredEditTokens().catch((err) =>
+      logger.error({ err }, "purgeExpiredEditTokens: error periódico"),
+    );
+  }, UNA_HORA_MS);
 
   setTimeout(() => {
     ejecutarCiclo(undefined, false).catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));

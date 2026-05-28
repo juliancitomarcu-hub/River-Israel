@@ -1,4 +1,7 @@
 import { randomBytes } from "node:crypto";
+import { db, editTokensTable } from "@workspace/db";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { logger } from "./logger";
 
 const EDIT_TOKEN_TTL_MS = 30 * 60 * 1000;
 const SESSION_TTL_MS = 30 * 60 * 1000;
@@ -6,14 +9,6 @@ const SESSION_TTL_MS = 30 * 60 * 1000;
 // por noticia, pero finita: si dejás el panel abierto en una compu prestada,
 // caduca sola.
 export const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
-
-interface EditTokenEntry {
-  // null = token "admin grade" (links del bot que no apuntan a una nota
-  // específica, ej: resumen diario de traducciones). Al canjearse crea una
-  // sesión admin corta en vez de una sesión scoped a una noticia.
-  noticiaId: number | null;
-  expiresAt: number;
-}
 
 interface SessionEntry {
   noticiaId: number;
@@ -24,35 +19,69 @@ interface AdminSessionEntry {
   expiresAt: number;
 }
 
-const editTokens = new Map<string, EditTokenEntry>();
+// Sessions siguen en memoria (otra tarea: pasarlas a cookies seguras).
 const sessions = new Map<string, SessionEntry>();
 const adminSessions = new Map<string, AdminSessionEntry>();
 
-function purgeExpired(): void {
+function purgeExpiredSessions(): void {
   const now = Date.now();
-  for (const [k, v] of editTokens) if (v.expiresAt <= now) editTokens.delete(k);
   for (const [k, v] of sessions) if (v.expiresAt <= now) sessions.delete(k);
   for (const [k, v] of adminSessions) if (v.expiresAt <= now) adminSessions.delete(k);
 }
 
-export function createEditToken(noticiaId: number | null): string {
-  purgeExpired();
+// Limpia tokens expirados o ya usados hace más de un día. Se llama desde el
+// scheduler cada cierto tiempo para que la tabla no crezca indefinidamente.
+export async function purgeExpiredEditTokens(): Promise<void> {
+  const now = new Date();
+  const unDiaAtras = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  try {
+    await db
+      .delete(editTokensTable)
+      .where(
+        or(
+          lt(editTokensTable.expiresAt, now),
+          and(
+            sql`${editTokensTable.usedAt} is not null`,
+            lt(editTokensTable.usedAt, unDiaAtras),
+          ),
+        ),
+      );
+  } catch (err) {
+    logger.error({ err }, "purgeExpiredEditTokens falló");
+  }
+}
+
+export async function createEditToken(noticiaId: number | null): Promise<string> {
   const token = randomBytes(24).toString("base64url");
-  editTokens.set(token, { noticiaId, expiresAt: Date.now() + EDIT_TOKEN_TTL_MS });
+  const expiresAt = new Date(Date.now() + EDIT_TOKEN_TTL_MS);
+  await db.insert(editTokensTable).values({ token, noticiaId, expiresAt });
   return token;
 }
 
-export function consumeEditToken(token: string): { noticiaId: number | null } | null {
-  purgeExpired();
-  const entry = editTokens.get(token);
-  if (!entry) return null;
-  editTokens.delete(token);
-  if (entry.expiresAt <= Date.now()) return null;
-  return { noticiaId: entry.noticiaId };
+export async function consumeEditToken(
+  token: string,
+): Promise<{ noticiaId: number | null } | null> {
+  // Marca usedAt atómicamente sólo si todavía no fue usado y no está expirado.
+  // Devuelve la fila para saber a qué noticia apuntaba.
+  const now = new Date();
+  const rows = await db
+    .update(editTokensTable)
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(editTokensTable.token, token),
+        isNull(editTokensTable.usedAt),
+        sql`${editTokensTable.expiresAt} > ${now}`,
+      ),
+    )
+    .returning({ noticiaId: editTokensTable.noticiaId });
+  const row = rows[0];
+  if (!row) return null;
+  return { noticiaId: row.noticiaId };
 }
 
 export function createNoticiaSession(noticiaId: number): { token: string; expiresAt: number } {
-  purgeExpired();
+  purgeExpiredSessions();
   const token = randomBytes(32).toString("base64url");
   const expiresAt = Date.now() + SESSION_TTL_MS;
   sessions.set(token, { noticiaId, expiresAt });
@@ -60,7 +89,7 @@ export function createNoticiaSession(noticiaId: number): { token: string; expire
 }
 
 export function getNoticiaSession(token: string): { noticiaId: number } | null {
-  purgeExpired();
+  purgeExpiredSessions();
   const entry = sessions.get(token);
   if (!entry) return null;
   if (entry.expiresAt <= Date.now()) {
@@ -73,7 +102,7 @@ export function getNoticiaSession(token: string): { noticiaId: number } | null {
 // Sesión completa de admin (creada vía /admin/login con la contraseña).
 // Tiene mismos permisos que el ADMIN_TOKEN permanente pero caduca sola.
 export function createAdminSession(): { token: string; expiresAt: number } {
-  purgeExpired();
+  purgeExpiredSessions();
   const token = randomBytes(32).toString("base64url");
   const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
   adminSessions.set(token, { expiresAt });
@@ -81,7 +110,7 @@ export function createAdminSession(): { token: string; expiresAt: number } {
 }
 
 export function getAdminSession(token: string): { expiresAt: number } | null {
-  purgeExpired();
+  purgeExpiredSessions();
   const entry = adminSessions.get(token);
   if (!entry) return null;
   if (entry.expiresAt <= Date.now()) {

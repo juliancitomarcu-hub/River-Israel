@@ -144,7 +144,7 @@ async function avisarTraduccionBorrador(input: {
   // todas las traducciones pendientes), así que el token no se ata a esta
   // nota: al canjearse crea una sesión admin corta y el admin puede revisar
   // y publicar cualquiera de las traducciones que tenga en borrador.
-  const editToken = createEditToken(null);
+  const editToken = await createEditToken(null);
   const link = `https://${dominio}/redactor?tab=publicaciones-hebreo&edit_token=${editToken}`;
 
   const escape = (s: string) =>

@@ -22,3 +22,4 @@ export * from "./galeria";
 export * from "./videos";
 export * from "./visitas";
 export * from "./suscriptores";
+export * from "./edit-tokens";
