@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { MapPin, Trophy, Calendar, ChevronRight } from "lucide-react";
+import { MapaEstadios } from "@/components/MapaEstadios";
 import { CountdownArgentina } from "@/components/CountdownArgentina";
 import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ } from "@/lib/mundial-data";
 import { setMundialOverride } from "@/lib/mundial-mode";
@@ -172,9 +173,28 @@ export default function MundialHome() {
             ))}
           </div>
 
-          <p className="text-center text-white/40 text-xs mt-6">
-            Próximamente: mapa interactivo con fotos y detalles de cada estadio.
-          </p>
+          {/* Mapa interactivo */}
+          <div className="mt-10">
+            <h3 className="text-center text-arg-dorado font-display font-bold text-lg uppercase tracking-widest mb-4">
+              Las 16 sedes en el mapa
+            </h3>
+            <MapaEstadios />
+            <p className="text-center text-white/40 text-xs mt-3">
+              Hacé click en cada marcador para ver capacidad, año de inauguración y detalles.
+            </p>
+          </div>
+
+          {/* CTA al fixture completo */}
+          <div className="mt-10 text-center">
+            <Link
+              href="/mundial/fixture"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-arg-celeste to-arg-dorado text-[#0a1628] font-bold px-6 py-3 rounded-full uppercase tracking-wide text-sm shadow-lg hover:-translate-y-0.5 transition-transform"
+            >
+              <Calendar className="w-4 h-4" />
+              Ver fixture completo Grupo A
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </section>
 

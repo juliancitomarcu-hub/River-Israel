@@ -1375,7 +1375,7 @@ export default function Redactor() {
       const response = await fetch("/api/procesar-noticia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto: textoOriginal }),
+        body: JSON.stringify({ texto: textoOriginal, categoria }),
       });
 
       if (!response.ok || !response.body) throw new Error("Error en la respuesta del servidor");

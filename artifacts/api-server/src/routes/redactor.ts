@@ -4,8 +4,13 @@ import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { PROMPT_MAESTRO } from "../lib/prompt-maestro";
+import { PROMPT_MAESTRO_SELECCION } from "../lib/prompt-maestro-seleccion";
 import { requireAdmin } from "../middleware/requireAdmin";
 import { generarImagenIG, type CategoriaImagen } from "../lib/generar-imagen-ig";
+
+function elegirPrompt(categoria: CategoriaImagen): string {
+  return categoria === "seleccion" ? PROMPT_MAESTRO_SELECCION : PROMPT_MAESTRO;
+}
 
 const router: IRouter = Router();
 
@@ -37,7 +42,8 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
 }
 
 router.post("/procesar-noticia", async (req, res) => {
-  const { texto } = req.body as { texto?: string };
+  const { texto, categoria } = req.body as { texto?: string; categoria?: CategoriaImagen };
+  const categoriaFinal: CategoriaImagen = categoria === "seleccion" ? "seleccion" : "river";
 
   if (!texto || texto.trim().length < 10) {
     res.status(400).json({ error: "Falta el texto de la noticia" });
@@ -49,11 +55,14 @@ router.post("/procesar-noticia", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
 
   try {
+    const intro = categoriaFinal === "seleccion"
+      ? "Transformá esta noticia para el sitio La Scaloneta en Israel (Selección Argentina, Mundial 2026):"
+      : "Transformá esta noticia para el sitio River en Israel:";
     const stream = await ai.models.generateContentStream({
       model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: `Transformá esta noticia para el sitio River en Israel:\n\n${texto}` }] }],
+      contents: [{ role: "user", parts: [{ text: `${intro}\n\n${texto}` }] }],
       config: {
-        systemInstruction: PROMPT_MAESTRO,
+        systemInstruction: elegirPrompt(categoriaFinal),
         maxOutputTokens: 8192,
       },
     });

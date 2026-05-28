@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import Redactor from "@/pages/Redactor";
 import Noticia from "@/pages/Noticia";
 import Fixture from "@/pages/Fixture";
+import MundialFixture from "@/pages/MundialFixture";
 import Equipo from "@/pages/Equipo";
 import Historia from "@/pages/Historia";
 import Postulacion from "@/pages/Postulacion";
@@ -33,6 +34,7 @@ function Router() {
           <Route path="/redactor" component={Redactor} />
           <Route path="/noticia/:id" component={Noticia} />
           <Route path="/fixture" component={Fixture} />
+          <Route path="/mundial/fixture" component={MundialFixture} />
           <Route path="/equipo" component={Equipo} />
           <Route path="/historia" component={Historia} />
           <Route path="/postula" component={Postulacion} />

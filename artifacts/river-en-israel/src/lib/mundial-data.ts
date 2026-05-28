@@ -44,6 +44,8 @@ export type PartidoMundial = {
   id: string;
   fase: "Fase de Grupos" | "32avos" | "Octavos" | "Cuartos" | "Semifinal" | "Tercer Puesto" | "Final";
   grupo?: string;
+  /** Número de jornada dentro de la fase de grupos (1, 2 o 3). */
+  jornada?: 1 | 2 | 3;
   fecha: string; // ISO
   /** Timestamp UTC */
   kickoffUTC: string;
@@ -165,6 +167,7 @@ export const FIXTURE_ARGENTINA: PartidoMundial[] = [
     id: "arg-mex",
     fase: "Fase de Grupos",
     grupo: "A",
+    jornada: 1,
     fecha: "2026-06-11",
     kickoffUTC: "2026-06-12T01:00:00Z", // 11/6 20:00 hora México / 12/6 04:00 Israel
     local: EQ.MEX,
@@ -175,6 +178,7 @@ export const FIXTURE_ARGENTINA: PartidoMundial[] = [
     id: "arg-kor",
     fase: "Fase de Grupos",
     grupo: "A",
+    jornada: 2,
     fecha: "2026-06-17",
     kickoffUTC: "2026-06-17T19:00:00Z", // 22:00 Israel
     local: EQ.ARG,
@@ -185,12 +189,68 @@ export const FIXTURE_ARGENTINA: PartidoMundial[] = [
     id: "arg-gha",
     fase: "Fase de Grupos",
     grupo: "A",
+    jornada: 3,
     fecha: "2026-06-23",
     kickoffUTC: "2026-06-23T20:00:00Z", // 23:00 Israel
     local: EQ.ARG,
     visitante: EQ.GHA,
     estadioId: "att",
   },
+];
+
+/**
+ * Fase de grupos COMPLETA del Grupo A (3 fechas, 6 partidos).
+ * Incluye los partidos que NO son de Argentina (los que definen rivales y tabla).
+ */
+export const FIXTURE_GRUPO_A: PartidoMundial[] = [
+  // Jornada 1
+  FIXTURE_ARGENTINA[0]!,
+  {
+    id: "kor-gha",
+    fase: "Fase de Grupos",
+    grupo: "A",
+    jornada: 1,
+    fecha: "2026-06-12",
+    kickoffUTC: "2026-06-13T00:00:00Z", // 03:00 Israel
+    local: EQ.KOR,
+    visitante: EQ.GHA,
+    estadioId: "metlife",
+  },
+  // Jornada 2
+  FIXTURE_ARGENTINA[1]!,
+  {
+    id: "mex-gha",
+    fase: "Fase de Grupos",
+    grupo: "A",
+    jornada: 2,
+    fecha: "2026-06-18",
+    kickoffUTC: "2026-06-18T19:00:00Z", // 22:00 Israel
+    local: EQ.MEX,
+    visitante: EQ.GHA,
+    estadioId: "akron",
+  },
+  // Jornada 3 (los dos partidos del cierre se juegan en simultáneo)
+  FIXTURE_ARGENTINA[2]!,
+  {
+    id: "mex-kor",
+    fase: "Fase de Grupos",
+    grupo: "A",
+    jornada: 3,
+    fecha: "2026-06-23",
+    kickoffUTC: "2026-06-23T20:00:00Z", // 23:00 Israel
+    local: EQ.MEX,
+    visitante: EQ.KOR,
+    estadioId: "azteca",
+  },
+];
+
+/** Tabla inicial del Grupo A. Editar manualmente desde el Redactor cuando avance el torneo. */
+export type FilaTabla = { equipo: Equipo; pj: number; pg: number; pe: number; pp: number; gf: number; gc: number; pts: number };
+export const TABLA_GRUPO_A_INICIAL: FilaTabla[] = [
+  { equipo: EQ.ARG, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
+  { equipo: EQ.MEX, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
+  { equipo: EQ.KOR, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
+  { equipo: EQ.GHA, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
 ];
 
 /**
