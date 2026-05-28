@@ -6,6 +6,7 @@ import { MapaEstadios } from "@/components/MapaEstadios";
 import { CountdownArgentina } from "@/components/CountdownArgentina";
 import { SolDeMayo } from "@/components/SolDeMayo";
 import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ, JUGADORES_SCALONETA } from "@/lib/mundial-data";
+import { useNews } from "@/hooks/use-river-data";
 
 interface GaleriaFoto { id: number; url: string; caption: string; orden: number; }
 interface VideoGaleria { id: number; url: string; titulo: string; thumbnail: string | null; orden: number; }
@@ -29,11 +30,17 @@ export default function MundialHome() {
     if (banderaTimer.current) window.clearTimeout(banderaTimer.current);
     if (banderaClicks.current >= 3) {
       banderaClicks.current = 0;
-      window.location.href = "/redactor?tab=publicaciones-seleccion";
+      window.location.href = "/redactor?categoria=seleccion";
       return;
     }
     banderaTimer.current = window.setTimeout(() => { banderaClicks.current = 0; }, 1200);
   };
+
+  // ── Noticias de la Selección (publicadas desde Telegram con categoría 'seleccion') ───
+  const [paginaNoticias, setPaginaNoticias] = useState(0);
+  const { data: newsData } = useNews(paginaNoticias, "seleccion");
+  const newsSel = newsData?.items;
+  const totalPaginasNoticias = newsData?.totalPages ?? 1;
 
   // ── Galería + Videos al pie (como River) ────────────────────────────────
   const [videos, setVideos] = useState<VideoGaleria[]>([]);
@@ -147,6 +154,89 @@ export default function MundialHome() {
           <span className="text-3xl md:text-4xl block" style={{ filter: "drop-shadow(0 0 8px rgba(116,172,223,0.35))" }}>🇦🇷</span>
         </button>
       </div>
+
+      {/* ═══════════ NOTICIAS SELECCIÓN ═══════════ */}
+      <section id="noticias" className="py-16 bg-gradient-to-b from-[#091324] to-[#0a1628]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="bg-arg-celeste/20 text-arg-celeste border border-arg-celeste/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
+              Últimas de la Selección
+            </span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-2 text-white">
+              ACTUALIDAD <span className="text-arg-dorado">SCALONETA</span>
+            </h2>
+            <p className="text-white/60 text-sm md:text-base max-w-2xl mx-auto mt-3">
+              Noticias publicadas y curadas desde Telegram, directo desde la filial en Ramat Gan.
+            </p>
+          </div>
+
+          {newsSel && newsSel.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {newsSel.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/noticia/${item.id}`}
+                    className="group bg-[#0f1f3a] rounded-xl overflow-hidden shadow-lg border border-arg-celeste/15 hover:border-arg-dorado/60 hover:shadow-arg-dorado/10 transition-all"
+                  >
+                    <div className="relative overflow-hidden aspect-[16/9]">
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-2 left-2">
+                        <span className="bg-arg-celeste text-[#0a1628] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">
+                          {item.category || "Selección"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <span className="text-[11px] text-white/40 flex items-center gap-1 mb-2">
+                        <Calendar className="w-3 h-3" /> {item.date}
+                      </span>
+                      <h3 className="font-display font-bold text-white group-hover:text-arg-dorado transition-colors text-base leading-snug line-clamp-2 mb-2">
+                        {item.title}
+                      </h3>
+                      <p className="text-white/60 text-xs line-clamp-2">{item.excerpt}</p>
+                      <span className="inline-flex items-center gap-1 text-arg-celeste text-xs font-bold mt-3 group-hover:gap-2 transition-all">
+                        Leer más <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {totalPaginasNoticias > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
+                  <button
+                    onClick={() => setPaginaNoticias((p) => Math.max(0, p - 1))}
+                    disabled={paginaNoticias === 0}
+                    className="px-3 py-1.5 rounded-full bg-arg-celeste/10 text-arg-celeste border border-arg-celeste/30 text-xs font-bold uppercase disabled:opacity-30 disabled:cursor-not-allowed hover:bg-arg-celeste/20 transition"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-white/60 text-xs font-bold px-2">
+                    {paginaNoticias + 1} / {totalPaginasNoticias}
+                  </span>
+                  <button
+                    onClick={() => setPaginaNoticias((p) => Math.min(totalPaginasNoticias - 1, p + 1))}
+                    disabled={paginaNoticias >= totalPaginasNoticias - 1}
+                    className="px-3 py-1.5 rounded-full bg-arg-celeste/10 text-arg-celeste border border-arg-celeste/30 text-xs font-bold uppercase disabled:opacity-30 disabled:cursor-not-allowed hover:bg-arg-celeste/20 transition"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center text-white/50 text-sm py-12 border border-dashed border-arg-celeste/20 rounded-xl">
+              Todavía no hay noticias publicadas de la Selección. <br />
+              Las que apruebes desde Telegram con categoría <span className="text-arg-dorado font-bold">Selección</span> aparecerán acá.
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* ═══════════ GRUPOS ═══════════ */}
       <section id="grupos" className="py-16 bg-gradient-to-b from-[#0a1628] to-[#091324]">

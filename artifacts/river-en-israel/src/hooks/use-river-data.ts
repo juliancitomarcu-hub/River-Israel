@@ -114,11 +114,13 @@ interface NewsPage {
   page: number;
 }
 
-export function useNews(page = 0) {
+export function useNews(page = 0, categoria?: "river" | "seleccion") {
   return useQuery({
-    queryKey: ["noticias-publicadas", page],
+    queryKey: ["noticias-publicadas", page, categoria ?? "all"],
     queryFn: async (): Promise<NewsPage> => {
-      const res = await fetch(`/api/noticias-publicadas?page=${page}&limit=6`);
+      const qs = new URLSearchParams({ page: String(page), limit: "6" });
+      if (categoria) qs.set("categoria", categoria);
+      const res = await fetch(`/api/noticias-publicadas?${qs.toString()}`);
       if (!res.ok) return { items: MOCK_NEWS_FALLBACK, total: 1, totalPages: 1, page: 0 };
       const data = await res.json() as { noticias: NoticiaPublicada[]; total: number; totalPages: number; page: number };
       if (!data.noticias || data.noticias.length === 0) return { items: MOCK_NEWS_FALLBACK, total: 1, totalPages: 1, page: 0 };

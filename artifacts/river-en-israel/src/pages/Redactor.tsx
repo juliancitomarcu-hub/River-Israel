@@ -1510,6 +1510,11 @@ export default function Redactor() {
       else if (t === "postulantes") cargarPostulaciones();
       else if (t === "suscriptores") cargarSuscriptores();
     }
+    // Preseleccionar categoría al abrir desde /redactor?categoria=seleccion (Scaloneta) o ?categoria=river
+    const catParam = params.get("categoria");
+    if (catParam === "seleccion" || catParam === "river") {
+      setCategoria(catParam);
+    }
   }, []);
 
   const buscarNoticias = async () => {

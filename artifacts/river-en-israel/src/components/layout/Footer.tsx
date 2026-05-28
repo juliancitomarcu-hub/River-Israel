@@ -80,9 +80,9 @@ export function Footer() {
     setClicks(next);
     if (next >= 3) {
       setClicks(0);
-      // En Scaloneta el redactor abre directo en el tab de Selección
+      // En Scaloneta el redactor abre con categoría preseleccionada en Selección
       window.location.href = mundialActivo
-        ? "/redactor?tab=publicaciones-seleccion"
+        ? "/redactor?categoria=seleccion"
         : "/redactor";
     }
     setTimeout(() => setClicks(0), 1500);
