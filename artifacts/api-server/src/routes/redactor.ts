@@ -4,8 +4,13 @@ import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { PROMPT_MAESTRO } from "../lib/prompt-maestro";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
+
+router.use("/procesar-noticia", requireAdmin);
+router.use("/enviar-telegram", requireAdmin);
+router.use("/test-scheduler", requireAdmin);
 
 function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
   const tituloMatch = texto.match(/\*\*Título:\*\*\s*(.+)/);

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
 
@@ -61,7 +62,7 @@ router.get("/historia", (_req, res) => {
 });
 
 // PATCH /historia/:index
-router.patch("/historia/:index", (req, res) => {
+router.patch("/historia/:index", requireAdmin, (req, res) => {
   const idx = parseInt(req.params.index, 10);
   const hitos = leerHitos();
 

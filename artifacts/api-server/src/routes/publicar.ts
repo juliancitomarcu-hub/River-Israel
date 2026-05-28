@@ -4,6 +4,7 @@ import { noticiasTable } from "@workspace/db";
 import { count as drizzleCount, desc, eq, and, sql } from "drizzle-orm";
 import { sql as sqlRaw } from "drizzle-orm";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
 
@@ -62,7 +63,7 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
   return { titulo, contenido, tags };
 }
 
-router.post("/publicar-noticia", async (req, res) => {
+router.post("/publicar-noticia", requireAdmin, async (req, res) => {
   const { textoResultado, textoOriginal, fuente, imagenPortada } = req.body as {
     textoResultado?: string;
     textoOriginal?: string;
@@ -101,7 +102,7 @@ router.post("/publicar-noticia", async (req, res) => {
   }
 });
 
-router.get("/noticia-pendiente/:id", async (req, res) => {
+router.get("/noticia-pendiente/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
   try {
@@ -114,7 +115,7 @@ router.get("/noticia-pendiente/:id", async (req, res) => {
   }
 });
 
-router.put("/noticia-pendiente/:id", async (req, res) => {
+router.put("/noticia-pendiente/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   const { textoResultado, imagenPortada } = req.body as { textoResultado?: string; imagenPortada?: string };
   if (isNaN(id) || !textoResultado || textoResultado.trim().length < 10) {
@@ -227,7 +228,7 @@ router.get("/noticias-publicadas", async (req, res) => {
   }
 });
 
-router.delete("/noticias-publicadas/:id", async (req, res) => {
+router.delete("/noticias-publicadas/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) {
     res.status(400).json({ error: "ID inválido" });

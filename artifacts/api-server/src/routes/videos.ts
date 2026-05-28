@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { videosTable } from "@workspace/db";
 import { asc, eq } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
@@ -37,7 +38,7 @@ router.get("/videos", async (req, res) => {
   }
 });
 
-router.post("/videos", upload.single("video"), async (req, res) => {
+router.post("/videos", requireAdmin, upload.single("video"), async (req, res) => {
   try {
     const titulo = (req.body as { titulo?: string }).titulo ?? "";
     const file = req.file;
@@ -58,7 +59,7 @@ router.post("/videos", upload.single("video"), async (req, res) => {
   }
 });
 
-router.put("/videos/:id", upload.single("thumbnail"), async (req, res) => {
+router.put("/videos/:id", requireAdmin, upload.single("thumbnail"), async (req, res) => {
   const id = Number(req.params.id);
   try {
     const titulo = (req.body as { titulo?: string }).titulo;
@@ -82,7 +83,7 @@ router.put("/videos/:id", upload.single("thumbnail"), async (req, res) => {
   }
 });
 
-router.delete("/videos/:id", async (req, res) => {
+router.delete("/videos/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   try {
     await db.delete(videosTable).where(eq(videosTable.id, id));

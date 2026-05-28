@@ -3,6 +3,7 @@ import multer from "multer";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -19,7 +20,7 @@ const upload = multer({
   },
 });
 
-router.post("/publicacion-libre", upload.single("imagen"), async (req, res) => {
+router.post("/publicacion-libre", requireAdmin, upload.single("imagen"), async (req, res) => {
   const { titulo, contenido } = req.body as { titulo?: string; contenido?: string };
 
   if (!titulo?.trim() || titulo.trim().length < 3) {

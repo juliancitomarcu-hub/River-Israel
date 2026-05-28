@@ -727,15 +727,82 @@ function VideosTab() {
 export default function Redactor() {
   const [tab, setTab] = useState<Tab>("redactor");
   const [adminToken, setAdminToken] = useState<string>(() => {
-    try { return localStorage.getItem("river_admin_token") ?? ""; } catch { return ""; }
+    try { return sessionStorage.getItem("river_admin_token") ?? localStorage.getItem("river_admin_token") ?? ""; } catch { return ""; }
   });
+  const [authStatus, setAuthStatus] = useState<"checking" | "needed" | "ok" | "error">("checking");
+  const [loginInput, setLoginInput] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
   const adminHeaders = (): Record<string, string> => adminToken ? { "x-admin-token": adminToken } : {};
   const pedirAdminToken = () => {
-    const t = window.prompt("Token de admin (pedíselo al dueño del sitio):", adminToken);
-    if (t !== null) {
-      setAdminToken(t);
-      try { localStorage.setItem("river_admin_token", t); } catch { /* ignore */ }
-    }
+    setAuthStatus("needed");
+    setLoginInput(adminToken);
+  };
+
+  // Verifica un token contra el backend
+  const verificarToken = async (token: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/admin/check", { headers: { "x-admin-token": token } });
+      return res.ok;
+    } catch { return false; }
+  };
+
+  // Al montar: validar token guardado contra el backend
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!adminToken) { setAuthStatus("needed"); return; }
+      const ok = await verificarToken(adminToken);
+      if (cancelled) return;
+      setAuthStatus(ok ? "ok" : "needed");
+      if (!ok) {
+        try { sessionStorage.removeItem("river_admin_token"); localStorage.removeItem("river_admin_token"); } catch { /* ignore */ }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Inyectar el x-admin-token en TODOS los fetch a /api/* mientras estamos en Redactor
+  useEffect(() => {
+    if (!adminToken) return;
+    const original = window.fetch.bind(window);
+    const patched: typeof window.fetch = (input, init) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL ? input.href : input.url;
+      if (typeof url === "string" && (url.startsWith("/api/") || url.includes("/api/"))) {
+        const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+        if (!headers.has("x-admin-token")) headers.set("x-admin-token", adminToken);
+        return original(input, { ...(init ?? {}), headers });
+      }
+      return original(input, init);
+    };
+    window.fetch = patched;
+    return () => { window.fetch = original; };
+  }, [adminToken]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const t = loginInput.trim();
+    if (!t) { setLoginError("Ingresá la contraseña"); return; }
+    setLoginLoading(true);
+    setLoginError("");
+    const ok = await verificarToken(t);
+    setLoginLoading(false);
+    if (!ok) { setLoginError("Contraseña incorrecta"); return; }
+    setAdminToken(t);
+    try {
+      sessionStorage.setItem("river_admin_token", t);
+      localStorage.setItem("river_admin_token", t);
+    } catch { /* ignore */ }
+    setAuthStatus("ok");
+  };
+
+  const handleLogout = () => {
+    setAdminToken("");
+    try { sessionStorage.removeItem("river_admin_token"); localStorage.removeItem("river_admin_token"); } catch { /* ignore */ }
+    setAuthStatus("needed");
   };
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");
@@ -1449,6 +1516,55 @@ export default function Redactor() {
     });
   };
 
+  if (authStatus === "checking") {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-gray-500">
+          <div className="w-5 h-5 border-2 border-river-red/30 border-t-river-red rounded-full animate-spin" />
+          Verificando acceso...
+        </div>
+      </div>
+    );
+  }
+
+  if (authStatus !== "ok") {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center px-4">
+        <form
+          onSubmit={handleLogin}
+          className="w-full max-w-sm bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4"
+        >
+          <div className="text-center space-y-1">
+            <div className="inline-flex items-center gap-2 bg-river-red/10 text-river-red px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5" /> Cocina Privada
+            </div>
+            <h1 className="font-display text-2xl font-bold text-river-black">Redactor IA</h1>
+            <p className="text-sm text-gray-500">Esta sección es privada. Ingresá la contraseña de admin para continuar.</p>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Contraseña de admin</label>
+            <input
+              type="password"
+              autoFocus
+              value={loginInput}
+              onChange={e => { setLoginInput(e.target.value); setLoginError(""); }}
+              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-river-red bg-white"
+              placeholder="••••••••"
+            />
+          </div>
+          {loginError && <p className="text-red-500 text-xs">{loginError}</p>}
+          <Button
+            type="submit"
+            disabled={loginLoading}
+            className="w-full bg-river-red hover:bg-river-red/90 text-white font-bold py-2 rounded-lg disabled:opacity-50"
+          >
+            {loginLoading ? "Verificando..." : "Entrar"}
+          </Button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1458,6 +1574,14 @@ export default function Redactor() {
           <div className="inline-flex items-center gap-2 bg-river-red/10 text-river-red px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider mb-4">
             <Sparkles className="w-4 h-4" />
             Cocina Privada — River en Israel
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="ml-2 text-[10px] font-bold underline opacity-70 hover:opacity-100"
+              title="Cerrar sesión de admin"
+            >
+              salir
+            </button>
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">
             Redactor <span className="text-river-red">IA</span>

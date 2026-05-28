@@ -6,6 +6,7 @@ import { ai } from "@workspace/integrations-gemini-ai";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
 
@@ -188,7 +189,7 @@ router.post("/postular-redactor", upload.single("archivo"), async (req, res) => 
   }
 });
 
-router.get("/postulaciones", async (req, res) => {
+router.get("/postulaciones", requireAdmin, async (req, res) => {
   try {
     const all = await db
       .select()
@@ -202,7 +203,7 @@ router.get("/postulaciones", async (req, res) => {
   }
 });
 
-router.post("/postulaciones/:id/rechazar", async (req, res) => {
+router.post("/postulaciones/:id/rechazar", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
   try {

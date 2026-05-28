@@ -4,8 +4,12 @@ import { db } from "@workspace/db";
 import { noticiasTable, visitasTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
+
+router.use("/scheduler/trigger", requireAdmin);
+router.use("/scheduler/audit", requireAdmin);
 
 // ─── TRIGGER MANUAL DEL SCHEDULER ────────────────────────────────────────────
 

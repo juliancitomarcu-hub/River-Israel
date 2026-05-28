@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { galeriaTable } from "@workspace/db";
 import { asc, eq } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -46,7 +47,7 @@ router.get("/galeria", async (req, res) => {
   }
 });
 
-router.post("/galeria", upload.single("foto"), async (req, res) => {
+router.post("/galeria", requireAdmin, upload.single("foto"), async (req, res) => {
   try {
     const caption = (req.body as { caption?: string }).caption ?? "";
     const file = req.file;
@@ -67,7 +68,7 @@ router.post("/galeria", upload.single("foto"), async (req, res) => {
   }
 });
 
-router.put("/galeria/:id", async (req, res) => {
+router.put("/galeria/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const { caption } = req.body as { caption?: string };
   if (!caption && caption !== "") {
@@ -83,7 +84,7 @@ router.put("/galeria/:id", async (req, res) => {
   }
 });
 
-router.delete("/galeria/:id", async (req, res) => {
+router.delete("/galeria/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   try {
     await db.delete(galeriaTable).where(eq(galeriaTable.id, id));
