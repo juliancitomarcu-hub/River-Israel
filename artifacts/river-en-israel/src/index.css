@@ -134,4 +134,47 @@
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary));
   }
+
+  /* ─── Mundial · animaciones y utilidades cinematográficas ─── */
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  .animate-spin-slow { animation: spin-slow 90s linear infinite; }
+
+  @keyframes float-orb {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.18; }
+    50%      { transform: translate(20px, -30px) scale(1.08); opacity: 0.28; }
+  }
+  .animate-float-orb { animation: float-orb 14s ease-in-out infinite; }
+
+  @keyframes pulse-celeste {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(116,172,223,0.55); }
+    50%      { box-shadow: 0 0 0 14px rgba(116,172,223,0); }
+  }
+  .animate-pulse-celeste { animation: pulse-celeste 2.4s ease-in-out infinite; }
+
+  /* Mesh dorado-celeste de fondo de hero Mundial */
+  .bg-mundial-mesh {
+    background:
+      radial-gradient(at 18% 22%, rgba(116,172,223,0.18) 0px, transparent 50%),
+      radial-gradient(at 82% 30%, rgba(241,184,45,0.14) 0px, transparent 55%),
+      radial-gradient(at 50% 90%, rgba(116,172,223,0.10) 0px, transparent 60%),
+      #0a1628;
+  }
+
+  /* Bandera argentina vertical para el logo del navbar — sol incluido */
+  .bandera-arg-logo {
+    background:
+      radial-gradient(circle at 50% 50%, #F1B82D 0, #F1B82D 22%, transparent 23%),
+      linear-gradient(to bottom, #74ACDF 0%, #74ACDF 33%, #FFFFFF 33%, #FFFFFF 66%, #74ACDF 66%, #74ACDF 100%);
+  }
+
+  /* Tipografía cinemática para el hero del Mundial */
+  .text-shadow-cinema {
+    text-shadow:
+      0 2px 0 rgba(0,0,0,0.35),
+      0 10px 30px rgba(116,172,223,0.35),
+      0 0 60px rgba(241,184,45,0.25);
+  }
 }

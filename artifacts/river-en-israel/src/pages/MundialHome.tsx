@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MapPin, Trophy, Calendar, ChevronRight } from "lucide-react";
 import { MapaEstadios } from "@/components/MapaEstadios";
 import { CountdownArgentina } from "@/components/CountdownArgentina";
+import { SolDeMayo } from "@/components/SolDeMayo";
 import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ } from "@/lib/mundial-data";
 import { setMundialOverride } from "@/lib/mundial-mode";
 
@@ -19,30 +20,36 @@ export default function MundialHome() {
   return (
     <div className="bg-[#0a1628] text-white min-h-screen">
       {/* ═══════════ HERO ═══════════ */}
-      <section className="relative overflow-hidden pt-28 pb-16 md:pt-32 md:pb-20">
-        {/* Bandera argentina como fondo */}
-        <div className="absolute inset-0 opacity-[0.08]">
+      <section className="relative overflow-hidden pt-28 pb-20 md:pt-32 md:pb-24 bg-mundial-mesh">
+        {/* Sol de Mayo gigante girando lento detrás del título */}
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[55%] opacity-[0.10]">
+          <SolDeMayo size={720} spin color="#F1B82D" />
+        </div>
+        {/* Orbes flotantes */}
+        <div className="pointer-events-none absolute -top-10 -left-10 w-72 h-72 bg-arg-celeste/30 rounded-full blur-[120px] animate-float-orb" />
+        <div className="pointer-events-none absolute bottom-0 -right-10 w-80 h-80 bg-arg-dorado/25 rounded-full blur-[140px] animate-float-orb" style={{ animationDelay: "3s" }} />
+        {/* Bandas sutiles de bandera */}
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none">
           <div className="absolute inset-x-0 top-0 h-1/3 bg-arg-celeste" />
           <div className="absolute inset-x-0 top-1/3 h-1/3 bg-white" />
           <div className="absolute inset-x-0 bottom-0 h-1/3 bg-arg-celeste" />
         </div>
-        {/* Sol radial */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-arg-dorado/10 blur-[140px] rounded-full pointer-events-none" />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-10">
-            <motion.span
+          <div className="text-center mb-12">
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-block bg-arg-dorado text-[#0a1628] text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-5"
+              className="inline-flex items-center gap-2 bg-arg-dorado/95 text-[#0a1628] text-[10px] md:text-xs font-bold uppercase tracking-[0.22em] px-4 py-1.5 rounded-full mb-6 shadow-lg shadow-arg-dorado/30"
             >
-              FIFA World Cup 2026 · USA · Canadá · México
-            </motion.span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0a1628] animate-pulse" />
+              Copa del Mundo 2026 · USA · Canadá · México
+            </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-5xl md:text-7xl lg:text-8xl font-display font-black mb-4 leading-none"
+              className="text-5xl md:text-7xl lg:text-[7.5rem] font-display font-black mb-5 leading-[0.95] tracking-tight text-shadow-cinema"
             >
               LA <span className="text-arg-celeste">SCALONETA</span>
               <br />
@@ -52,10 +59,11 @@ export default function MundialHome() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-white/70 text-base md:text-xl max-w-2xl mx-auto"
+              className="text-white/80 text-base md:text-xl max-w-2xl mx-auto leading-relaxed flex items-center justify-center gap-2 flex-wrap"
             >
               Toda la pasión de la Selección Argentina vivida desde Tierra Santa.
-              Defendiendo la corona del mundo. 🏆
+              Defendiendo la corona del mundo
+              <Trophy className="w-5 h-5 md:w-6 md:h-6 text-arg-dorado inline-block" />
             </motion.p>
           </div>
 
@@ -67,6 +75,13 @@ export default function MundialHome() {
           >
             <CountdownArgentina />
           </motion.div>
+        </div>
+
+        {/* Divider con sol de mayo central */}
+        <div className="relative z-10 mt-12 flex items-center justify-center gap-4">
+          <div className="h-px w-24 md:w-40 bg-gradient-to-r from-transparent to-arg-dorado/60" />
+          <SolDeMayo size={32} />
+          <div className="h-px w-24 md:w-40 bg-gradient-to-l from-transparent to-arg-dorado/60" />
         </div>
       </section>
 

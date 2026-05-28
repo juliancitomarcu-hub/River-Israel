@@ -36,23 +36,34 @@ export function CountdownArgentina() {
 
   const Box = ({ value, label }: { value: number; label: string }) => (
     <div className="flex flex-col items-center">
-      <motion.div
-        key={value}
-        initial={{ scale: 1.15, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.25 }}
-        className="bg-gradient-to-br from-arg-celeste to-[#5b8fc4] text-white font-display text-4xl md:text-6xl font-bold tabular-nums w-16 h-16 md:w-24 md:h-24 rounded-2xl flex items-center justify-center shadow-2xl border border-white/20"
-      >
-        {String(value).padStart(2, "0")}
-      </motion.div>
-      <span className="text-arg-dorado text-[10px] md:text-xs uppercase tracking-widest font-bold mt-2">
+      <div className="relative">
+        {/* Brillo dorado de fondo */}
+        <div className="absolute inset-0 bg-arg-dorado/20 rounded-2xl blur-xl" />
+        <motion.div
+          key={value}
+          initial={{ scale: 1.15, opacity: 0, rotateX: -25 }}
+          animate={{ scale: 1, opacity: 1, rotateX: 0 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="relative bg-gradient-to-br from-[#1a3559] via-arg-celeste to-[#4a82b7] text-white font-display text-4xl md:text-6xl font-black tabular-nums w-[68px] h-[68px] md:w-28 md:h-28 rounded-2xl flex items-center justify-center shadow-[0_10px_40px_-5px_rgba(0,0,0,0.5)] border border-white/25"
+          style={{ textShadow: "0 2px 0 rgba(0,0,0,0.4), 0 0 24px rgba(241,184,45,0.35)" }}
+        >
+          {/* Línea brillante superior (efecto scoreboard) */}
+          <span className="absolute top-0 left-2 right-2 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+          {/* Línea divisoria media (efecto flip) */}
+          <span className="absolute left-1 right-1 top-1/2 h-px bg-black/20" />
+          {String(value).padStart(2, "0")}
+        </motion.div>
+      </div>
+      <span className="text-arg-dorado text-[10px] md:text-xs uppercase tracking-[0.22em] font-bold mt-3">
         {label}
       </span>
     </div>
   );
 
   return (
-    <div className="bg-gradient-to-br from-arg-celeste/10 to-arg-dorado/10 border-2 border-arg-dorado/40 rounded-3xl p-6 md:p-10 backdrop-blur-sm">
+    <div className="relative bg-gradient-to-br from-arg-celeste/15 via-[#0a1628]/40 to-arg-dorado/15 border-2 border-arg-dorado/50 rounded-3xl p-6 md:p-10 backdrop-blur-sm overflow-hidden">
+      {/* Línea dorada superior tipo broadcast */}
+      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-arg-dorado to-transparent" />
       <div className="text-center mb-6">
         <span className="inline-block bg-arg-dorado text-[#1a1a1a] text-[10px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3">
           {partido.fase} · Grupo {partido.grupo}
@@ -73,19 +84,23 @@ export function CountdownArgentina() {
 
       {r.done ? (
         <div className="text-center py-6">
-          <p className="text-4xl md:text-6xl font-display font-bold text-arg-dorado animate-pulse">
-            ¡EN JUEGO!
+          <div className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-xs mb-4 animate-pulse-celeste">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            EN VIVO
+          </div>
+          <p className="text-4xl md:text-6xl font-display font-black text-arg-dorado animate-pulse leading-none">
+            ¡SE JUEGA!
           </p>
-          <p className="text-white/80 mt-2">Vamos Argentina 🇦🇷</p>
+          <p className="text-white/80 mt-3 text-base md:text-lg font-semibold tracking-wide">VAMOS ARGENTINA</p>
         </div>
       ) : (
-        <div className="flex items-center justify-center gap-3 md:gap-5">
+        <div className="flex items-center justify-center gap-2 md:gap-4">
           <Box value={r.days}  label="Días" />
-          <span className="text-arg-dorado/50 text-3xl md:text-5xl font-light pb-6">:</span>
+          <span className="text-arg-dorado/40 text-3xl md:text-5xl font-light pb-6 select-none">:</span>
           <Box value={r.hours} label="Horas" />
-          <span className="text-arg-dorado/50 text-3xl md:text-5xl font-light pb-6">:</span>
+          <span className="text-arg-dorado/40 text-3xl md:text-5xl font-light pb-6 select-none">:</span>
           <Box value={r.mins}  label="Min" />
-          <span className="text-arg-dorado/50 text-3xl md:text-5xl font-light pb-6">:</span>
+          <span className="text-arg-dorado/40 text-3xl md:text-5xl font-light pb-6 select-none">:</span>
           <Box value={r.secs}  label="Seg" />
         </div>
       )}

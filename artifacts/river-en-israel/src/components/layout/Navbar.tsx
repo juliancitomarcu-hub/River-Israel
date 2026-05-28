@@ -4,6 +4,7 @@ import { Menu, X, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMundialMode, isMundialPeriod, setMundialOverride } from "@/lib/mundial-mode";
+import { SolDeMayo } from "@/components/SolDeMayo";
 
 const NAV_LINKS = [
   { name: "Inicio",          href: "/" },
@@ -62,17 +63,22 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
             <div className={cn(
-              "escudo-river relative w-9 h-9 overflow-hidden rounded-full border-2 border-white group-hover:scale-105 transition-transform",
+              "escudo-river relative w-10 h-10 overflow-hidden rounded-full border-2 border-white group-hover:scale-105 transition-transform",
               mundialActivo
-                ? "shadow-[0_0_14px_rgba(116,172,223,0.6)]"
+                ? "shadow-[0_0_16px_rgba(241,184,45,0.65)] border-arg-dorado"
                 : "shadow-[0_0_10px_rgba(204,0,0,0.5)]"
             )}>
               {mundialActivo ? (
-                <div className="absolute inset-0 flex flex-col">
-                  <div className="flex-1 bg-arg-celeste"></div>
-                  <div className="flex-1 bg-white"></div>
-                  <div className="flex-1 bg-arg-celeste"></div>
-                </div>
+                <>
+                  <div className="absolute inset-0 flex flex-col">
+                    <div className="flex-1 bg-arg-celeste"></div>
+                    <div className="flex-1 bg-white"></div>
+                    <div className="flex-1 bg-arg-celeste"></div>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <SolDeMayo size={22} />
+                  </div>
+                </>
               ) : (
                 <div className="absolute inset-0 bg-diagonal-red"></div>
               )}

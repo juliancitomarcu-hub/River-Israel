@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { ArrowLeft, MapPin, Trophy } from "lucide-react";
+import { SolDeMayo } from "@/components/SolDeMayo";
 import {
   FIXTURE_ARGENTINA,
   FIXTURE_GRUPO_A,
@@ -36,10 +37,13 @@ export default function MundialFixture() {
           <Link href="/" className="inline-flex items-center gap-2 text-arg-celeste hover:text-arg-dorado text-sm mb-4 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Volver al inicio
           </Link>
-          <span className="bg-arg-dorado/20 text-arg-dorado border border-arg-dorado/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
-            Grupo {GRUPO_ARGENTINA} · Mundial 2026
-          </span>
-          <h1 className="text-4xl md:text-6xl font-display font-bold leading-tight">
+          <div className="flex items-center gap-3 mb-3">
+            <SolDeMayo size={36} />
+            <span className="bg-arg-dorado/20 text-arg-dorado border border-arg-dorado/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block">
+              Grupo {GRUPO_ARGENTINA} · Mundial 2026
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-display font-black leading-[0.95] text-shadow-cinema">
             FIXTURE DE LA <span className="text-arg-celeste">SCALONETA</span>
           </h1>
           <p className="text-white/70 text-sm md:text-base mt-3 max-w-2xl">
@@ -123,31 +127,35 @@ export default function MundialFixture() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: i * 0.05 }}
-                        className={`rounded-2xl p-4 border transition-all ${
+                        className={`relative rounded-2xl p-5 border transition-all overflow-hidden ${
                           esArg
-                            ? "bg-arg-celeste/10 border-arg-celeste/40 shadow-[0_0_24px_rgba(116,172,223,0.2)]"
-                            : "bg-white/5 border-white/10"
+                            ? "bg-gradient-to-r from-arg-celeste/15 via-arg-celeste/5 to-arg-dorado/10 border-arg-celeste/50 shadow-[0_0_30px_rgba(116,172,223,0.25)]"
+                            : "bg-white/5 border-white/10 hover:border-white/25"
                         }`}
                       >
+                        {/* Marca dorada lateral para partidos de Argentina */}
+                        {esArg && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-arg-celeste via-arg-dorado to-arg-celeste" />
+                        )}
                         <div className="flex items-center justify-between flex-wrap gap-3">
-                          <div className="flex items-center gap-3 flex-1 min-w-[260px]">
+                          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-[280px]">
                             <div className="flex items-center gap-2 flex-1 justify-end">
-                              <span className={`font-bold ${esArg && p.local.code === EQ.ARG.code ? "text-arg-celeste" : "text-white"}`}>
+                              <span className={`font-bold text-sm md:text-base ${esArg && p.local.code === EQ.ARG.code ? "text-arg-celeste" : "text-white"}`}>
                                 {p.local.nombre}
                               </span>
-                              <span className="text-2xl">{p.local.bandera}</span>
+                              <span className="text-3xl md:text-4xl drop-shadow-lg">{p.local.bandera}</span>
                             </div>
-                            <span className="text-white/40 font-bold text-sm px-2">vs</span>
+                            <span className="text-arg-dorado font-display font-black text-xl md:text-2xl px-2 md:px-3 select-none">VS</span>
                             <div className="flex items-center gap-2 flex-1">
-                              <span className="text-2xl">{p.visitante.bandera}</span>
-                              <span className={`font-bold ${esArg && p.visitante.code === EQ.ARG.code ? "text-arg-celeste" : "text-white"}`}>
+                              <span className="text-3xl md:text-4xl drop-shadow-lg">{p.visitante.bandera}</span>
+                              <span className={`font-bold text-sm md:text-base ${esArg && p.visitante.code === EQ.ARG.code ? "text-arg-celeste" : "text-white"}`}>
                                 {p.visitante.nombre}
                               </span>
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="text-arg-dorado font-bold text-sm">{formatearHoraIsrael(p.kickoffUTC)}</div>
-                            <div className="text-white/50 text-[11px] flex items-center gap-1 justify-end">
+                            <div className="text-white/50 text-[11px] flex items-center gap-1 justify-end mt-0.5">
                               <MapPin className="w-3 h-3" />
                               {estadio?.nombre ?? p.estadioId} · {estadio?.ciudad}
                             </div>
