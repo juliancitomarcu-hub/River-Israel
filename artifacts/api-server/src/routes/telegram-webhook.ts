@@ -4,6 +4,7 @@ import { noticiasTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { ejecutarCiclo, type EjecucionResultado } from "../scheduler";
+import { createEditToken } from "../lib/edit-tokens";
 
 const router: IRouter = Router();
 
@@ -436,8 +437,10 @@ async function procesarCallback(
         }
       }, 10 * 60 * 1000);
 
-      // Instrucciones para el usuario
-      const editUrl = `\n\n🌐 O editá con foto en: https://riverplateisrael.com/redactor?editar=${noticiaId}`;
+      // Instrucciones para el usuario — token de un solo uso para entrar directo al redactor
+      const dominioEdit = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+      const editToken = createEditToken(noticiaId);
+      const editUrl = `\n\n🌐 O editá con foto en: https://${dominioEdit}/redactor?editar=${noticiaId}&edit_token=${editToken}`;
 
       await enviarMensajeTelegram(
         token, chatId,

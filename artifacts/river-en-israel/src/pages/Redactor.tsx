@@ -747,10 +747,48 @@ export default function Redactor() {
     } catch { return false; }
   };
 
-  // Al montar: validar token guardado contra el backend
+  // Al montar: validar token guardado contra el backend.
+  // Si la URL trae ?edit_token=XYZ (link directo de Telegram), lo canjeamos por el
+  // admin token real antes de pedir login, así el editor entra directo al modo edición.
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const editToken = params.get("edit_token");
+        if (editToken) {
+          // Limpiar el token de la URL para que no quede en el historial / no se reuse al refrescar.
+          params.delete("edit_token");
+          const rest = params.toString();
+          const nuevaUrl = window.location.pathname + (rest ? `?${rest}` : "") + window.location.hash;
+          window.history.replaceState({}, "", nuevaUrl);
+
+          try {
+            const res = await fetch("/api/admin/exchange-edit-token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: editToken }),
+            });
+            if (res.ok) {
+              const data = await res.json() as { sessionToken?: string };
+              if (data.sessionToken) {
+                if (cancelled) return;
+                setAdminToken(data.sessionToken);
+                // Sólo sessionStorage (no localStorage): la sesión que viene de
+                // un link de Telegram es efímera y no debe sobrevivir a cerrar
+                // la pestaña.
+                try {
+                  sessionStorage.setItem("river_admin_token", data.sessionToken);
+                } catch { /* ignore */ }
+                setAuthStatus("ok");
+                return;
+              }
+            }
+            // Token inválido/expirado → seguimos con el flujo normal de login
+          } catch { /* ignore — flujo normal */ }
+        }
+      } catch { /* ignore */ }
+
       if (!adminToken) { setAuthStatus("needed"); return; }
       const ok = await verificarToken(adminToken);
       if (cancelled) return;
@@ -1341,13 +1379,24 @@ export default function Redactor() {
     }
   };
 
+  // Cargar nota a editar SÓLO cuando la auth está lista (evita race con el
+  // exchange del edit_token de Telegram, que también ocurre on-mount).
+  const editarHandledRef = useRef(false);
   useEffect(() => {
+    if (authStatus !== "ok" || editarHandledRef.current) return;
     const params = new URLSearchParams(window.location.search);
     const editarId = params.get("editar");
     if (editarId) {
       const id = parseInt(editarId);
-      if (!isNaN(id)) cargarParaEditar(id);
+      if (!isNaN(id)) {
+        editarHandledRef.current = true;
+        cargarParaEditar(id);
+      }
     }
+  }, [authStatus]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     const tabsValidos: Tab[] = [
       "redactor", "publicaciones", "publicaciones-libres", "historia",

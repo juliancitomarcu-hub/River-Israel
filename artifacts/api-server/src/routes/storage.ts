@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
-import { requireAdmin } from "../middleware/requireAdmin";
+import { requireAdminOrAnyNoticiaSession } from "../middleware/requireAdmin";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -14,7 +14,7 @@ const objectStorageService = new ObjectStorageService();
  * The client sends JSON metadata (name, size, contentType) — NOT the file.
  * Then uploads the file directly to the returned presigned URL.
  */
-router.post("/storage/uploads/request-url", requireAdmin, async (req: Request, res: Response) => {
+router.post("/storage/uploads/request-url", requireAdminOrAnyNoticiaSession, async (req: Request, res: Response) => {
   const body = req.body as { name?: string; size?: number; contentType?: string };
   if (!body.name || typeof body.size !== "number" || !body.contentType) {
     res.status(400).json({ error: "Missing or invalid required fields" });
