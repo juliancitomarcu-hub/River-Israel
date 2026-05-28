@@ -63,7 +63,7 @@ router.get("/historia", (_req, res) => {
 
 // PATCH /historia/:index
 router.patch("/historia/:index", requireAdmin, (req, res) => {
-  const idx = parseInt(req.params.index, 10);
+  const idx = parseInt(String(req.params.index ?? ""), 10);
   const hitos = leerHitos();
 
   if (isNaN(idx) || idx < 0 || idx >= hitos.length) {

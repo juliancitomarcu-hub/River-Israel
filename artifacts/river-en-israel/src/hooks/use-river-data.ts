@@ -41,9 +41,9 @@ interface NoticiaPublicada {
 }
 
 const MOCK_MATCHES: MatchResult[] = [
-  { id: "m1", competition: "Liga Profesional", date: "10/10/2024", homeTeam: "River Plate", awayTeam: "Independiente", homeScore: 3, awayScore: 0, status: "FINISHED", isRiverHome: true },
-  { id: "m2", competition: "Copa Libertadores", date: "03/10/2024", homeTeam: "Nacional (URU)", awayTeam: "River Plate", homeScore: 1, awayScore: 2, status: "FINISHED", isRiverHome: false },
-  { id: "m3", competition: "Liga Profesional", date: "15/10/2024", homeTeam: "Boca Juniors", awayTeam: "River Plate", homeScore: null, awayScore: null, status: "UPCOMING", isRiverHome: false },
+  { id: "m1", competition: "Liga Profesional", date: "10/10/2024", homeTeam: "River Plate", awayTeam: "Independiente", homeScore: 3, awayScore: 0, status: "FINISHED", isRiverHome: true, horaIsrael: "", resultado: null },
+  { id: "m2", competition: "Copa Libertadores", date: "03/10/2024", homeTeam: "Nacional (URU)", awayTeam: "River Plate", homeScore: 1, awayScore: 2, status: "FINISHED", isRiverHome: false, horaIsrael: "", resultado: null },
+  { id: "m3", competition: "Liga Profesional", date: "15/10/2024", homeTeam: "Boca Juniors", awayTeam: "River Plate", homeScore: null, awayScore: null, status: "UPCOMING", isRiverHome: false, horaIsrael: "", resultado: null },
 ];
 
 const MOCK_TIMELINE: TimelineEvent[] = [

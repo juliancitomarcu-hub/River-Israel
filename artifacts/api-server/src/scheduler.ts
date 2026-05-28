@@ -301,14 +301,14 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
     ].join(", ");
 
     let parrafos = $(SELECTORES)
-      .map((_: number, el: cheerio.Element) => limpiarTexto($(el).text().trim()))
+      .map((_idx, el) => limpiarTexto($(el).text().trim()))
       .get()
       .filter((t: string) => t.length > 50);
 
     // Fallback: si ningún selector especializado funcionó, buscar todos los <p> con texto
     if (parrafos.length === 0) {
       parrafos = $("p")
-        .map((_: number, el: cheerio.Element) => limpiarTexto($(el).text().trim()))
+        .map((_idx, el) => limpiarTexto($(el).text().trim()))
         .get()
         .filter((t: string) => t.length > 80);
     }
@@ -469,10 +469,10 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       return { tipo: "ia_sin_contenido" };
     }
 
-    logger.info("Scheduler: output AI inicial", {
+    logger.info({
       chars: resultado.length,
       preview: resultado.slice(0, 200).replace(/\n/g, "↵"),
-    });
+    }, "Scheduler: output AI inicial");
 
     // ── CONTROL DE CALIDAD PRE-GUARDADO ───────────────────────────────────
     let parsed = parsearResultado(resultado);
@@ -481,10 +481,10 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     const corta   = parsed.contenido.length < MINIMO_CHARS;
 
     if (corta || cortada) {
-      logger.warn("Scheduler: nota insuficiente, solicitando expansión a la IA", {
+      logger.warn({
         chars: parsed.contenido.length,
         cortada,
-      });
+      }, "Scheduler: nota insuficiente, solicitando expansión a la IA");
       const expansion = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [
@@ -498,7 +498,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       if (resultadoExpandido && resultadoExpandido.length > resultado.length) {
         resultado = resultadoExpandido;
         parsed = parsearResultado(resultado);
-        logger.info("Scheduler: expansión aplicada", { chars: parsed.contenido.length });
+        logger.info({ chars: parsed.contenido.length }, "Scheduler: expansión aplicada");
       }
     }
 

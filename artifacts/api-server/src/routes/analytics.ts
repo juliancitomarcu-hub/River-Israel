@@ -13,7 +13,7 @@ router.get("/analytics", async (req, res) => {
     const force = req.query.force === "1";
 
     if (cache && !force && ahora - cache.fetchedAt < CACHE_MS) {
-      return res.json({ ...cache.data, fromCache: true, fetchedAt: cache.fetchedAt });
+      return res.json({ ...(cache.data as Record<string, unknown>), fromCache: true, fetchedAt: cache.fetchedAt });
     }
 
     const totalesRes = await db.execute(sql`

@@ -44,15 +44,8 @@ export async function generarImagenIG(
 ): Promise<{ url: string; buffer: Buffer; mimeType: string } | null> {
   try {
     const prompt = promptParaCategoria(titulo, categoria);
-    const dataUrl = await generateImage(prompt);
-
-    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) {
-      logger.warn("generarImagenIG: respuesta de Gemini sin formato data URL");
-      return null;
-    }
-    const mimeType = match[1];
-    const buffer = Buffer.from(match[2], "base64");
+    const { b64_json, mimeType } = await generateImage(prompt);
+    const buffer = Buffer.from(b64_json, "base64");
 
     const ext = mimeType.includes("jpeg") ? "jpg" : mimeType.includes("png") ? "png" : "img";
     const subPath = `ig-covers/${categoria}-${Date.now()}.${ext}`;

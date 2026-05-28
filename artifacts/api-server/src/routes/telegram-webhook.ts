@@ -5,6 +5,7 @@ import { eq, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { ejecutarCiclo, type EjecucionResultado } from "../scheduler";
 import { createEditToken } from "../lib/edit-tokens";
+import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
 
 const router: IRouter = Router();
 

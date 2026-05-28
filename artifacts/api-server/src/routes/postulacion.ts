@@ -204,7 +204,7 @@ router.get("/postulaciones", requireAdmin, async (req, res) => {
 });
 
 router.post("/postulaciones/:id/rechazar", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id ?? ""), 10);
   if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
   try {
     await db.update(noticiasTable).set({ pendiente: false, publicada: false }).where(eq(noticiasTable.id, id));

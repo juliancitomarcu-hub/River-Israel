@@ -101,7 +101,7 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
   const opciones: {
     label: string;
     sublabel?: string;
-    icon: JSX.Element;
+    icon: React.JSX.Element;
     bg: string;
     fg: string;
     action: () => void;

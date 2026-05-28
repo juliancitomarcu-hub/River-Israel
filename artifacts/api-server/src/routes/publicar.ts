@@ -7,7 +7,8 @@ import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
 import { requireAdmin, requireAdminOrNoticiaSession } from "../middleware/requireAdmin";
 
 const requireAdminOrThisNoticia = requireAdminOrNoticiaSession((req) => {
-  const id = parseInt(req.params.id ?? "", 10);
+  const raw = req.params.id;
+  const id = parseInt(typeof raw === "string" ? raw : "", 10);
   return isNaN(id) ? null : id;
 });
 
@@ -108,7 +109,7 @@ router.post("/publicar-noticia", requireAdmin, async (req, res) => {
 });
 
 router.get("/noticia-pendiente/:id", requireAdminOrThisNoticia, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id ?? ""), 10);
   if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
   try {
     const [noticia] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, id)).limit(1);
@@ -121,7 +122,7 @@ router.get("/noticia-pendiente/:id", requireAdminOrThisNoticia, async (req, res)
 });
 
 router.put("/noticia-pendiente/:id", requireAdminOrThisNoticia, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id ?? ""), 10);
   const { textoResultado, imagenPortada } = req.body as { textoResultado?: string; imagenPortada?: string };
   if (isNaN(id) || !textoResultado || textoResultado.trim().length < 10) {
     res.status(400).json({ error: "Faltan datos" }); return;
@@ -155,7 +156,7 @@ router.put("/noticia-pendiente/:id", requireAdminOrThisNoticia, async (req, res)
 });
 
 router.get("/noticias-publicadas/:id", async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id ?? ""), 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "ID inválido" });
     return;
@@ -242,7 +243,7 @@ router.get("/noticias-publicadas", async (req, res) => {
 });
 
 router.delete("/noticias-publicadas/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id ?? ""), 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "ID inválido" });
     return;

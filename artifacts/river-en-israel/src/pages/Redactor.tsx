@@ -3095,7 +3095,7 @@ export default function Redactor() {
         </div>
 
         {/* ── POSTULANTES ───────────────────────────────────────────────── */}
-        {tab === "postulantes" && (
+        {(tab as Tab) === "postulantes" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
               <div>

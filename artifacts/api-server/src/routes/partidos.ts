@@ -377,12 +377,13 @@ router.get("/partido-proximo", async (req, res) => {
               titular: p.starting ?? p.is_starting ?? false,
             }));
 
+          const squadsObj = squads as unknown as { home?: unknown; away?: unknown };
           if (squads.length >= 2) {
             alineacionLocal = parseSquad(squads[0]);
             alineacionVisitante = parseSquad(squads[1]);
-          } else if (squads.home) {
-            alineacionLocal = parseSquad(squads.home);
-            alineacionVisitante = parseSquad(squads.away);
+          } else if (squadsObj.home) {
+            alineacionLocal = parseSquad(squadsObj.home);
+            alineacionVisitante = parseSquad(squadsObj.away);
           }
         }
       } catch (_) {
