@@ -46,7 +46,7 @@ export default function Home() {
   const [videos, setVideos] = useState<VideoGaleria[]>([]);
   const [videoAbierto, setVideoAbierto] = useState<VideoGaleria | null>(null);
   useEffect(() => {
-    fetch("/api/videos", { cache: "no-store" })
+    fetch("/api/videos?categoria=river", { cache: "no-store" })
       .then(r => r.json())
       .then((d: { videos?: VideoGaleria[] }) => setVideos(d.videos ?? []))
       .catch(() => {/* silencioso */});

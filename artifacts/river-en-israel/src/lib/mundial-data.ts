@@ -179,21 +179,35 @@ export type FiguraScaloneta = {
  *
  * Para agregar fotos: subirlas via /redactor (tab Galería) y pegar la URL en este array.
  */
+const wp = (file: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${file}?width=400`;
+
 export const JUGADORES_SCALONETA: FiguraScaloneta[] = [
   { dorsal: 10, nombre: "Lionel", apellido: "Messi",          posicion: "Delantero",     club: "Inter Miami",        apodo: "La Pulga · El GOAT", esCapitan: true,
-    foto: "https://commons.wikimedia.org/wiki/Special:FilePath/Lionel_Messi_20180626.jpg?width=400" },
-  { dorsal: 23, nombre: "Emiliano", apellido: "Martínez",     posicion: "Arquero",       club: "Aston Villa",        apodo: "Dibu" },
-  { dorsal: 7,  nombre: "Rodrigo", apellido: "De Paul",       posicion: "Mediocampista", club: "Atlético Madrid",    apodo: "Motorcito" },
-  { dorsal: 9,  nombre: "Julián", apellido: "Álvarez",        posicion: "Delantero",     club: "Atlético Madrid",    apodo: "La Araña" },
-  { dorsal: 22, nombre: "Lautaro", apellido: "Martínez",      posicion: "Delantero",     club: "Inter Milán",        apodo: "El Toro" },
-  { dorsal: 24, nombre: "Enzo", apellido: "Fernández",        posicion: "Mediocampista", club: "Chelsea",            apodo: "Enzo" },
-  { dorsal: 20, nombre: "Alexis", apellido: "Mac Allister",   posicion: "Mediocampista", club: "Liverpool",          apodo: "Colo" },
-  { dorsal: 13, nombre: "Cristian", apellido: "Romero",       posicion: "Defensor",      club: "Tottenham",          apodo: "Cuti" },
-  { dorsal: 26, nombre: "Nahuel", apellido: "Molina",         posicion: "Defensor",      club: "Atlético Madrid" },
-  { dorsal: 3,  nombre: "Nicolás", apellido: "Tagliafico",    posicion: "Defensor",      club: "Olympique Lyon" },
-  { dorsal: 19, nombre: "Nicolás", apellido: "Otamendi",      posicion: "Defensor",      club: "Benfica",            apodo: "El General" },
-  { dorsal: 11, nombre: "Ángel", apellido: "Di María",        posicion: "Delantero",     club: "Rosario Central",    apodo: "Fideo · Leyenda" },
-  { dorsal: 0,  nombre: "Lionel", apellido: "Scaloni",        posicion: "DT",            club: "Selección Argentina", apodo: "El estratega" },
+    foto: wp("Lionel_Messi_20180626.jpg") },
+  { dorsal: 23, nombre: "Emiliano", apellido: "Martínez",     posicion: "Arquero",       club: "Aston Villa",        apodo: "Dibu",
+    foto: wp("Emiliano_Mart%C3%ADnez_2022.jpg") },
+  { dorsal: 7,  nombre: "Rodrigo", apellido: "De Paul",       posicion: "Mediocampista", club: "Atlético Madrid",    apodo: "Motorcito",
+    foto: wp("Rodrigo_De_Paul_2018.jpg") },
+  { dorsal: 9,  nombre: "Julián", apellido: "Álvarez",        posicion: "Delantero",     club: "Atlético Madrid",    apodo: "La Araña",
+    foto: wp("Juli%C3%A1n_%C3%81lvarez_2022.jpg") },
+  { dorsal: 22, nombre: "Lautaro", apellido: "Martínez",      posicion: "Delantero",     club: "Inter Milán",        apodo: "El Toro",
+    foto: wp("Lautaro_Mart%C3%ADnez_2022.jpg") },
+  { dorsal: 24, nombre: "Enzo", apellido: "Fernández",        posicion: "Mediocampista", club: "Chelsea",            apodo: "Enzo",
+    foto: wp("Enzo_Fern%C3%A1ndez_2022.jpg") },
+  { dorsal: 20, nombre: "Alexis", apellido: "Mac Allister",   posicion: "Mediocampista", club: "Liverpool",          apodo: "Colo",
+    foto: wp("Alexis_Mac_Allister_2022.jpg") },
+  { dorsal: 13, nombre: "Cristian", apellido: "Romero",       posicion: "Defensor",      club: "Tottenham",          apodo: "Cuti",
+    foto: wp("Cristian_Romero_2021.jpg") },
+  { dorsal: 26, nombre: "Nahuel", apellido: "Molina",         posicion: "Defensor",      club: "Atlético Madrid",
+    foto: wp("Nahuel_Molina_2022.jpg") },
+  { dorsal: 3,  nombre: "Nicolás", apellido: "Tagliafico",    posicion: "Defensor",      club: "Olympique Lyon",
+    foto: wp("Nicol%C3%A1s_Tagliafico_2018.jpg") },
+  { dorsal: 19, nombre: "Nicolás", apellido: "Otamendi",      posicion: "Defensor",      club: "Benfica",            apodo: "El General",
+    foto: wp("Nicol%C3%A1s_Otamendi_2018.jpg") },
+  { dorsal: 11, nombre: "Ángel", apellido: "Di María",        posicion: "Delantero",     club: "Rosario Central",    apodo: "Fideo · Leyenda",
+    foto: wp("%C3%81ngel_Di_Mar%C3%ADa_2018.jpg") },
+  { dorsal: 0,  nombre: "Lionel", apellido: "Scaloni",        posicion: "DT",            club: "Selección Argentina", apodo: "El estratega",
+    foto: wp("Lionel_Scaloni_2018.jpg") },
 ];
 
 // ──────────────────────────────────────────────────────────────

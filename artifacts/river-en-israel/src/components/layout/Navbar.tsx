@@ -127,7 +127,7 @@ export function Navbar() {
               </span>
               <span className="text-[0.55rem] text-gray-300 font-semibold tracking-wide flex items-center gap-0.5 truncate">
                 <MapPin className={cn("w-2.5 h-2.5 shrink-0", mundialActivo ? "text-arg-dorado" : "text-river-red")} />
-                {mundialActivo ? "Filial Selección Argentina · Ramat Gan" : "Filial River Israel \"El TUCU\" SAJNIN"}
+                {mundialActivo ? "Filial Israel" : "Filial River Israel \"El TUCU\" SAJNIN"}
               </span>
             </div>
           </Link>

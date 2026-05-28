@@ -48,11 +48,12 @@ export default function MundialHome() {
   const [galeriaFotos, setGaleriaFotos] = useState<GaleriaFoto[]>([]);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [paginaGaleria, setPaginaGaleria] = useState(0);
+  const [estadiosVisibles, setEstadiosVisibles] = useState(3);
   const COLS = 4; const ROWS = 3; const PAGE_SIZE = COLS * ROWS;
   const totalPaginas = Math.max(1, Math.ceil(galeriaFotos.length / PAGE_SIZE));
 
   useEffect(() => {
-    fetch("/api/videos", { cache: "no-store" }).then(r => r.json())
+    fetch("/api/videos?categoria=seleccion", { cache: "no-store" }).then(r => r.json())
       .then((d: { videos?: VideoGaleria[] }) => setVideos(d.videos ?? [])).catch(() => {});
     fetch("/api/galeria?categoria=seleccion", { cache: "no-store" }).then(r => r.json())
       .then((d: { fotos?: GaleriaFoto[] }) => setGaleriaFotos(d.fotos ?? [])).catch(() => {});
@@ -108,9 +109,9 @@ export default function MundialHome() {
               transition={{ delay: 0.1 }}
               className="text-5xl md:text-7xl lg:text-[7.5rem] font-display font-black mb-5 leading-[0.95] tracking-tight text-shadow-cinema"
             >
-              LA <span className="text-arg-celeste">SCALONETA</span>
+              <span className="text-white">LA</span> <span className="text-arg-celeste">SCALONETA</span>
               <br />
-              <span className="text-arg-dorado">EN ISRAEL</span>
+              <span className="text-white">EN ISRAEL</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
@@ -426,14 +427,14 @@ export default function MundialHome() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {ESTADIOS.map((e, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {ESTADIOS.slice(0, estadiosVisibles).map((e, i) => (
               <motion.div
                 key={e.id}
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.03 }}
+                transition={{ delay: (i % 3) * 0.05 }}
                 className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-arg-celeste/40 rounded-2xl p-4 transition-all cursor-pointer"
               >
                 <div className={`h-1 w-12 rounded-full mb-3 bg-gradient-to-r ${PAISES_COLORS[e.pais]}`} />
@@ -450,6 +451,22 @@ export default function MundialHome() {
               </motion.div>
             ))}
           </div>
+
+          {estadiosVisibles < ESTADIOS.length && (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setEstadiosVisibles(n => Math.min(n + 3, ESTADIOS.length))}
+                className="inline-flex items-center gap-2 bg-arg-celeste/15 hover:bg-arg-celeste/25 border border-arg-celeste/40 text-arg-celeste font-bold uppercase tracking-widest text-xs px-5 py-2.5 rounded-full transition-colors"
+              >
+                Ver más estadios
+                <span className="text-white/50 font-normal normal-case tracking-normal">
+                  ({estadiosVisibles}/{ESTADIOS.length})
+                </span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* Mapa interactivo */}
           <div className="mt-10">

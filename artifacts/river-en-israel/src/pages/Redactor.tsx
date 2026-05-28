@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "galeria-seleccion" | "videos" | "analytics" | "suscriptores" | "publicaciones-hebreo";
+type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "historia" | "postulantes" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
 
 interface Suscriptor {
   id: number;
@@ -378,7 +378,9 @@ function resolverUrlVideo(url: string) {
   return url;
 }
 
-function VideosTab() {
+function VideosTab({ categoria = "river" }: { categoria?: "river" | "seleccion" } = {}) {
+  const esSeleccion = categoria === "seleccion";
+  const tituloTab = esSeleccion ? "Videos Selección 🇦🇷" : "Videos River";
   const [videosList, setVideosList] = useState<VideoGaleria[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -402,7 +404,7 @@ function VideosTab() {
     setCargando(true);
     setError("");
     try {
-      const res = await fetch("/api/videos", { cache: "no-store" });
+      const res = await fetch(`/api/videos?categoria=${categoria}`, { cache: "no-store" });
       const data = await res.json() as { videos?: VideoGaleria[] };
       setVideosList(data.videos ?? []);
     } catch {
@@ -412,7 +414,7 @@ function VideosTab() {
     }
   };
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [categoria]);
 
   const abrirEdicion = (vid: VideoGaleria) => {
     setEditandoId(vid.id);
@@ -471,6 +473,7 @@ function VideosTab() {
       const fd = new FormData();
       fd.append("video", nuevoFile);
       fd.append("titulo", nuevoTitulo);
+      fd.append("categoria", categoria);
       const res = await fetch("/api/videos", { method: "POST", body: fd });
       const data = await res.json() as { ok?: boolean; video?: VideoGaleria; error?: string };
       if (data.ok && data.video) {
@@ -493,9 +496,11 @@ function VideosTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-river-black flex items-center gap-2">
-            <Video className="w-5 h-5 text-river-red" /> Videos de Galería
+            <Video className={`w-5 h-5 ${esSeleccion ? "text-sky-500" : "text-river-red"}`} /> {tituloTab}
           </h2>
-          <p className="text-xs text-gray-400 mt-0.5">{videosList.length} videos · Subí, editá o eliminá videos de la galería</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {videosList.length} videos · {esSeleccion ? "Aparecen en la home de La Scaloneta en Israel" : "Aparecen en la home de River en Israel"}
+          </p>
         </div>
         <button onClick={cargar} disabled={cargando}
           className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors">
@@ -1554,7 +1559,7 @@ export default function Redactor() {
     const tabParam = params.get("tab");
     const tabsValidos: Tab[] = [
       "redactor", "publicaciones", "publicaciones-seleccion", "publicaciones-libres", "historia",
-      "postulantes", "galeria", "videos", "analytics", "suscriptores",
+      "postulantes", "galeria", "galeria-seleccion", "videos", "videos-seleccion", "analytics", "suscriptores",
       "publicaciones-hebreo",
     ];
     if (tabParam && (tabsValidos as string[]).includes(tabParam)) {
@@ -1992,7 +1997,17 @@ export default function Redactor() {
                   : "text-gray-500 hover:text-river-red"
               }`}
             >
-              <Video className="w-4 h-4" /> Videos de Galería
+              <Video className="w-4 h-4" /> Videos River
+            </button>
+            <button
+              onClick={() => setTab("videos-seleccion")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "videos-seleccion"
+                  ? "bg-sky-500 text-white shadow-sm"
+                  : "text-gray-500 hover:text-sky-500"
+              }`}
+            >
+              <Video className="w-4 h-4" /> Videos Selección 🇦🇷
             </button>
           </div>
         </div>
@@ -3969,7 +3984,8 @@ export default function Redactor() {
         {tab === "galeria-seleccion" && <GaleriaTab categoria="seleccion" />}
 
         {/* ── VIDEOS DE GALERÍA ────────────────────────────────────────── */}
-        {tab === "videos" && <VideosTab />}
+        {tab === "videos" && <VideosTab categoria="river" />}
+        {tab === "videos-seleccion" && <VideosTab categoria="seleccion" />}
       </div>
     </div>
   );

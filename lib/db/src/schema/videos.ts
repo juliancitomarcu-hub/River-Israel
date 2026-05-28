@@ -8,6 +8,7 @@ export const videosTable = pgTable("videos_galeria", {
   titulo: text("titulo").notNull().default(""),
   thumbnail: text("thumbnail"),
   orden: integer("orden").notNull().default(0),
+  categoria: text("categoria").notNull().default("river"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

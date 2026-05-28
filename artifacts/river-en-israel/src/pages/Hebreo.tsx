@@ -110,7 +110,7 @@ export default function Hebreo() {
 
   // Videos
   useEffect(() => {
-    fetch("/api/videos", { cache: "no-store" })
+    fetch("/api/videos?categoria=river", { cache: "no-store" })
       .then(r => r.json())
       .then((d: { videos?: VideoGaleria[] }) => setVideos((d.videos ?? []).slice(0, 4)))
       .catch(() => {});
