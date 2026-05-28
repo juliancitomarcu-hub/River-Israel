@@ -1,4 +1,5 @@
 import { ai } from "@workspace/integrations-gemini-ai";
+import { generarImagenIG } from "./lib/generar-imagen-ig";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq, sql as sqlRaw } from "drizzle-orm";
@@ -531,7 +532,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
       logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl }, "Scheduler: nota autopublicada con foto automática");
     } else {
       // ── MODO MANUAL: artículo completo + 2 botones ────────────────────
-      // Si hay imagen, la enviamos primero como sendPhoto
+      // Si hay imagen scrapeada, la enviamos primero como sendPhoto
       if (imagenAutoUrl) {
         await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
           method: "POST",
@@ -543,6 +544,32 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false): Pro
             parse_mode: "Markdown",
           }),
         }).catch(() => { /* no bloquear si falla la foto */ });
+      }
+
+      // Foto 1:1 generada por Gemini para Instagram (siempre, además de la scrapeada)
+      const imagenIG = await generarImagenIG(titulo, "river");
+      if (imagenIG) {
+        try {
+          const form = new FormData();
+          form.append("chat_id", chatId);
+          form.append("caption", `📸 *Foto 1:1 para Instagram*\n_${titulo}_`);
+          form.append("parse_mode", "Markdown");
+          form.append(
+            "photo",
+            new Blob([new Uint8Array(imagenIG.buffer)], { type: imagenIG.mimeType }),
+            `ig-${savedNoticia.id}.${imagenIG.mimeType.includes("jpeg") ? "jpg" : "png"}`,
+          );
+          await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+            method: "POST",
+            body: form,
+          });
+          await db
+            .update(noticiasTable)
+            .set({ imagenInstagram: imagenIG.url })
+            .where(eq(noticiasTable.id, savedNoticia.id));
+        } catch (err) {
+          logger.warn({ err }, "Scheduler: no se pudo mandar foto IG por Telegram");
+        }
       }
 
       // Artículo completo — sin truncar. El contenido redactado cabe dentro de 4096 chars.

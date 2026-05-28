@@ -5,6 +5,7 @@ import { noticiasTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { PROMPT_MAESTRO } from "../lib/prompt-maestro";
 import { requireAdmin } from "../middleware/requireAdmin";
+import { generarImagenIG, type CategoriaImagen } from "../lib/generar-imagen-ig";
 
 const router: IRouter = Router();
 
@@ -74,12 +75,14 @@ router.post("/procesar-noticia", async (req, res) => {
 });
 
 router.post("/enviar-telegram", async (req, res) => {
-  const { texto, textoOriginal, fuente, imagenPortada } = req.body as {
+  const { texto, textoOriginal, fuente, imagenPortada, categoria } = req.body as {
     texto?: string;
     textoOriginal?: string;
     fuente?: string;
     imagenPortada?: string;
+    categoria?: CategoriaImagen;
   };
+  const categoriaFinal: CategoriaImagen = categoria === "seleccion" ? "seleccion" : "river";
 
   const token = process.env.TELEGRAM_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -97,6 +100,9 @@ router.post("/enviar-telegram", async (req, res) => {
   try {
     const { titulo, contenido, tags } = parsearResultado(texto);
 
+    // Generar imagen 1:1 para Instagram con Gemini. Si falla, seguimos sin foto IG.
+    const imagenIG = await generarImagenIG(titulo, categoriaFinal);
+
     const [noticia] = await db
       .insert(noticiasTable)
       .values({
@@ -108,8 +114,32 @@ router.post("/enviar-telegram", async (req, res) => {
         publicada: false,
         pendiente: true,
         imagenPortada: imagenPortada ?? "",
+        imagenInstagram: imagenIG?.url ?? "",
+        categoria: categoriaFinal,
       })
       .returning();
+
+    // Mandar la foto IG como PRIMER mensaje (multipart) — para que el editor
+    // la pueda descargar directo desde Telegram y subir al feed sin pasar por la web.
+    if (imagenIG) {
+      try {
+        const form = new FormData();
+        form.append("chat_id", chatId);
+        form.append("caption", `📸 *Foto 1:1 para Instagram*\n_${titulo}_`);
+        form.append("parse_mode", "Markdown");
+        form.append(
+          "photo",
+          new Blob([new Uint8Array(imagenIG.buffer)], { type: imagenIG.mimeType }),
+          `ig-${noticia.id}.${imagenIG.mimeType.includes("jpeg") ? "jpg" : "png"}`,
+        );
+        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+          method: "POST",
+          body: form,
+        });
+      } catch (err) {
+        req.log.warn({ err }, "No se pudo mandar la foto IG por Telegram, sigo con el texto");
+      }
+    }
 
     const replyMarkup = {
       inline_keyboard: [
