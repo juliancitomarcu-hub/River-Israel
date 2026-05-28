@@ -13,6 +13,14 @@
   --color-river-black: hsl(0 0% 10%);
   --color-river-gray: hsl(0 0% 96%);
 
+  /* ── Paleta Mundial / Selección Argentina ── */
+  --color-arg-celeste: #74ACDF;
+  --color-arg-celeste-hover: #5B95C9;
+  --color-arg-celeste-dark: #4A82B7;
+  --color-arg-dorado: #F1B82D;
+  --color-arg-dorado-hover: #D9A21A;
+  --color-arg-azul-noche: #0a1628;
+
   --color-primary: hsl(0 100% 40%);
   --color-primary-foreground: hsl(0 0% 100%);
   
@@ -59,6 +67,32 @@
   body {
     @apply bg-background text-foreground antialiased font-sans;
     scroll-behavior: smooth;
+  }
+
+  /* ── Modo Mundial: intervención del logo de River con bandera argentina ── */
+  html[data-theme="mundial"] .escudo-river {
+    position: relative;
+    border-radius: 9999px;
+    padding: 3px;
+    background:
+      conic-gradient(from 0deg,
+        #74ACDF 0deg, #74ACDF 90deg,
+        #FFFFFF 90deg, #FFFFFF 180deg,
+        #74ACDF 180deg, #74ACDF 270deg,
+        #F1B82D 270deg, #F1B82D 360deg);
+    box-shadow: 0 0 16px rgba(241, 184, 45, 0.5);
+  }
+  html[data-theme="mundial"] .escudo-river::after {
+    content: "🇦🇷";
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    font-size: 14px;
+    line-height: 1;
+    background: #0a1628;
+    border-radius: 9999px;
+    padding: 1px 3px;
+    border: 1px solid #F1B82D;
   }
 
   h1, h2, h3, h4, h5, h6 {

@@ -12,6 +12,8 @@ import { Link } from "wouter";
 import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
 import ShareButton from "@/components/ShareButton";
 import CredencialGenerador from "@/components/CredencialGenerador";
+import MundialHome from "@/pages/MundialHome";
+import { useMundialMode } from "@/lib/mundial-mode";
 
 interface GaleriaFoto {
   id: number;
@@ -37,6 +39,9 @@ const suscripSchema = z.object({
 type SuscripValues = z.infer<typeof suscripSchema>;
 
 export default function Home() {
+  const mundialActivo = useMundialMode();
+  if (mundialActivo) return <MundialHome />;
+
   const [mostrarCredencial, setMostrarCredencial] = useState(false);
   const [suscripEstado, setSuscripEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [suscripError, setSuscripError] = useState("");

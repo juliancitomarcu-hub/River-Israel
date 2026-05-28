@@ -1,0 +1,207 @@
+import { useMemo } from "react";
+import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { MapPin, Trophy, Calendar, ChevronRight } from "lucide-react";
+import { CountdownArgentina } from "@/components/CountdownArgentina";
+import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ } from "@/lib/mundial-data";
+
+const PAISES_COLORS: Record<string, string> = {
+  USA: "from-blue-600 to-red-500",
+  "Canadá": "from-red-600 to-white",
+  "México": "from-green-600 to-red-600",
+};
+
+export default function MundialHome() {
+  const totalEquipos = useMemo(() => GRUPOS.reduce((a, g) => a + g.equipos.length, 0), []);
+
+  return (
+    <div className="bg-[#0a1628] text-white min-h-screen">
+      {/* ═══════════ HERO ═══════════ */}
+      <section className="relative overflow-hidden pt-28 pb-16 md:pt-32 md:pb-20">
+        {/* Bandera argentina como fondo */}
+        <div className="absolute inset-0 opacity-[0.08]">
+          <div className="absolute inset-x-0 top-0 h-1/3 bg-arg-celeste" />
+          <div className="absolute inset-x-0 top-1/3 h-1/3 bg-white" />
+          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-arg-celeste" />
+        </div>
+        {/* Sol radial */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-arg-dorado/10 blur-[140px] rounded-full pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-10">
+            <motion.span
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-block bg-arg-dorado text-[#0a1628] text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-5"
+            >
+              FIFA World Cup 2026 · USA · Canadá · México
+            </motion.span>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-5xl md:text-7xl lg:text-8xl font-display font-black mb-4 leading-none"
+            >
+              LA <span className="text-arg-celeste">SCALONETA</span>
+              <br />
+              <span className="text-arg-dorado">EN ISRAEL</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-white/70 text-base md:text-xl max-w-2xl mx-auto"
+            >
+              Toda la pasión de la Selección Argentina vivida desde Tierra Santa.
+              Defendiendo la corona del mundo. 🏆
+            </motion.p>
+          </div>
+
+          {/* Countdown */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <CountdownArgentina />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════ GRUPOS ═══════════ */}
+      <section className="py-16 bg-gradient-to-b from-[#0a1628] to-[#091324]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="bg-arg-celeste/20 text-arg-celeste border border-arg-celeste/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
+              48 equipos · 12 grupos
+            </span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-2">
+              GRUPOS DEL <span className="text-arg-celeste">MUNDIAL</span>
+            </h2>
+            <p className="text-white/60 text-sm">
+              {totalEquipos} selecciones. Una sola corona. Argentina defiende el título.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+            {GRUPOS.map((g, i) => {
+              const isArg = g.letra === GRUPO_ARGENTINA;
+              return (
+                <motion.div
+                  key={g.letra}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.04, duration: 0.4 }}
+                  className={`rounded-2xl p-4 transition-all ${
+                    isArg
+                      ? "bg-gradient-to-br from-arg-celeste/20 to-arg-dorado/15 border-2 border-arg-dorado shadow-[0_0_30px_rgba(241,184,45,0.25)]"
+                      : "bg-white/5 border border-white/10 hover:border-white/25"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`font-display text-2xl font-bold ${isArg ? "text-arg-dorado" : "text-white"}`}>
+                      Grupo {g.letra}
+                    </h3>
+                    {isArg && (
+                      <span className="text-[9px] font-bold uppercase tracking-widest bg-arg-dorado text-[#0a1628] px-2 py-0.5 rounded-full">
+                        Argentina
+                      </span>
+                    )}
+                  </div>
+                  <ul className="space-y-1.5">
+                    {g.equipos.map(eq => (
+                      <li
+                        key={eq.code}
+                        className={`flex items-center gap-2 text-sm ${
+                          isArg && eq.code === "ARG"
+                            ? "text-arg-dorado font-bold"
+                            : "text-white/85"
+                        }`}
+                      >
+                        <span className="text-base">{eq.bandera}</span>
+                        <span className="truncate">{eq.nombre}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ ESTADIOS ═══════════ */}
+      <section className="py-16 bg-[#091324]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="bg-arg-dorado/20 text-arg-dorado border border-arg-dorado/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
+              16 sedes · 3 países
+            </span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-2">
+              ESTADIOS DEL <span className="text-arg-dorado">MUNDIAL</span>
+            </h2>
+            <p className="text-white/60 text-sm max-w-2xl mx-auto">
+              Desde el legendario Azteca hasta el MetLife de la final. 16 escenarios para la fiesta más grande del fútbol.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {ESTADIOS.map((e, i) => (
+              <motion.div
+                key={e.id}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.03 }}
+                className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-arg-celeste/40 rounded-2xl p-4 transition-all cursor-pointer"
+              >
+                <div className={`h-1 w-12 rounded-full mb-3 bg-gradient-to-r ${PAISES_COLORS[e.pais]}`} />
+                <h3 className="font-display font-bold text-white text-lg leading-tight mb-1 group-hover:text-arg-celeste transition-colors">
+                  {e.nombre}
+                </h3>
+                <p className="text-white/60 text-xs flex items-center gap-1 mb-2">
+                  <MapPin className="w-3 h-3" /> {e.ciudad} · {e.pais}
+                </p>
+                <div className="flex items-center justify-between text-[11px] text-white/40">
+                  <span>{e.capacidad.toLocaleString()} esp.</span>
+                  <span>Desde {e.inaugurado}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <p className="text-center text-white/40 text-xs mt-6">
+            Próximamente: mapa interactivo con fotos y detalles de cada estadio.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══════════ CTA NOTICIAS ═══════════ */}
+      <section className="py-16 bg-gradient-to-b from-[#091324] to-[#0a1628]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Trophy className="w-12 h-12 text-arg-dorado mx-auto mb-4" />
+          <h2 className="text-3xl md:text-5xl font-display font-bold mb-3">
+            COBERTURA <span className="text-arg-celeste">MILLONARIA</span>
+          </h2>
+          <p className="text-white/70 mb-8 max-w-2xl mx-auto">
+            Análisis tácticos, previas, post-partidos y todo lo que pasa con la Scaloneta y River durante el Mundial.
+          </p>
+          <Link
+            href="/actualidad"
+            className="inline-flex items-center gap-2 bg-arg-dorado hover:bg-arg-dorado/90 text-[#0a1628] font-bold px-6 py-3 rounded-full uppercase tracking-wide text-sm transition-all shadow-lg hover:-translate-y-0.5"
+          >
+            Ver últimas noticias <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer leve recordando River */}
+      <div className="text-center py-6 bg-[#0a1628] border-t border-white/5">
+        <p className="text-white/40 text-xs">
+          🔴⚪ <span className="font-semibold">River en Israel</span> · Modo Mundial activo · Volvemos al rojo y blanco después de la final
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useMundialMode } from "@/lib/mundial-mode";
 
 const NAV_LINKS = [
   { name: "Inicio",          href: "/" },
@@ -19,6 +20,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
+  const mundialActivo = useMundialMode();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -57,15 +59,31 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="relative w-9 h-9 overflow-hidden rounded-full border-2 border-white shadow-[0_0_10px_rgba(204,0,0,0.5)] group-hover:scale-105 transition-transform">
-              <div className="absolute inset-0 bg-diagonal-red"></div>
+            <div className={cn(
+              "escudo-river relative w-9 h-9 overflow-hidden rounded-full border-2 border-white group-hover:scale-105 transition-transform",
+              mundialActivo
+                ? "shadow-[0_0_14px_rgba(116,172,223,0.6)]"
+                : "shadow-[0_0_10px_rgba(204,0,0,0.5)]"
+            )}>
+              {mundialActivo ? (
+                <div className="absolute inset-0 flex flex-col">
+                  <div className="flex-1 bg-arg-celeste"></div>
+                  <div className="flex-1 bg-white"></div>
+                  <div className="flex-1 bg-arg-celeste"></div>
+                </div>
+              ) : (
+                <div className="absolute inset-0 bg-diagonal-red"></div>
+              )}
             </div>
             <div className="flex flex-col">
               <span className="font-display font-bold text-lg lg:text-xl text-white leading-none tracking-wide">
-                RIVER EN ISRAEL
+                {mundialActivo ? (
+                  <>LA <span className="text-arg-celeste">SCALONETA</span> <span className="text-arg-dorado">EN ISRAEL</span></>
+                ) : "RIVER EN ISRAEL"}
               </span>
               <span className="text-[0.55rem] text-gray-300 font-semibold tracking-wide whitespace-nowrap flex items-center gap-0.5">
-                <MapPin className="w-2.5 h-2.5 text-river-red shrink-0" /> Filial River Israel &quot;El TUCU&quot; SAJNIN
+                <MapPin className={cn("w-2.5 h-2.5 shrink-0", mundialActivo ? "text-arg-dorado" : "text-river-red")} />
+                {mundialActivo ? "Modo Mundial · Volvemos a River el 21/7" : "Filial River Israel \"El TUCU\" SAJNIN"}
               </span>
             </div>
           </Link>
