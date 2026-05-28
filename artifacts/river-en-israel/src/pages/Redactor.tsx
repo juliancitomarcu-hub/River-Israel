@@ -1337,6 +1337,21 @@ export default function Redactor() {
       const id = parseInt(editarId);
       if (!isNaN(id)) cargarParaEditar(id);
     }
+    const tabParam = params.get("tab");
+    const tabsValidos: Tab[] = [
+      "redactor", "publicaciones", "publicaciones-libres", "historia",
+      "postulantes", "galeria", "videos", "analytics", "suscriptores",
+      "publicaciones-hebreo",
+    ];
+    if (tabParam && (tabsValidos as string[]).includes(tabParam)) {
+      const t = tabParam as Tab;
+      setTab(t);
+      if (t === "publicaciones-hebreo") cargarNoticiasHebreo();
+      else if (t === "publicaciones") cargarPublicaciones();
+      else if (t === "historia") cargarHistoria();
+      else if (t === "postulantes") cargarPostulaciones();
+      else if (t === "suscriptores") cargarSuscriptores();
+    }
   }, []);
 
   const buscarNoticias = async () => {

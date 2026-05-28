@@ -109,7 +109,56 @@ export async function traducirYGuardarHebreo(
 
     await db.update(noticiasTable).set({ ...traduccion, hebreoPublicada: false }).where(eq(noticiasTable.id, noticiaId));
     logger.info({ id: noticiaId, tituloHe: traduccion.tituloHe }, "✡ Traducción hebrea guardada");
+
+    await avisarTraduccionBorrador({
+      tituloEs: noticia.titulo,
+      tituloHe: traduccion.tituloHe,
+    }).catch((err) => logger.warn({ err, noticiaId }, "Aviso Telegram traducción hebrea falló"));
   } catch (err) {
     logger.error({ err, noticiaId }, "Error en traducirYGuardarHebreo");
+  }
+}
+
+/**
+ * Avisa por Telegram al admin que una traducción al hebreo quedó en borrador
+ * esperando revisión en /redactor (tab "Publicaciones en Hebreo").
+ *
+ * Se puede desactivar seteando AVISAR_HEBREO_BORRADOR=0.
+ */
+async function avisarTraduccionBorrador(input: {
+  tituloEs: string;
+  tituloHe: string;
+}): Promise<void> {
+  if (process.env.AVISAR_HEBREO_BORRADOR === "0") return;
+
+  const token = process.env.TELEGRAM_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+
+  const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+  const link = `https://${dominio}/redactor?tab=publicaciones-hebreo`;
+
+  const escape = (s: string) =>
+    s.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+
+  const texto =
+    "✡ *Nueva traducción al hebreo en borrador*\n\n" +
+    `🇪🇸 ${escape(input.tituloEs)}\n` +
+    `🇮🇱 ${escape(input.tituloHe)}\n\n` +
+    `[Revisar y publicar en /redactor](${link})`;
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: texto,
+      parse_mode: "MarkdownV2",
+      disable_web_page_preview: true,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    logger.warn({ status: res.status, body }, "Telegram sendMessage falló (aviso hebreo)");
   }
 }
