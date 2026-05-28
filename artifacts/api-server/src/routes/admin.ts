@@ -1,13 +1,19 @@
 import { Router, type IRouter } from "express";
-import { consumeEditToken, createNoticiaSession, getNoticiaSession } from "../lib/edit-tokens";
+import {
+  consumeEditToken,
+  createAdminSession,
+  createNoticiaSession,
+  getAdminSession,
+  getNoticiaSession,
+  revokeAdminSession,
+} from "../lib/edit-tokens";
 
 const router: IRouter = Router();
 
-// Acepta el ADMIN_TOKEN permanente O una sesión scoped (canjeada desde un
-// edit_token de Telegram). Esto último permite que, al recargar la página
-// dentro de la ventana de la sesión, el token en sessionStorage siga siendo
-// reconocido como "logueado" para la UI, aunque solo pueda usar los
-// endpoints scoped a su noticia.
+// Acepta el ADMIN_TOKEN permanente (uso interno / curl), una sesión admin
+// creada vía /admin/login, O una sesión scoped (canjeada desde un edit_token
+// de Telegram). Las sesiones devuelven su expiresAt para que la UI pueda
+// avisar antes de que caduque.
 router.get("/admin/check", (req, res) => {
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) {
@@ -22,7 +28,12 @@ router.get("/admin/check", (req, res) => {
     return;
   }
   if (provided === expected) {
-    res.json({ ok: true, scope: "admin" });
+    res.json({ ok: true, scope: "admin", expiresAt: null });
+    return;
+  }
+  const adminSession = getAdminSession(provided);
+  if (adminSession) {
+    res.json({ ok: true, scope: "admin", expiresAt: adminSession.expiresAt });
     return;
   }
   const session = getNoticiaSession(provided);
@@ -31,6 +42,38 @@ router.get("/admin/check", (req, res) => {
     return;
   }
   res.status(401).json({ error: "No autorizado" });
+});
+
+// Login con la contraseña de admin: devuelve una sesión efímera. Así nunca
+// guardamos el ADMIN_TOKEN permanente en el navegador.
+router.post("/admin/login", (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    req.log.error("ADMIN_TOKEN no está configurado — rechazando login");
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const body = (req.body ?? {}) as { password?: unknown };
+  const password = typeof body.password === "string" ? body.password : "";
+  if (!password) {
+    res.status(400).json({ error: "Falta contraseña" });
+    return;
+  }
+  if (password !== expected) {
+    res.status(401).json({ error: "Contraseña incorrecta" });
+    return;
+  }
+  const session = createAdminSession();
+  res.json({ sessionToken: session.token, expiresAt: session.expiresAt });
+});
+
+// Revoca la sesión admin actual (si la hay). Idempotente.
+router.post("/admin/logout", (req, res) => {
+  const header = req.header("x-admin-token");
+  const body = (req.body ?? {}) as { token?: unknown };
+  const provided = header ?? (typeof body.token === "string" ? body.token : "");
+  if (provided) revokeAdminSession(provided);
+  res.json({ ok: true });
 });
 
 // Canjea un edit_token de un solo uso (enviado por Telegram al admin) por una

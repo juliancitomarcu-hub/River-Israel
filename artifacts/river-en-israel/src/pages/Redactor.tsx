@@ -727,24 +727,62 @@ function VideosTab() {
 export default function Redactor() {
   const [tab, setTab] = useState<Tab>("redactor");
   const [adminToken, setAdminToken] = useState<string>(() => {
-    try { return sessionStorage.getItem("river_admin_token") ?? localStorage.getItem("river_admin_token") ?? ""; } catch { return ""; }
+    try { return sessionStorage.getItem("river_admin_token") ?? ""; } catch { return ""; }
+  });
+  // Timestamp (ms) cuando caduca la sesión. null = sin caducidad conocida
+  // (ej: ADMIN_TOKEN permanente usado por dev). Se persiste junto al token.
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(() => {
+    try {
+      const raw = sessionStorage.getItem("river_admin_token_expires");
+      if (!raw) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    } catch { return null; }
   });
   const [authStatus, setAuthStatus] = useState<"checking" | "needed" | "ok" | "error">("checking");
   const [loginInput, setLoginInput] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  // Tick para refrescar el countdown del aviso de caducidad
+  const [now, setNow] = useState(() => Date.now());
   const adminHeaders = (): Record<string, string> => adminToken ? { "x-admin-token": adminToken } : {};
   const pedirAdminToken = () => {
     setAuthStatus("needed");
-    setLoginInput(adminToken);
+    setLoginInput("");
   };
 
-  // Verifica un token contra el backend
-  const verificarToken = async (token: string): Promise<boolean> => {
+  const guardarSesion = (token: string, expiresAt: number | null) => {
+    setAdminToken(token);
+    setSessionExpiresAt(expiresAt);
+    try {
+      sessionStorage.setItem("river_admin_token", token);
+      if (expiresAt != null) sessionStorage.setItem("river_admin_token_expires", String(expiresAt));
+      else sessionStorage.removeItem("river_admin_token_expires");
+      // Limpiar el viejo localStorage por si quedó de una versión anterior:
+      // ya no persistimos la contraseña indefinidamente.
+      localStorage.removeItem("river_admin_token");
+    } catch { /* ignore */ }
+  };
+
+  const limpiarSesion = () => {
+    setAdminToken("");
+    setSessionExpiresAt(null);
+    try {
+      sessionStorage.removeItem("river_admin_token");
+      sessionStorage.removeItem("river_admin_token_expires");
+      localStorage.removeItem("river_admin_token");
+    } catch { /* ignore */ }
+  };
+
+  // Verifica un token contra el backend. Devuelve null si inválido,
+  // o el expiresAt (number | null) si la sesión es válida.
+  const verificarToken = async (token: string): Promise<{ expiresAt: number | null } | null> => {
     try {
       const res = await fetch("/api/admin/check", { headers: { "x-admin-token": token } });
-      return res.ok;
-    } catch { return false; }
+      if (!res.ok) return null;
+      const data = await res.json() as { expiresAt?: number | null };
+      return { expiresAt: typeof data.expiresAt === "number" ? data.expiresAt : null };
+    } catch { return null; }
   };
 
   // Al montar: validar token guardado contra el backend.
@@ -770,16 +808,10 @@ export default function Redactor() {
               body: JSON.stringify({ token: editToken }),
             });
             if (res.ok) {
-              const data = await res.json() as { sessionToken?: string };
+              const data = await res.json() as { sessionToken?: string; expiresAt?: number };
               if (data.sessionToken) {
                 if (cancelled) return;
-                setAdminToken(data.sessionToken);
-                // Sólo sessionStorage (no localStorage): la sesión que viene de
-                // un link de Telegram es efímera y no debe sobrevivir a cerrar
-                // la pestaña.
-                try {
-                  sessionStorage.setItem("river_admin_token", data.sessionToken);
-                } catch { /* ignore */ }
+                guardarSesion(data.sessionToken, typeof data.expiresAt === "number" ? data.expiresAt : null);
                 setAuthStatus("ok");
                 return;
               }
@@ -790,16 +822,42 @@ export default function Redactor() {
       } catch { /* ignore */ }
 
       if (!adminToken) { setAuthStatus("needed"); return; }
-      const ok = await verificarToken(adminToken);
+      const result = await verificarToken(adminToken);
       if (cancelled) return;
-      setAuthStatus(ok ? "ok" : "needed");
-      if (!ok) {
-        try { sessionStorage.removeItem("river_admin_token"); localStorage.removeItem("river_admin_token"); } catch { /* ignore */ }
+      if (result) {
+        setSessionExpiresAt(result.expiresAt);
+        try {
+          if (result.expiresAt != null) sessionStorage.setItem("river_admin_token_expires", String(result.expiresAt));
+          else sessionStorage.removeItem("river_admin_token_expires");
+        } catch { /* ignore */ }
+        setAuthStatus("ok");
+      } else {
+        setAuthStatus("needed");
+        limpiarSesion();
       }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Tick cada 30s para que el countdown / aviso de caducidad se mantenga
+  // actualizado sin esperar a otra interacción.
+  useEffect(() => {
+    if (authStatus !== "ok" || sessionExpiresAt == null) return;
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, [authStatus, sessionExpiresAt]);
+
+  // Auto-logout cuando la sesión caduca.
+  useEffect(() => {
+    if (authStatus !== "ok" || sessionExpiresAt == null) return;
+    if (now >= sessionExpiresAt) {
+      limpiarSesion();
+      setAuthStatus("needed");
+      setLoginError("Tu sesión caducó. Volvé a ingresar la contraseña.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [now, sessionExpiresAt, authStatus]);
 
   // Inyectar el x-admin-token en TODOS los fetch a /api/* mientras estamos en Redactor
   useEffect(() => {
@@ -826,21 +884,41 @@ export default function Redactor() {
     if (!t) { setLoginError("Ingresá la contraseña"); return; }
     setLoginLoading(true);
     setLoginError("");
-    const ok = await verificarToken(t);
-    setLoginLoading(false);
-    if (!ok) { setLoginError("Contraseña incorrecta"); return; }
-    setAdminToken(t);
     try {
-      sessionStorage.setItem("river_admin_token", t);
-      localStorage.setItem("river_admin_token", t);
-    } catch { /* ignore */ }
-    setAuthStatus("ok");
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: t }),
+      });
+      if (!res.ok) {
+        setLoginLoading(false);
+        setLoginError(res.status === 401 ? "Contraseña incorrecta" : "No se pudo iniciar sesión");
+        return;
+      }
+      const data = await res.json() as { sessionToken?: string; expiresAt?: number };
+      setLoginLoading(false);
+      if (!data.sessionToken) { setLoginError("Respuesta inválida del servidor"); return; }
+      guardarSesion(data.sessionToken, typeof data.expiresAt === "number" ? data.expiresAt : null);
+      setNow(Date.now());
+      setAuthStatus("ok");
+    } catch {
+      setLoginLoading(false);
+      setLoginError("Error de conexión");
+    }
   };
 
   const handleLogout = () => {
-    setAdminToken("");
-    try { sessionStorage.removeItem("river_admin_token"); localStorage.removeItem("river_admin_token"); } catch { /* ignore */ }
+    const t = adminToken;
+    limpiarSesion();
     setAuthStatus("needed");
+    if (t) {
+      // Best-effort: avisar al backend para revocar la sesión.
+      fetch("/api/admin/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": t },
+        body: JSON.stringify({ token: t }),
+      }).catch(() => { /* ignore */ });
+    }
   };
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");
@@ -1662,9 +1740,42 @@ export default function Redactor() {
     );
   }
 
+  const msRestantes = sessionExpiresAt != null ? sessionExpiresAt - now : null;
+  // Aviso ~15 min antes de caducar
+  const mostrarAvisoCaducidad = msRestantes != null && msRestantes > 0 && msRestantes <= 15 * 60 * 1000;
+  const formatRestante = (ms: number): string => {
+    const totalSeg = Math.max(0, Math.floor(ms / 1000));
+    const min = Math.floor(totalSeg / 60);
+    const seg = totalSeg % 60;
+    if (min <= 0) return `${seg}s`;
+    if (min < 60) return `${min} min`;
+    const horas = Math.floor(min / 60);
+    const minRest = min % 60;
+    return minRest > 0 ? `${horas}h ${minRest}m` : `${horas}h`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {mostrarAvisoCaducidad && (
+          <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-800 text-sm">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold">Tu sesión está por caducar</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Quedan <strong>{formatRestante(msRestantes)}</strong>. Guardá lo que estés editando y volvé a entrar para extenderla.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-xs font-bold underline opacity-80 hover:opacity-100"
+            >
+              Salir
+            </button>
+          </div>
+        )}
 
         {/* Header */}
         <div className="text-center mb-10">

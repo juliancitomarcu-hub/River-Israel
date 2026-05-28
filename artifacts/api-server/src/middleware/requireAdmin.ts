@@ -1,10 +1,19 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
-import { getNoticiaSession } from "../lib/edit-tokens";
+import { getAdminSession, getNoticiaSession } from "../lib/edit-tokens";
 
 function extractToken(req: Request): string | undefined {
   const header = req.header("x-admin-token");
   const query = typeof req.query.token === "string" ? req.query.token : undefined;
   return header ?? query;
+}
+
+// Acepta el ADMIN_TOKEN permanente (env var, para curl / scripts) o un
+// sessionToken de admin canjeado vía /admin/login. Las sesiones caducan
+// solas; el ADMIN_TOKEN sigue siendo válido para uso interno.
+function isFullAdmin(provided: string, expected: string): boolean {
+  if (provided === expected) return true;
+  if (getAdminSession(provided)) return true;
+  return false;
 }
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
@@ -15,7 +24,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
   const provided = extractToken(req);
-  if (!provided || provided !== expected) {
+  if (!provided || !isFullAdmin(provided, expected)) {
     res.status(401).json({ error: "No autorizado" });
     return;
   }
@@ -23,12 +32,12 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
 }
 
 // Permite acceso si:
-//  - viene el ADMIN_TOKEN permanente, O
+//  - viene el ADMIN_TOKEN permanente o una sesión admin válida, O
 //  - viene un session token efímero (canjeado desde un edit_token de Telegram)
 //    que está scoped a la MISMA noticiaId que la del request.
 // Los session tokens NO sirven para ningún otro recurso ni endpoint admin.
-// Acepta ADMIN_TOKEN o cualquier sesión scoped válida (sin verificar a qué
-// nota está scoped). Sólo usar en endpoints que no actúan sobre una nota
+// Acepta ADMIN_TOKEN/sesión admin o cualquier sesión scoped válida (sin verificar
+// a qué nota está scoped). Sólo usar en endpoints que no actúan sobre una nota
 // específica pero que necesita el flujo de edición (ej: pedir presigned URL
 // de upload para la foto de portada).
 export function requireAdminOrAnyNoticiaSession(req: Request, res: Response, next: NextFunction): void {
@@ -43,7 +52,7 @@ export function requireAdminOrAnyNoticiaSession(req: Request, res: Response, nex
     res.status(401).json({ error: "No autorizado" });
     return;
   }
-  if (provided === expected) { next(); return; }
+  if (isFullAdmin(provided, expected)) { next(); return; }
   if (getNoticiaSession(provided)) { next(); return; }
   res.status(401).json({ error: "No autorizado" });
 }
@@ -61,7 +70,7 @@ export function requireAdminOrNoticiaSession(getNoticiaId: (req: Request) => num
       res.status(401).json({ error: "No autorizado" });
       return;
     }
-    if (provided === expected) {
+    if (isFullAdmin(provided, expected)) {
       next();
       return;
     }
