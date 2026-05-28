@@ -9,6 +9,7 @@ import Redactor from "@/pages/Redactor";
 import Noticia from "@/pages/Noticia";
 import Fixture from "@/pages/Fixture";
 import MundialFixture from "@/pages/MundialFixture";
+import MundialHome from "@/pages/MundialHome";
 import Equipo from "@/pages/Equipo";
 import Historia from "@/pages/Historia";
 import Postulacion from "@/pages/Postulacion";
@@ -31,6 +32,7 @@ function Router() {
       <main className="flex-grow">
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/scaloneta" component={MundialHome} />
           <Route path="/redactor" component={Redactor} />
           <Route path="/noticia/:id" component={Noticia} />
           <Route path="/fixture" component={Fixture} />

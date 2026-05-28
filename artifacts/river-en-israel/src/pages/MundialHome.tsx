@@ -1,12 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
-import { MapPin, Trophy, Calendar, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MapPin, Trophy, Calendar, ChevronRight, ChevronLeft, Play, X, ZoomIn } from "lucide-react";
 import { MapaEstadios } from "@/components/MapaEstadios";
 import { CountdownArgentina } from "@/components/CountdownArgentina";
 import { SolDeMayo } from "@/components/SolDeMayo";
 import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ, JUGADORES_SCALONETA } from "@/lib/mundial-data";
-import { setMundialOverride } from "@/lib/mundial-mode";
+
+interface GaleriaFoto { id: number; url: string; caption: string; orden: number; }
+interface VideoGaleria { id: number; url: string; titulo: string; thumbnail: string | null; orden: number; }
+
+const resolverUrl = (url: string) => url.startsWith("/objects/") ? `/api/storage${url}` : url;
 
 const PAISES_COLORS: Record<string, string> = {
   USA: "from-blue-600 to-red-500",
@@ -17,8 +21,54 @@ const PAISES_COLORS: Record<string, string> = {
 export default function MundialHome() {
   const totalEquipos = useMemo(() => GRUPOS.reduce((a, g) => a + g.equipos.length, 0), []);
 
+  // Triple-click en bandera Argentina → Redactor IA filtrado en Selección
+  const banderaClicks = useRef(0);
+  const banderaTimer = useRef<number | null>(null);
+  const handleBanderaClick = () => {
+    banderaClicks.current += 1;
+    if (banderaTimer.current) window.clearTimeout(banderaTimer.current);
+    if (banderaClicks.current >= 3) {
+      banderaClicks.current = 0;
+      window.location.href = "/redactor?tab=publicaciones-seleccion";
+      return;
+    }
+    banderaTimer.current = window.setTimeout(() => { banderaClicks.current = 0; }, 1200);
+  };
+
+  // ── Galería + Videos al pie (como River) ────────────────────────────────
+  const [videos, setVideos] = useState<VideoGaleria[]>([]);
+  const [videoAbierto, setVideoAbierto] = useState<VideoGaleria | null>(null);
+  const [galeriaFotos, setGaleriaFotos] = useState<GaleriaFoto[]>([]);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [paginaGaleria, setPaginaGaleria] = useState(0);
+  const COLS = 4; const ROWS = 3; const PAGE_SIZE = COLS * ROWS;
+  const totalPaginas = Math.max(1, Math.ceil(galeriaFotos.length / PAGE_SIZE));
+
+  useEffect(() => {
+    fetch("/api/videos", { cache: "no-store" }).then(r => r.json())
+      .then((d: { videos?: VideoGaleria[] }) => setVideos(d.videos ?? [])).catch(() => {});
+    fetch("/api/galeria", { cache: "no-store" }).then(r => r.json())
+      .then((d: { fotos?: GaleriaFoto[] }) => setGaleriaFotos(d.fotos ?? [])).catch(() => {});
+  }, []);
+
+  const cerrarLightbox = useCallback(() => setLightboxIdx(null), []);
+  const irAnterior = useCallback(() => setLightboxIdx(i => i !== null ? (i - 1 + galeriaFotos.length) % galeriaFotos.length : null), [galeriaFotos.length]);
+  const irSiguiente = useCallback(() => setLightboxIdx(i => i !== null ? (i + 1) % galeriaFotos.length : null), [galeriaFotos.length]);
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") irAnterior();
+      if (e.key === "ArrowRight") irSiguiente();
+      if (e.key === "Escape") cerrarLightbox();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [lightboxIdx, irAnterior, irSiguiente, cerrarLightbox]);
+
+  const fotosPagina = galeriaFotos.slice(paginaGaleria * PAGE_SIZE, (paginaGaleria + 1) * PAGE_SIZE);
+
   return (
-    <div className="bg-[#0a1628] text-white min-h-screen">
+    <div className="bg-[#0a1628] text-white min-h-screen overflow-x-hidden">
       {/* ═══════════ HERO ═══════════ */}
       <section className="relative overflow-hidden pt-28 pb-20 md:pt-32 md:pb-24 bg-mundial-mesh">
         {/* Sol de Mayo gigante girando lento detrás del título */}
@@ -85,8 +135,21 @@ export default function MundialHome() {
         </div>
       </section>
 
+      {/* Bandera Argentina clickeable (triple-click → Redactor IA) */}
+      <div className="relative z-10 -mt-2 mb-4 flex items-center justify-center">
+        <button
+          type="button"
+          onClick={handleBanderaClick}
+          title=""
+          aria-label="Bandera Argentina"
+          className="select-none cursor-default focus:outline-none opacity-70 hover:opacity-100 transition-opacity"
+        >
+          <span className="text-3xl md:text-4xl block" style={{ filter: "drop-shadow(0 0 8px rgba(116,172,223,0.35))" }}>🇦🇷</span>
+        </button>
+      </div>
+
       {/* ═══════════ GRUPOS ═══════════ */}
-      <section className="py-16 bg-gradient-to-b from-[#0a1628] to-[#091324]">
+      <section id="grupos" className="py-16 bg-gradient-to-b from-[#0a1628] to-[#091324]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="bg-arg-celeste/20 text-arg-celeste border border-arg-celeste/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
@@ -149,7 +212,7 @@ export default function MundialHome() {
       </section>
 
       {/* ═══════════ FIGURAS DE LA SCALONETA ═══════════ */}
-      <section className="relative py-16 bg-gradient-to-b from-[#091324] via-[#0a1f3a] to-[#091324] overflow-hidden">
+      <section id="plantel" className="relative py-16 bg-gradient-to-b from-[#091324] via-[#0a1f3a] to-[#091324] overflow-hidden">
         <div className="pointer-events-none absolute -top-20 -right-20 opacity-[0.06]">
           <SolDeMayo size={420} spin />
         </div>
@@ -194,20 +257,39 @@ export default function MundialHome() {
                     </span>
                   )}
                   <div className="relative aspect-square flex items-center justify-center bg-gradient-to-br from-arg-celeste/30 via-white/5 to-[#0a1628] overflow-hidden">
+                    {/* Fallback siempre presente, foto encima */}
                     <div className="absolute inset-0 opacity-20 flex items-center justify-center">
                       <SolDeMayo size={140} />
                     </div>
                     {esDT ? (
-                      <div className="relative font-display font-black text-arg-dorado text-3xl md:text-4xl text-center leading-none">
+                      <div className="relative font-display font-black text-arg-dorado text-3xl md:text-4xl text-center leading-none z-[1]">
                         DT<br />
                         <span className="text-lg md:text-xl tracking-widest text-white/80">SCALONI</span>
                       </div>
                     ) : (
-                      <div className="relative font-display font-black text-white text-6xl md:text-7xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                      <div className="relative font-display font-black text-white text-6xl md:text-7xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] z-[1]">
                         {j.dorsal}
                       </div>
                     )}
-                    <span className="absolute bottom-2 left-2 text-xl">🇦🇷</span>
+                    {j.foto && (
+                      <img
+                        src={j.foto}
+                        alt={`${j.nombre} ${j.apellido}`}
+                        loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover object-top z-[2]"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    )}
+                    {/* Degradado abajo para que el dorsal/badge se lea */}
+                    {j.foto && (
+                      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0a1628]/85 to-transparent z-[3]" />
+                    )}
+                    {!esDT && j.foto && (
+                      <span className="absolute bottom-2 right-2 z-[4] font-display font-black text-white text-2xl drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
+                        {j.dorsal}
+                      </span>
+                    )}
+                    <span className="absolute bottom-2 left-2 text-xl z-[4]">🇦🇷</span>
                   </div>
                   <div className="p-3 md:p-4 text-center">
                     <h3 className="font-display font-bold text-white text-sm md:text-base leading-tight uppercase tracking-wide">
@@ -240,7 +322,7 @@ export default function MundialHome() {
       </section>
 
       {/* ═══════════ ESTADIOS ═══════════ */}
-      <section className="py-16 bg-[#091324]">
+      <section id="estadios" className="py-16 bg-[#091324]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="bg-arg-dorado/20 text-arg-dorado border border-arg-dorado/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
@@ -323,26 +405,167 @@ export default function MundialHome() {
         </div>
       </section>
 
-      {/* Footer — recordatorio + acceso al sitio de River */}
+      {/* ═══════════ GALERÍA + VIDEOS (al pie, como en River) ═══════════ */}
+      <section id="galeria-videos" className="py-20 bg-gradient-to-b from-[#091324] to-black">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="bg-arg-celeste/15 text-arg-celeste border border-arg-celeste/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
+              Hinchas · Selección · Mundial
+            </span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-2">
+              GALERÍA Y <span className="text-arg-celeste">VIDEOS</span>
+            </h2>
+            <p className="text-white/60 text-sm">Momentos de la Scaloneta y la pasión argentina en Israel.</p>
+          </div>
+
+          {/* Videos */}
+          {videos.length > 0 && (
+            <div className="mb-12">
+              <h3 className="text-arg-dorado font-display font-bold uppercase tracking-widest text-sm mb-4">▶ Videos</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {videos.slice(0, 8).map(v => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setVideoAbierto(v)}
+                    className="group relative aspect-video rounded-xl overflow-hidden border border-white/10 hover:border-arg-celeste/60 transition-all"
+                  >
+                    {v.thumbnail ? (
+                      <img src={resolverUrl(v.thumbnail)} alt={v.titulo} className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-arg-celeste/30 to-[#0a1628]" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-arg-dorado flex items-center justify-center shadow-xl">
+                        <Play className="w-5 h-5 text-[#0a1628] ml-0.5" />
+                      </div>
+                    </div>
+                    <p className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/90 to-transparent text-white text-xs font-semibold truncate">
+                      {v.titulo}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Fotos */}
+          {galeriaFotos.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-arg-dorado font-display font-bold uppercase tracking-widest text-sm">📸 Fotos</h3>
+                {totalPaginas > 1 && (
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setPaginaGaleria(p => Math.max(0, p - 1))} disabled={paginaGaleria === 0}
+                      className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-white/60">{paginaGaleria + 1} / {totalPaginas}</span>
+                    <button onClick={() => setPaginaGaleria(p => Math.min(totalPaginas - 1, p + 1))} disabled={paginaGaleria >= totalPaginas - 1}
+                      className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30">
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {fotosPagina.map((f, idx) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setLightboxIdx(paginaGaleria * PAGE_SIZE + idx)}
+                    className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 hover:border-arg-celeste/60 transition-all"
+                  >
+                    <img src={resolverUrl(f.url)} alt={f.caption} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <ZoomIn className="w-6 h-6 text-white" />
+                    </div>
+                    {f.caption && (
+                      <p className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/85 to-transparent text-white text-[11px] truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                        {f.caption}
+                      </p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-center text-white/40 text-sm py-8">
+              Pronto vamos a sumar fotos del Mundial 🇦🇷
+            </p>
+          )}
+        </div>
+
+        {/* Lightbox fotos */}
+        <AnimatePresence>
+          {lightboxIdx !== null && galeriaFotos[lightboxIdx] && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={cerrarLightbox}
+              className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
+            >
+              <button onClick={cerrarLightbox} className="absolute top-4 right-4 text-white/80 hover:text-white p-2">
+                <X className="w-6 h-6" />
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); irAnterior(); }}
+                className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 bg-white/5 rounded-full">
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <img
+                src={resolverUrl(galeriaFotos[lightboxIdx].url)}
+                alt={galeriaFotos[lightboxIdx].caption}
+                onClick={(e) => e.stopPropagation()}
+                className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+              />
+              <button onClick={(e) => { e.stopPropagation(); irSiguiente(); }}
+                className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 bg-white/5 rounded-full">
+                <ChevronRight className="w-6 h-6" />
+              </button>
+              {galeriaFotos[lightboxIdx].caption && (
+                <p className="absolute bottom-6 inset-x-0 text-center text-white/90 text-sm px-6">
+                  {galeriaFotos[lightboxIdx].caption}
+                </p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Lightbox videos */}
+        <AnimatePresence>
+          {videoAbierto && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setVideoAbierto(null)}
+              className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
+            >
+              <button onClick={() => setVideoAbierto(null)} className="absolute top-4 right-4 text-white/80 hover:text-white p-2">
+                <X className="w-6 h-6" />
+              </button>
+              <video
+                src={resolverUrl(videoAbierto.url)}
+                controls
+                autoPlay
+                onClick={(e) => e.stopPropagation()}
+                className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      {/* Cross-link al sitio de River, como pie de página */}
       <div className="bg-[#0a1628] border-t border-white/5 py-10">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <p className="text-white/50 text-sm mb-4">
             ¿Buscás contenido de <span className="font-semibold text-white/80">Club Atlético River Plate</span>?
-            Durante el Mundial mantenemos toda la historia y noticias millonarias intactas.
+            La filial sigue activa con noticias, historia y todo lo millonario.
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              setMundialOverride("off");
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
+          <Link
+            href="/"
             className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red/90 text-white font-bold px-6 py-3 rounded-full uppercase tracking-wide text-sm transition-all shadow-lg hover:-translate-y-0.5"
           >
-            🔴⚪ Visitar River en Israel <ChevronRight className="w-4 h-4" />
-          </button>
-          <p className="text-white/30 text-[11px] mt-4">
-            Modo Mundial vuelve solo después · Reverte al rojo y blanco automáticamente el 21/07
-          </p>
+            ⚪️🔴 Ir a River en Israel <ChevronRight className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </div>

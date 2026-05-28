@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { MapPin, Phone, Facebook, Instagram, Youtube, Twitter, MessageCircle, Send, X, Users } from "lucide-react";
+import { useMundialMode } from "@/lib/mundial-mode";
 
 // ─── HOOK: Contador de visitas persistente ────────────────────────────────────
 // Usa localStorage para saber si es la primera visita del navegador.
@@ -50,6 +51,7 @@ export function Footer() {
   const [mensaje, setMensaje] = useState("");
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const visitas = useContadorVisitas();
+  const mundialActivo = useMundialMode();
 
   const handleEnviar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,13 +80,16 @@ export function Footer() {
     setClicks(next);
     if (next >= 3) {
       setClicks(0);
-      window.location.href = "/redactor";
+      // En Scaloneta el redactor abre directo en el tab de Selección
+      window.location.href = mundialActivo
+        ? "/redactor?tab=publicaciones-seleccion"
+        : "/redactor";
     }
     setTimeout(() => setClicks(0), 1500);
   };
 
   return (
-    <footer className="bg-river-black text-white border-t-4 border-river-red pt-16 pb-8">
+    <footer className={`text-white pt-16 pb-8 border-t-4 ${mundialActivo ? "bg-[#0a1628] border-arg-dorado" : "bg-river-black border-river-red"}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
 
@@ -93,18 +98,39 @@ export function Footer() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleLogoClick}
-                className="relative w-12 h-12 overflow-hidden rounded-full border-2 border-white cursor-default select-none focus:outline-none"
+                className={`relative w-12 h-12 overflow-hidden rounded-full border-2 cursor-default select-none focus:outline-none ${mundialActivo ? "border-arg-dorado" : "border-white"}`}
                 aria-hidden="true"
                 tabIndex={-1}
               >
-                <div className="absolute inset-0 bg-diagonal-red"></div>
+                {mundialActivo ? (
+                  <div className="absolute inset-0 flex flex-col">
+                    <div className="flex-1 bg-arg-celeste"></div>
+                    <div className="flex-1 bg-white"></div>
+                    <div className="flex-1 bg-arg-celeste"></div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 bg-diagonal-red"></div>
+                )}
               </button>
-              <span className="font-display font-bold text-3xl">RIVER EN ISRAEL</span>
+              <span className="font-display font-bold text-3xl">
+                {mundialActivo ? <>LA <span className="text-arg-celeste">SCALONETA</span></> : "RIVER EN ISRAEL"}
+              </span>
             </div>
             <p className="text-gray-400 max-w-sm mt-4">
-              La filial oficial del Club Atlético River Plate en Medio Oriente.
-              Viviendo la pasión por La Banda del Millonario desde la Tierra Santa. 🇦🇷 ❤️ 🇮🇱
+              {mundialActivo
+                ? <>Sitio dedicado a <span className="text-arg-celeste">la Selección Argentina</span> rumbo al Mundial 2026, desde la Filial Ramat Gan. 🇦🇷 ❤️ 🇮🇱</>
+                : <>La filial oficial del Club Atlético River Plate en Medio Oriente. Viviendo la pasión por La Banda del Millonario desde la Tierra Santa. 🇦🇷 ❤️ 🇮🇱</>}
             </p>
+            <Link
+              href={mundialActivo ? "/" : "/scaloneta"}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
+                mundialActivo
+                  ? "bg-river-red hover:bg-river-red/90 text-white"
+                  : "bg-gradient-to-r from-arg-celeste to-arg-dorado text-[#0a1628] hover:brightness-110"
+              }`}
+            >
+              {mundialActivo ? "⚪️🔴 Ir a River en Israel" : "🇦🇷 Ir a La Scaloneta"}
+            </Link>
           </div>
 
           {/* Contact */}

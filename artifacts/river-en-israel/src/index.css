@@ -35,6 +35,11 @@
   --color-card-foreground: hsl(0 0% 9%);
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 0 0% 9%;

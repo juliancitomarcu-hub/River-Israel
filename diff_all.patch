@@ -1,0 +1,931 @@
+diff --git a/artifacts/river-en-israel/src/App.tsx b/artifacts/river-en-israel/src/App.tsx
+index acfc3f4..f56d9b4 100644
+--- a/artifacts/river-en-israel/src/App.tsx
++++ b/artifacts/river-en-israel/src/App.tsx
+@@ -9,6 +9,7 @@ import Redactor from "@/pages/Redactor";
+ import Noticia from "@/pages/Noticia";
+ import Fixture from "@/pages/Fixture";
+ import MundialFixture from "@/pages/MundialFixture";
++import MundialHome from "@/pages/MundialHome";
+ import Equipo from "@/pages/Equipo";
+ import Historia from "@/pages/Historia";
+ import Postulacion from "@/pages/Postulacion";
+@@ -31,6 +32,7 @@ function Router() {
+       <main className="flex-grow">
+         <Switch>
+           <Route path="/" component={Home} />
++          <Route path="/scaloneta" component={MundialHome} />
+           <Route path="/redactor" component={Redactor} />
+           <Route path="/noticia/:id" component={Noticia} />
+           <Route path="/fixture" component={Fixture} />
+diff --git a/artifacts/river-en-israel/src/components/layout/Footer.tsx b/artifacts/river-en-israel/src/components/layout/Footer.tsx
+index 20e9366..dba12f9 100644
+--- a/artifacts/river-en-israel/src/components/layout/Footer.tsx
++++ b/artifacts/river-en-israel/src/components/layout/Footer.tsx
+@@ -1,6 +1,7 @@
+ import { useState, useEffect } from "react";
+ import { Link } from "wouter";
+ import { MapPin, Phone, Facebook, Instagram, Youtube, Twitter, MessageCircle, Send, X, Users } from "lucide-react";
++import { useMundialMode } from "@/lib/mundial-mode";
+ 
+ // ─── HOOK: Contador de visitas persistente ────────────────────────────────────
+ // Usa localStorage para saber si es la primera visita del navegador.
+@@ -50,6 +51,7 @@ export function Footer() {
+   const [mensaje, setMensaje] = useState("");
+   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
+   const visitas = useContadorVisitas();
++  const mundialActivo = useMundialMode();
+ 
+   const handleEnviar = async (e: React.FormEvent) => {
+     e.preventDefault();
+@@ -78,13 +80,16 @@ export function Footer() {
+     setClicks(next);
+     if (next >= 3) {
+       setClicks(0);
+-      window.location.href = "/redactor";
++      // En Scaloneta el redactor abre directo en el tab de Selección
++      window.location.href = mundialActivo
++        ? "/redactor?tab=publicaciones-seleccion"
++        : "/redactor";
+     }
+     setTimeout(() => setClicks(0), 1500);
+   };
+ 
+   return (
+-    <footer className="bg-river-black text-white border-t-4 border-river-red pt-16 pb-8">
++    <footer className={`text-white pt-16 pb-8 border-t-4 ${mundialActivo ? "bg-[#0a1628] border-arg-dorado" : "bg-river-black border-river-red"}`}>
+       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+ 
+@@ -93,18 +98,39 @@ export function Footer() {
+             <div className="flex items-center gap-3">
+               <button
+                 onClick={handleLogoClick}
+-                className="relative w-12 h-12 overflow-hidden rounded-full border-2 border-white cursor-default select-none focus:outline-none"
++                className={`relative w-12 h-12 overflow-hidden rounded-full border-2 cursor-default select-none focus:outline-none ${mundialActivo ? "border-arg-dorado" : "border-white"}`}
+                 aria-hidden="true"
+                 tabIndex={-1}
+               >
+-                <div className="absolute inset-0 bg-diagonal-red"></div>
++                {mundialActivo ? (
++                  <div className="absolute inset-0 flex flex-col">
++                    <div className="flex-1 bg-arg-celeste"></div>
++                    <div className="flex-1 bg-white"></div>
++                    <div className="flex-1 bg-arg-celeste"></div>
++                  </div>
++                ) : (
++                  <div className="absolute inset-0 bg-diagonal-red"></div>
++                )}
+               </button>
+-              <span className="font-display font-bold text-3xl">RIVER EN ISRAEL</span>
++              <span className="font-display font-bold text-3xl">
++                {mundialActivo ? <>LA <span className="text-arg-celeste">SCALONETA</span></> : "RIVER EN ISRAEL"}
++              </span>
+             </div>
+             <p className="text-gray-400 max-w-sm mt-4">
+-              La filial oficial del Club Atlético River Plate en Medio Oriente.
+-              Viviendo la pasión por La Banda del Millonario desde la Tierra Santa. 🇦🇷 ❤️ 🇮🇱
++              {mundialActivo
++                ? <>Sitio dedicado a <span className="text-arg-celeste">la Selección Argentina</span> rumbo al Mundial 2026, desde la Filial Ramat Gan. 🇦🇷 ❤️ 🇮🇱</>
++                : <>La filial oficial del Club Atlético River Plate en Medio Oriente. Viviendo la pasión por La Banda del Millonario desde la Tierra Santa. 🇦🇷 ❤️ 🇮🇱</>}
+             </p>
++            <Link
++              href={mundialActivo ? "/" : "/scaloneta"}
++              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
++                mundialActivo
++                  ? "bg-river-red hover:bg-river-red/90 text-white"
++                  : "bg-gradient-to-r from-arg-celeste to-arg-dorado text-[#0a1628] hover:brightness-110"
++              }`}
++            >
++              {mundialActivo ? "⚪️🔴 Ir a River en Israel" : "🇦🇷 Ir a La Scaloneta"}
++            </Link>
+           </div>
+ 
+           {/* Contact */}
+diff --git a/artifacts/river-en-israel/src/components/layout/Navbar.tsx b/artifacts/river-en-israel/src/components/layout/Navbar.tsx
+index 52df468..d181aea 100644
+--- a/artifacts/river-en-israel/src/components/layout/Navbar.tsx
++++ b/artifacts/river-en-israel/src/components/layout/Navbar.tsx
+@@ -3,19 +3,29 @@ import { Link, useLocation } from "wouter";
+ import { Menu, X, MapPin } from "lucide-react";
+ import { cn } from "@/lib/utils";
+ import { motion, AnimatePresence } from "framer-motion";
+-import { useMundialMode, isMundialPeriod, setMundialOverride } from "@/lib/mundial-mode";
++import { useMundialMode } from "@/lib/mundial-mode";
+ import { SolDeMayo } from "@/components/SolDeMayo";
+ 
+-type NavLink = { name: string; href: string; hideOnMundial?: boolean };
+-const NAV_LINKS: NavLink[] = [
+-  { name: "Inicio",          href: "/" },
+-  { name: "Página en hebreo",href: "/hebreo",   hideOnMundial: true },
+-  { name: "Historia",        href: "/historia" },
+-  { name: "Plantel",         href: "/equipo" },
+-  { name: "Nuestra Filial",  href: "#filial",   hideOnMundial: true },
+-  { name: "Galería",       href: "#galeria" },
+-  { name: "Videos",          href: "#videos" },
+-  { name: "Próximos Eventos",href: "#eventos" },
++type NavLink = { name: string; href: string };
++
++const NAV_LINKS_RIVER: NavLink[] = [
++  { name: "Inicio",           href: "/" },
++  { name: "Página en hebreo", href: "/hebreo" },
++  { name: "Historia",         href: "/historia" },
++  { name: "Plantel",          href: "/equipo" },
++  { name: "Nuestra Filial",   href: "#filial" },
++  { name: "Galería",          href: "#galeria" },
++  { name: "Videos",           href: "#videos" },
++  { name: "Próximos Eventos", href: "#eventos" },
++];
++
++const NAV_LINKS_SCALONETA: NavLink[] = [
++  { name: "Inicio",           href: "/scaloneta" },
++  { name: "Grupos",           href: "/scaloneta#grupos" },
++  { name: "Plantel",          href: "/scaloneta#plantel" },
++  { name: "Estadios",         href: "/scaloneta#estadios" },
++  { name: "Galería y Videos", href: "/scaloneta#galeria-videos" },
++  { name: "Fixture Mundial",  href: "/mundial/fixture" },
+ ];
+ 
+ export function Navbar() {
+@@ -23,48 +33,55 @@ export function Navbar() {
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const [location] = useLocation();
+   const mundialActivo = useMundialMode();
+-  // Si está corriendo el Mundial pero el usuario eligió ver River, ofrecemos volver.
+-  const mostrarVolverAlMundial = !mundialActivo && isMundialPeriod();
++  const navLinks = mundialActivo ? NAV_LINKS_SCALONETA : NAV_LINKS_RIVER;
+ 
+   useEffect(() => {
+-    const handleScroll = () => {
+-      setIsScrolled(window.scrollY > 50);
+-    };
++    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+     window.addEventListener("scroll", handleScroll);
+     return () => window.removeEventListener("scroll", handleScroll);
+   }, []);
+ 
++  // Scroll to anchor if href has hash (and we're already on the right page)
+   const handleNavClick = (href: string) => {
+     setMobileMenuOpen(false);
+-    if (href.startsWith('#')) {
+-      const element = document.querySelector(href);
+-      if (element) {
+-        setTimeout(() => {
+-          const top = element.getBoundingClientRect().top + window.scrollY - 80;
+-          window.scrollTo({ top, behavior: 'smooth' });
+-        }, 80);
++    if (href.includes("#")) {
++      const [path, hash] = href.split("#");
++      const targetPath = path || "/";
++      const onTargetPage = location === targetPath || (targetPath === "/" && location === "");
++      if (onTargetPage) {
++        const el = document.getElementById(hash);
++        if (el) {
++          setTimeout(() => {
++            const top = el.getBoundingClientRect().top + window.scrollY - 80;
++            window.scrollTo({ top, behavior: "smooth" });
++          }, 80);
++        }
+       } else {
+-        window.location.href = '/' + href;
++        window.location.href = href;
+       }
+     }
+   };
+ 
++  const logoHref = mundialActivo ? "/scaloneta" : "/";
++
+   return (
+     <nav
+       className={cn(
+         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out border-b border-transparent",
+         isScrolled
+-          ? "bg-river-black/95 backdrop-blur-md py-2 shadow-lg border-white/10"
++          ? mundialActivo
++            ? "bg-[#0a1628]/95 backdrop-blur-md py-2 shadow-lg border-arg-celeste/20"
++            : "bg-river-black/95 backdrop-blur-md py-2 shadow-lg border-white/10"
+           : "bg-gradient-to-b from-black/80 to-transparent py-3"
+       )}
+     >
+       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+-        <div className="flex items-center justify-between gap-4">
++        <div className="flex items-center justify-between gap-2 md:gap-4">
+ 
+           {/* Logo */}
+-          <Link href="/" className="flex items-center gap-2 group shrink-0">
++          <Link href={logoHref} className="flex items-center gap-2 group shrink-0 min-w-0">
+             <div className={cn(
+-              "escudo-river relative w-10 h-10 overflow-hidden rounded-full border-2 border-white group-hover:scale-105 transition-transform",
++              "escudo-river relative w-10 h-10 overflow-hidden rounded-full border-2 border-white group-hover:scale-105 transition-transform shrink-0",
+               mundialActivo
+                 ? "shadow-[0_0_16px_rgba(241,184,45,0.65)] border-arg-dorado"
+                 : "shadow-[0_0_10px_rgba(204,0,0,0.5)]"
+@@ -84,77 +101,92 @@ export function Navbar() {
+                 <div className="absolute inset-0 bg-diagonal-red"></div>
+               )}
+             </div>
+-            <div className="flex flex-col">
+-              <span className="font-display font-bold text-lg lg:text-xl text-white leading-none tracking-wide">
++            <div className="flex flex-col min-w-0">
++              <span className="font-display font-bold text-base sm:text-lg lg:text-xl text-white leading-none tracking-wide truncate">
+                 {mundialActivo ? (
+                   <>LA <span className="text-arg-celeste">SCALONETA</span> <span className="text-arg-dorado">EN ISRAEL</span></>
+                 ) : "RIVER EN ISRAEL"}
+               </span>
+-              <span className="text-[0.55rem] text-gray-300 font-semibold tracking-wide whitespace-nowrap flex items-center gap-0.5">
++              <span className="text-[0.55rem] text-gray-300 font-semibold tracking-wide flex items-center gap-0.5 truncate">
+                 <MapPin className={cn("w-2.5 h-2.5 shrink-0", mundialActivo ? "text-arg-dorado" : "text-river-red")} />
+-                {mundialActivo ? "Modo Mundial · Volvemos con River Plate el 21/07" : "Filial River Israel \"El TUCU\" SAJNIN"}
++                {mundialActivo ? "Filial Selección Argentina · Ramat Gan" : "Filial River Israel \"El TUCU\" SAJNIN"}
+               </span>
+             </div>
+           </Link>
+ 
+-          {/* Switch para volver al Modo Mundial (solo si está vigente y el usuario opted out) */}
+-          {mostrarVolverAlMundial && (
+-            <button
+-              type="button"
+-              onClick={() => {
+-                setMundialOverride(null);
+-                window.scrollTo({ top: 0, behavior: "smooth" });
+-              }}
+-              title="Volver al Modo Mundial"
+-              className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-[#74ACDF] to-[#F1B82D] hover:brightness-110 text-[#0a1628] font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md transition-all hover:-translate-y-0.5 whitespace-nowrap"
+-            >
+-              🇦🇷 Volver al Mundial
+-            </button>
+-          )}
++          {/* Cross-link: River ↔ Scaloneta (siempre visible, escala según pantalla) */}
++          <Link
++            href={mundialActivo ? "/" : "/scaloneta"}
++            title={mundialActivo ? "Ir a River en Israel" : "Ir a La Scaloneta en Israel"}
++            className={cn(
++              "hidden sm:inline-flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md transition-all hover:-translate-y-0.5 whitespace-nowrap shrink-0",
++              mundialActivo
++                ? "bg-gradient-to-r from-river-red to-[#a00000] text-white hover:brightness-110"
++                : "bg-gradient-to-r from-[#74ACDF] to-[#F1B82D] text-[#0a1628] hover:brightness-110"
++            )}
++          >
++            {mundialActivo ? "⚪️🔴 River en Israel" : "🇦🇷 La Scaloneta"}
++          </Link>
+ 
+           {/* Desktop Nav */}
+-          <div className="hidden md:flex items-center gap-3 lg:gap-5">
+-            {NAV_LINKS.filter((l) => !(mundialActivo && l.hideOnMundial)).map((link) =>
+-              link.href.startsWith("/") ? (
++          <div className="hidden md:flex items-center gap-2 lg:gap-4">
++            {navLinks.map((link) =>
++              link.href.startsWith("/") && !link.href.includes("#") ? (
+                 <Link
+                   key={link.name}
+                   href={link.href}
+-                  className="text-white/90 hover:text-white font-medium text-[0.7rem] lg:text-xs uppercase tracking-wide relative group py-1 whitespace-nowrap"
++                  className={cn(
++                    "text-white/90 hover:text-white font-medium text-[0.7rem] lg:text-xs uppercase tracking-wide relative group py-1 whitespace-nowrap",
++                  )}
+                 >
+                   {link.name}
+-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
++                  <span className={cn(
++                    "absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full",
++                    mundialActivo ? "bg-arg-dorado" : "bg-river-red"
++                  )}></span>
+                 </Link>
+               ) : (
+                 <a
+                   key={link.name}
+                   href={link.href}
+                   onClick={(e) => {
+-                    if (link.href.startsWith('#')) {
+-                      e.preventDefault();
+-                      handleNavClick(link.href);
++                    if (link.href.includes("#")) {
++                      const [path] = link.href.split("#");
++                      const onPage = location === (path || "/");
++                      if (onPage) {
++                        e.preventDefault();
++                        handleNavClick(link.href);
++                      }
+                     }
+                   }}
+                   className="text-white/90 hover:text-white font-medium text-[0.7rem] lg:text-xs uppercase tracking-wide relative group py-1 whitespace-nowrap"
+                 >
+                   {link.name}
+-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-river-red transition-all duration-300 group-hover:w-full"></span>
++                  <span className={cn(
++                    "absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full",
++                    mundialActivo ? "bg-arg-dorado" : "bg-river-red"
++                  )}></span>
+                 </a>
+               )
+             )}
+-            <a
+-              href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+-              target="_blank"
+-              rel="noopener noreferrer"
+-              className="shrink-0 bg-river-red hover:bg-river-red-hover text-white px-3 py-1.5 rounded-full font-bold uppercase tracking-wide text-[0.65rem] lg:text-xs transition-all shadow-[0_0_12px_rgba(204,0,0,0.4)] hover:shadow-[0_0_18px_rgba(204,0,0,0.6)] hover:-translate-y-0.5 whitespace-nowrap"
+-            >
+-              Unite al WhatsApp
+-            </a>
++            {/* WhatsApp solo en modo River (la Scaloneta no tiene grupo propio) */}
++            {!mundialActivo && (
++              <a
++                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
++                target="_blank"
++                rel="noopener noreferrer"
++                className="shrink-0 bg-river-red hover:bg-river-red-hover text-white px-3 py-1.5 rounded-full font-bold uppercase tracking-wide text-[0.65rem] lg:text-xs transition-all shadow-[0_0_12px_rgba(204,0,0,0.4)] hover:shadow-[0_0_18px_rgba(204,0,0,0.6)] hover:-translate-y-0.5 whitespace-nowrap"
++              >
++                Unite al WhatsApp
++              </a>
++            )}
+           </div>
+ 
+           {/* Mobile Menu Button */}
+           <button
+-            className="md:hidden text-white p-2"
++            className="md:hidden text-white p-2 shrink-0"
+             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
++            aria-label="Menú"
+           >
+             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+           </button>
+@@ -168,11 +200,30 @@ export function Navbar() {
+             initial={{ opacity: 0, height: 0 }}
+             animate={{ opacity: 1, height: "auto" }}
+             exit={{ opacity: 0, height: 0 }}
+-            className="md:hidden bg-river-black border-t border-white/10 overflow-hidden"
++            className={cn(
++              "md:hidden border-t overflow-hidden",
++              mundialActivo
++                ? "bg-[#0a1628] border-arg-celeste/20"
++                : "bg-river-black border-white/10"
++            )}
+           >
+             <div className="flex flex-col px-4 pt-2 pb-6 space-y-2">
+-              {NAV_LINKS.filter((l) => !(mundialActivo && l.hideOnMundial)).map((link) =>
+-                link.href.startsWith("/") ? (
++              {/* Cross-link prominente arriba en mobile */}
++              <Link
++                href={mundialActivo ? "/" : "/scaloneta"}
++                onClick={() => setMobileMenuOpen(false)}
++                className={cn(
++                  "px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center",
++                  mundialActivo
++                    ? "bg-gradient-to-r from-river-red to-[#a00000] text-white"
++                    : "bg-gradient-to-r from-[#74ACDF] to-[#F1B82D] text-[#0a1628]"
++                )}
++              >
++                {mundialActivo ? "⚪️🔴 Ir a River en Israel" : "🇦🇷 Ir a La Scaloneta"}
++              </Link>
++
++              {navLinks.map((link) =>
++                link.href.startsWith("/") && !link.href.includes("#") ? (
+                   <Link
+                     key={link.name}
+                     href={link.href}
+@@ -186,9 +237,13 @@ export function Navbar() {
+                     key={link.name}
+                     href={link.href}
+                     onClick={(e) => {
+-                      if (link.href.startsWith('#')) {
+-                        e.preventDefault();
+-                        handleNavClick(link.href);
++                      if (link.href.includes("#")) {
++                        const [path] = link.href.split("#");
++                        const onPage = location === (path || "/");
++                        if (onPage) {
++                          e.preventDefault();
++                          handleNavClick(link.href);
++                        }
+                       }
+                     }}
+                     className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg uppercase tracking-wider transition-colors"
+@@ -197,14 +252,17 @@ export function Navbar() {
+                   </a>
+                 )
+               )}
+-              <a
+-                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+-                target="_blank"
+-                rel="noopener noreferrer"
+-                className="bg-river-red text-white px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center mt-4"
+-              >
+-                Unite al grupo de WhatsApp
+-              </a>
++              {/* WhatsApp solo en River */}
++              {!mundialActivo && (
++                <a
++                  href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
++                  target="_blank"
++                  rel="noopener noreferrer"
++                  className="bg-river-red text-white px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center mt-4"
++                >
++                  Unite al grupo de WhatsApp
++                </a>
++              )}
+             </div>
+           </motion.div>
+         )}
+diff --git a/artifacts/river-en-israel/src/index.css b/artifacts/river-en-israel/src/index.css
+index 741fbc5..67aeb9d 100644
+--- a/artifacts/river-en-israel/src/index.css
++++ b/artifacts/river-en-israel/src/index.css
+@@ -35,6 +35,11 @@
+   --color-card-foreground: hsl(0 0% 9%);
+ }
+ 
++html, body {
++  overflow-x: hidden;
++  max-width: 100vw;
++}
++
+ :root {
+   --background: 0 0% 100%;
+   --foreground: 0 0% 9%;
+diff --git a/artifacts/river-en-israel/src/lib/mundial-data.ts b/artifacts/river-en-israel/src/lib/mundial-data.ts
+index 29a6037..64b6664 100644
+--- a/artifacts/river-en-israel/src/lib/mundial-data.ts
++++ b/artifacts/river-en-israel/src/lib/mundial-data.ts
+@@ -169,10 +169,19 @@ export type FiguraScaloneta = {
+   club: string;
+   apodo?: string;
+   esCapitan?: boolean;
++  foto?: string;
+ };
+ 
++/**
++ * Fotos: campo `foto` opcional. Cuando no hay URL, el render muestra el dorsal grande
++ * sobre el Sol de Mayo (fallback elegante). Las URLs de Wikipedia thumbs son inestables
++ * (404/429), así que sólo dejamos Messi verificado; el resto se sube desde el admin.
++ *
++ * Para agregar fotos: subirlas via /redactor (tab Galería) y pegar la URL en este array.
++ */
+ export const JUGADORES_SCALONETA: FiguraScaloneta[] = [
+-  { dorsal: 10, nombre: "Lionel", apellido: "Messi",          posicion: "Delantero",     club: "Inter Miami",        apodo: "La Pulga · El GOAT", esCapitan: true },
++  { dorsal: 10, nombre: "Lionel", apellido: "Messi",          posicion: "Delantero",     club: "Inter Miami",        apodo: "La Pulga · El GOAT", esCapitan: true,
++    foto: "https://commons.wikimedia.org/wiki/Special:FilePath/Lionel_Messi_20180626.jpg?width=400" },
+   { dorsal: 23, nombre: "Emiliano", apellido: "Martínez",     posicion: "Arquero",       club: "Aston Villa",        apodo: "Dibu" },
+   { dorsal: 7,  nombre: "Rodrigo", apellido: "De Paul",       posicion: "Mediocampista", club: "Atlético Madrid",    apodo: "Motorcito" },
+   { dorsal: 9,  nombre: "Julián", apellido: "Álvarez",        posicion: "Delantero",     club: "Atlético Madrid",    apodo: "La Araña" },
+diff --git a/artifacts/river-en-israel/src/lib/mundial-mode.ts b/artifacts/river-en-israel/src/lib/mundial-mode.ts
+index aabf90e..c91afdc 100644
+--- a/artifacts/river-en-israel/src/lib/mundial-mode.ts
++++ b/artifacts/river-en-israel/src/lib/mundial-mode.ts
+@@ -1,58 +1,21 @@
+-import { useEffect, useState } from "react";
++import { useLocation } from "wouter";
++import { useEffect } from "react";
+ 
+ /**
+- * Modo Mundial = activo desde ahora hasta el 21/07/2026 00:00 hora Israel
+- * (un día extra para celebrar la final del 19/07). Después revierte a River.
++ * Modo Mundial = el usuario está navegando dentro de /scaloneta.
++ * Antes era automático por fecha; ahora son dos sitios paralelos:
++ *   /           → River en Israel
++ *   /scaloneta  → La Scaloneta en Israel
+  *
+- * 21/07/2026 00:00 IDT = 20/07/2026 21:00 UTC
+- *   (Israel está en IDT = UTC+3 entre fines de marzo y fines de octubre)
++ * Cada uno con su navbar/home/footer; el usuario alterna con los
++ * botones de "Cruzar al otro sitio" que están en navbar y footer.
+  */
+-const MUNDIAL_END_UTC_MS = Date.UTC(2026, 6, 20, 21, 0, 0);
+ 
+-/**
+- * Lectura/escritura del override manual via localStorage.
+- * Valores: "on" | "off" | null (auto por fecha).
+- */
+-const OVERRIDE_KEY = "mundial-mode-override";
+-
+-export function getMundialOverride(): "on" | "off" | null {
+-  if (typeof window === "undefined") return null;
+-  const v = window.localStorage.getItem(OVERRIDE_KEY);
+-  return v === "on" || v === "off" ? v : null;
+-}
+-
+-export function setMundialOverride(v: "on" | "off" | null) {
+-  if (typeof window === "undefined") return;
+-  if (v === null) window.localStorage.removeItem(OVERRIDE_KEY);
+-  else window.localStorage.setItem(OVERRIDE_KEY, v);
+-  window.dispatchEvent(new Event("mundial-mode-change"));
+-}
+-
+-function computeActive(): boolean {
+-  const override = getMundialOverride();
+-  if (override === "on") return true;
+-  if (override === "off") return false;
+-  return Date.now() < MUNDIAL_END_UTC_MS;
+-}
++const SCALONETA_PREFIX = "/scaloneta";
+ 
+-/**
+- * Hook reactivo. Setea data-theme="mundial" en <html> cuando está activo.
+- * Re-evalúa cada minuto + reacciona a cambios de override.
+- */
+ export function useMundialMode(): boolean {
+-  const [active, setActive] = useState<boolean>(computeActive);
+-
+-  useEffect(() => {
+-    const recompute = () => setActive(computeActive());
+-    const interval = window.setInterval(recompute, 60_000);
+-    window.addEventListener("mundial-mode-change", recompute);
+-    window.addEventListener("storage", recompute);
+-    return () => {
+-      window.clearInterval(interval);
+-      window.removeEventListener("mundial-mode-change", recompute);
+-      window.removeEventListener("storage", recompute);
+-    };
+-  }, []);
++  const [location] = useLocation();
++  const active = location === SCALONETA_PREFIX || location.startsWith(`${SCALONETA_PREFIX}/`);
+ 
+   useEffect(() => {
+     const root = document.documentElement;
+@@ -63,11 +26,12 @@ export function useMundialMode(): boolean {
+   return active;
+ }
+ 
+-export function mundialEndDate(): Date {
+-  return new Date(MUNDIAL_END_UTC_MS);
+-}
+-
+-/** True si la fecha cae dentro del período del Mundial (ignora el override). */
++/** True por compatibilidad con código viejo: el período del Mundial sigue vigente. */
+ export function isMundialPeriod(): boolean {
+-  return Date.now() < MUNDIAL_END_UTC_MS;
++  return Date.now() < Date.UTC(2026, 6, 20, 21, 0, 0);
+ }
++
++/** Deprecated: ya no hay override de fecha; mantenido como no-op para evitar romper imports. */
++export function getMundialOverride(): "on" | "off" | null { return null; }
++export function setMundialOverride(_v: "on" | "off" | null) { /* no-op */ }
++export function mundialEndDate(): Date { return new Date(Date.UTC(2026, 6, 20, 21, 0, 0)); }
+diff --git a/artifacts/river-en-israel/src/pages/Home.tsx b/artifacts/river-en-israel/src/pages/Home.tsx
+index 5634b15..eaf4bb0 100644
+--- a/artifacts/river-en-israel/src/pages/Home.tsx
++++ b/artifacts/river-en-israel/src/pages/Home.tsx
+@@ -12,8 +12,6 @@ import { Link } from "wouter";
+ import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
+ import ShareButton from "@/components/ShareButton";
+ import CredencialGenerador from "@/components/CredencialGenerador";
+-import MundialHome from "@/pages/MundialHome";
+-import { useMundialMode } from "@/lib/mundial-mode";
+ 
+ interface GaleriaFoto {
+   id: number;
+@@ -39,9 +37,6 @@ const suscripSchema = z.object({
+ type SuscripValues = z.infer<typeof suscripSchema>;
+ 
+ export default function Home() {
+-  const mundialActivo = useMundialMode();
+-  if (mundialActivo) return <MundialHome />;
+-
+   const [mostrarCredencial, setMostrarCredencial] = useState(false);
+   const [suscripEstado, setSuscripEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
+   const [suscripError, setSuscripError] = useState("");
+diff --git a/artifacts/river-en-israel/src/pages/MundialHome.tsx b/artifacts/river-en-israel/src/pages/MundialHome.tsx
+index 8215a44..9d493ce 100644
+--- a/artifacts/river-en-israel/src/pages/MundialHome.tsx
++++ b/artifacts/river-en-israel/src/pages/MundialHome.tsx
+@@ -1,12 +1,16 @@
+-import { useMemo } from "react";
++import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+ import { Link } from "wouter";
+-import { motion } from "framer-motion";
+-import { MapPin, Trophy, Calendar, ChevronRight } from "lucide-react";
++import { motion, AnimatePresence } from "framer-motion";
++import { MapPin, Trophy, Calendar, ChevronRight, ChevronLeft, Play, X, ZoomIn } from "lucide-react";
+ import { MapaEstadios } from "@/components/MapaEstadios";
+ import { CountdownArgentina } from "@/components/CountdownArgentina";
+ import { SolDeMayo } from "@/components/SolDeMayo";
+ import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ, JUGADORES_SCALONETA } from "@/lib/mundial-data";
+-import { setMundialOverride } from "@/lib/mundial-mode";
++
++interface GaleriaFoto { id: number; url: string; caption: string; orden: number; }
++interface VideoGaleria { id: number; url: string; titulo: string; thumbnail: string | null; orden: number; }
++
++const resolverUrl = (url: string) => url.startsWith("/objects/") ? `/api/storage${url}` : url;
+ 
+ const PAISES_COLORS: Record<string, string> = {
+   USA: "from-blue-600 to-red-500",
+@@ -17,8 +21,54 @@ const PAISES_COLORS: Record<string, string> = {
+ export default function MundialHome() {
+   const totalEquipos = useMemo(() => GRUPOS.reduce((a, g) => a + g.equipos.length, 0), []);
+ 
++  // Triple-click en bandera Argentina → Redactor IA filtrado en Selección
++  const banderaClicks = useRef(0);
++  const banderaTimer = useRef<number | null>(null);
++  const handleBanderaClick = () => {
++    banderaClicks.current += 1;
++    if (banderaTimer.current) window.clearTimeout(banderaTimer.current);
++    if (banderaClicks.current >= 3) {
++      banderaClicks.current = 0;
++      window.location.href = "/redactor?tab=publicaciones-seleccion";
++      return;
++    }
++    banderaTimer.current = window.setTimeout(() => { banderaClicks.current = 0; }, 1200);
++  };
++
++  // ── Galería + Videos al pie (como River) ────────────────────────────────
++  const [videos, setVideos] = useState<VideoGaleria[]>([]);
++  const [videoAbierto, setVideoAbierto] = useState<VideoGaleria | null>(null);
++  const [galeriaFotos, setGaleriaFotos] = useState<GaleriaFoto[]>([]);
++  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
++  const [paginaGaleria, setPaginaGaleria] = useState(0);
++  const COLS = 4; const ROWS = 3; const PAGE_SIZE = COLS * ROWS;
++  const totalPaginas = Math.max(1, Math.ceil(galeriaFotos.length / PAGE_SIZE));
++
++  useEffect(() => {
++    fetch("/api/videos", { cache: "no-store" }).then(r => r.json())
++      .then((d: { videos?: VideoGaleria[] }) => setVideos(d.videos ?? [])).catch(() => {});
++    fetch("/api/galeria", { cache: "no-store" }).then(r => r.json())
++      .then((d: { fotos?: GaleriaFoto[] }) => setGaleriaFotos(d.fotos ?? [])).catch(() => {});
++  }, []);
++
++  const cerrarLightbox = useCallback(() => setLightboxIdx(null), []);
++  const irAnterior = useCallback(() => setLightboxIdx(i => i !== null ? (i - 1 + galeriaFotos.length) % galeriaFotos.length : null), [galeriaFotos.length]);
++  const irSiguiente = useCallback(() => setLightboxIdx(i => i !== null ? (i + 1) % galeriaFotos.length : null), [galeriaFotos.length]);
++  useEffect(() => {
++    if (lightboxIdx === null) return;
++    const h = (e: KeyboardEvent) => {
++      if (e.key === "ArrowLeft") irAnterior();
++      if (e.key === "ArrowRight") irSiguiente();
++      if (e.key === "Escape") cerrarLightbox();
++    };
++    window.addEventListener("keydown", h);
++    return () => window.removeEventListener("keydown", h);
++  }, [lightboxIdx, irAnterior, irSiguiente, cerrarLightbox]);
++
++  const fotosPagina = galeriaFotos.slice(paginaGaleria * PAGE_SIZE, (paginaGaleria + 1) * PAGE_SIZE);
++
+   return (
+-    <div className="bg-[#0a1628] text-white min-h-screen">
++    <div className="bg-[#0a1628] text-white min-h-screen overflow-x-hidden">
+       {/* ═══════════ HERO ═══════════ */}
+       <section className="relative overflow-hidden pt-28 pb-20 md:pt-32 md:pb-24 bg-mundial-mesh">
+         {/* Sol de Mayo gigante girando lento detrás del título */}
+@@ -85,8 +135,21 @@ export default function MundialHome() {
+         </div>
+       </section>
+ 
++      {/* Bandera Argentina clickeable (triple-click → Redactor IA) */}
++      <div className="relative z-10 -mt-2 mb-4 flex items-center justify-center">
++        <button
++          type="button"
++          onClick={handleBanderaClick}
++          title=""
++          aria-label="Bandera Argentina"
++          className="select-none cursor-default focus:outline-none opacity-70 hover:opacity-100 transition-opacity"
++        >
++          <span className="text-3xl md:text-4xl block" style={{ filter: "drop-shadow(0 0 8px rgba(116,172,223,0.35))" }}>🇦🇷</span>
++        </button>
++      </div>
++
+       {/* ═══════════ GRUPOS ═══════════ */}
+-      <section className="py-16 bg-gradient-to-b from-[#0a1628] to-[#091324]">
++      <section id="grupos" className="py-16 bg-gradient-to-b from-[#0a1628] to-[#091324]">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="text-center mb-10">
+             <span className="bg-arg-celeste/20 text-arg-celeste border border-arg-celeste/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
+@@ -149,7 +212,7 @@ export default function MundialHome() {
+       </section>
+ 
+       {/* ═══════════ FIGURAS DE LA SCALONETA ═══════════ */}
+-      <section className="relative py-16 bg-gradient-to-b from-[#091324] via-[#0a1f3a] to-[#091324] overflow-hidden">
++      <section id="plantel" className="relative py-16 bg-gradient-to-b from-[#091324] via-[#0a1f3a] to-[#091324] overflow-hidden">
+         <div className="pointer-events-none absolute -top-20 -right-20 opacity-[0.06]">
+           <SolDeMayo size={420} spin />
+         </div>
+@@ -194,20 +257,39 @@ export default function MundialHome() {
+                     </span>
+                   )}
+                   <div className="relative aspect-square flex items-center justify-center bg-gradient-to-br from-arg-celeste/30 via-white/5 to-[#0a1628] overflow-hidden">
++                    {/* Fallback siempre presente, foto encima */}
+                     <div className="absolute inset-0 opacity-20 flex items-center justify-center">
+                       <SolDeMayo size={140} />
+                     </div>
+                     {esDT ? (
+-                      <div className="relative font-display font-black text-arg-dorado text-3xl md:text-4xl text-center leading-none">
++                      <div className="relative font-display font-black text-arg-dorado text-3xl md:text-4xl text-center leading-none z-[1]">
+                         DT<br />
+                         <span className="text-lg md:text-xl tracking-widest text-white/80">SCALONI</span>
+                       </div>
+                     ) : (
+-                      <div className="relative font-display font-black text-white text-6xl md:text-7xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
++                      <div className="relative font-display font-black text-white text-6xl md:text-7xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] z-[1]">
+                         {j.dorsal}
+                       </div>
+                     )}
+-                    <span className="absolute bottom-2 left-2 text-xl">🇦🇷</span>
++                    {j.foto && (
++                      <img
++                        src={j.foto}
++                        alt={`${j.nombre} ${j.apellido}`}
++                        loading="lazy"
++                        className="absolute inset-0 w-full h-full object-cover object-top z-[2]"
++                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
++                      />
++                    )}
++                    {/* Degradado abajo para que el dorsal/badge se lea */}
++                    {j.foto && (
++                      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0a1628]/85 to-transparent z-[3]" />
++                    )}
++                    {!esDT && j.foto && (
++                      <span className="absolute bottom-2 right-2 z-[4] font-display font-black text-white text-2xl drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
++                        {j.dorsal}
++                      </span>
++                    )}
++                    <span className="absolute bottom-2 left-2 text-xl z-[4]">🇦🇷</span>
+                   </div>
+                   <div className="p-3 md:p-4 text-center">
+                     <h3 className="font-display font-bold text-white text-sm md:text-base leading-tight uppercase tracking-wide">
+@@ -240,7 +322,7 @@ export default function MundialHome() {
+       </section>
+ 
+       {/* ═══════════ ESTADIOS ═══════════ */}
+-      <section className="py-16 bg-[#091324]">
++      <section id="estadios" className="py-16 bg-[#091324]">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="text-center mb-10">
+             <span className="bg-arg-dorado/20 text-arg-dorado border border-arg-dorado/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
+@@ -323,26 +405,167 @@ export default function MundialHome() {
+         </div>
+       </section>
+ 
+-      {/* Footer — recordatorio + acceso al sitio de River */}
++      {/* ═══════════ GALERÍA + VIDEOS (al pie, como en River) ═══════════ */}
++      <section id="galeria-videos" className="py-20 bg-gradient-to-b from-[#091324] to-black">
++        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
++          <div className="text-center mb-10">
++            <span className="bg-arg-celeste/15 text-arg-celeste border border-arg-celeste/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest inline-block mb-3">
++              Hinchas · Selección · Mundial
++            </span>
++            <h2 className="text-3xl md:text-5xl font-display font-bold mb-2">
++              GALERÍA Y <span className="text-arg-celeste">VIDEOS</span>
++            </h2>
++            <p className="text-white/60 text-sm">Momentos de la Scaloneta y la pasión argentina en Israel.</p>
++          </div>
++
++          {/* Videos */}
++          {videos.length > 0 && (
++            <div className="mb-12">
++              <h3 className="text-arg-dorado font-display font-bold uppercase tracking-widest text-sm mb-4">▶ Videos</h3>
++              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
++                {videos.slice(0, 8).map(v => (
++                  <button
++                    key={v.id}
++                    type="button"
++                    onClick={() => setVideoAbierto(v)}
++                    className="group relative aspect-video rounded-xl overflow-hidden border border-white/10 hover:border-arg-celeste/60 transition-all"
++                  >
++                    {v.thumbnail ? (
++                      <img src={resolverUrl(v.thumbnail)} alt={v.titulo} className="absolute inset-0 w-full h-full object-cover" />
++                    ) : (
++                      <div className="absolute inset-0 bg-gradient-to-br from-arg-celeste/30 to-[#0a1628]" />
++                    )}
++                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
++                      <div className="w-12 h-12 rounded-full bg-arg-dorado flex items-center justify-center shadow-xl">
++                        <Play className="w-5 h-5 text-[#0a1628] ml-0.5" />
++                      </div>
++                    </div>
++                    <p className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/90 to-transparent text-white text-xs font-semibold truncate">
++                      {v.titulo}
++                    </p>
++                  </button>
++                ))}
++              </div>
++            </div>
++          )}
++
++          {/* Fotos */}
++          {galeriaFotos.length > 0 ? (
++            <>
++              <div className="flex items-center justify-between mb-4">
++                <h3 className="text-arg-dorado font-display font-bold uppercase tracking-widest text-sm">📸 Fotos</h3>
++                {totalPaginas > 1 && (
++                  <div className="flex items-center gap-2">
++                    <button onClick={() => setPaginaGaleria(p => Math.max(0, p - 1))} disabled={paginaGaleria === 0}
++                      className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30">
++                      <ChevronLeft className="w-4 h-4" />
++                    </button>
++                    <span className="text-xs text-white/60">{paginaGaleria + 1} / {totalPaginas}</span>
++                    <button onClick={() => setPaginaGaleria(p => Math.min(totalPaginas - 1, p + 1))} disabled={paginaGaleria >= totalPaginas - 1}
++                      className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30">
++                      <ChevronRight className="w-4 h-4" />
++                    </button>
++                  </div>
++                )}
++              </div>
++              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
++                {fotosPagina.map((f, idx) => (
++                  <button
++                    key={f.id}
++                    type="button"
++                    onClick={() => setLightboxIdx(paginaGaleria * PAGE_SIZE + idx)}
++                    className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 hover:border-arg-celeste/60 transition-all"
++                  >
++                    <img src={resolverUrl(f.url)} alt={f.caption} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
++                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
++                      <ZoomIn className="w-6 h-6 text-white" />
++                    </div>
++                    {f.caption && (
++                      <p className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/85 to-transparent text-white text-[11px] truncate opacity-0 group-hover:opacity-100 transition-opacity">
++                        {f.caption}
++                      </p>
++                    )}
++                  </button>
++                ))}
++              </div>
++            </>
++          ) : (
++            <p className="text-center text-white/40 text-sm py-8">
++              Pronto vamos a sumar fotos del Mundial 🇦🇷
++            </p>
++          )}
++        </div>
++
++        {/* Lightbox fotos */}
++        <AnimatePresence>
++          {lightboxIdx !== null && galeriaFotos[lightboxIdx] && (
++            <motion.div
++              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
++              onClick={cerrarLightbox}
++              className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
++            >
++              <button onClick={cerrarLightbox} className="absolute top-4 right-4 text-white/80 hover:text-white p-2">
++                <X className="w-6 h-6" />
++              </button>
++              <button onClick={(e) => { e.stopPropagation(); irAnterior(); }}
++                className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 bg-white/5 rounded-full">
++                <ChevronLeft className="w-6 h-6" />
++              </button>
++              <img
++                src={resolverUrl(galeriaFotos[lightboxIdx].url)}
++                alt={galeriaFotos[lightboxIdx].caption}
++                onClick={(e) => e.stopPropagation()}
++                className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
++              />
++              <button onClick={(e) => { e.stopPropagation(); irSiguiente(); }}
++                className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 bg-white/5 rounded-full">
++                <ChevronRight className="w-6 h-6" />
++              </button>
++              {galeriaFotos[lightboxIdx].caption && (
++                <p className="absolute bottom-6 inset-x-0 text-center text-white/90 text-sm px-6">
++                  {galeriaFotos[lightboxIdx].caption}
++                </p>
++              )}
++            </motion.div>
++          )}
++        </AnimatePresence>
++
++        {/* Lightbox videos */}
++        <AnimatePresence>
++          {videoAbierto && (
++            <motion.div
++              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
++              onClick={() => setVideoAbierto(null)}
++              className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
++            >
++              <button onClick={() => setVideoAbierto(null)} className="absolute top-4 right-4 text-white/80 hover:text-white p-2">
++                <X className="w-6 h-6" />
++              </button>
++              <video
++                src={resolverUrl(videoAbierto.url)}
++                controls
++                autoPlay
++                onClick={(e) => e.stopPropagation()}
++                className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl"
++              />
++            </motion.div>
++          )}
++        </AnimatePresence>
++      </section>
++
++      {/* Cross-link al sitio de River, como pie de página */}
+       <div className="bg-[#0a1628] border-t border-white/5 py-10">
+         <div className="max-w-3xl mx-auto px-4 text-center">
+           <p className="text-white/50 text-sm mb-4">
+             ¿Buscás contenido de <span className="font-semibold text-white/80">Club Atlético River Plate</span>?
+-            Durante el Mundial mantenemos toda la historia y noticias millonarias intactas.
++            La filial sigue activa con noticias, historia y todo lo millonario.
+           </p>
+-          <button
+-            type="button"
+-            onClick={() => {
+-              setMundialOverride("off");
+-              window.scrollTo({ top: 0, behavior: "smooth" });
+-            }}
++          <Link
++            href="/"
+             className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red/90 text-white font-bold px-6 py-3 rounded-full uppercase tracking-wide text-sm transition-all shadow-lg hover:-translate-y-0.5"
+           >
+-            🔴⚪ Visitar River en Israel <ChevronRight className="w-4 h-4" />
+-          </button>
+-          <p className="text-white/30 text-[11px] mt-4">
+-            Modo Mundial vuelve solo después · Reverte al rojo y blanco automáticamente el 21/07
+-          </p>
++            ⚪️🔴 Ir a River en Israel <ChevronRight className="w-4 h-4" />
++          </Link>
+         </div>
+       </div>
+     </div>

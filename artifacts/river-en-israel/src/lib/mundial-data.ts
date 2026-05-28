@@ -169,10 +169,19 @@ export type FiguraScaloneta = {
   club: string;
   apodo?: string;
   esCapitan?: boolean;
+  foto?: string;
 };
 
+/**
+ * Fotos: campo `foto` opcional. Cuando no hay URL, el render muestra el dorsal grande
+ * sobre el Sol de Mayo (fallback elegante). Las URLs de Wikipedia thumbs son inestables
+ * (404/429), así que sólo dejamos Messi verificado; el resto se sube desde el admin.
+ *
+ * Para agregar fotos: subirlas via /redactor (tab Galería) y pegar la URL en este array.
+ */
 export const JUGADORES_SCALONETA: FiguraScaloneta[] = [
-  { dorsal: 10, nombre: "Lionel", apellido: "Messi",          posicion: "Delantero",     club: "Inter Miami",        apodo: "La Pulga · El GOAT", esCapitan: true },
+  { dorsal: 10, nombre: "Lionel", apellido: "Messi",          posicion: "Delantero",     club: "Inter Miami",        apodo: "La Pulga · El GOAT", esCapitan: true,
+    foto: "https://commons.wikimedia.org/wiki/Special:FilePath/Lionel_Messi_20180626.jpg?width=400" },
   { dorsal: 23, nombre: "Emiliano", apellido: "Martínez",     posicion: "Arquero",       club: "Aston Villa",        apodo: "Dibu" },
   { dorsal: 7,  nombre: "Rodrigo", apellido: "De Paul",       posicion: "Mediocampista", club: "Atlético Madrid",    apodo: "Motorcito" },
   { dorsal: 9,  nombre: "Julián", apellido: "Álvarez",        posicion: "Delantero",     club: "Atlético Madrid",    apodo: "La Araña" },
