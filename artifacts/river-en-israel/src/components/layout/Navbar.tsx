@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMundialMode } from "@/lib/mundial-mode";
+import { useMundialMode, isMundialPeriod, setMundialOverride } from "@/lib/mundial-mode";
 
 const NAV_LINKS = [
   { name: "Inicio",          href: "/" },
@@ -21,6 +21,8 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
   const mundialActivo = useMundialMode();
+  // Si está corriendo el Mundial pero el usuario eligió ver River, ofrecemos volver.
+  const mostrarVolverAlMundial = !mundialActivo && isMundialPeriod();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,6 +89,21 @@ export function Navbar() {
               </span>
             </div>
           </Link>
+
+          {/* Switch para volver al Modo Mundial (solo si está vigente y el usuario opted out) */}
+          {mostrarVolverAlMundial && (
+            <button
+              type="button"
+              onClick={() => {
+                setMundialOverride(null);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              title="Volver al Modo Mundial"
+              className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-[#74ACDF] to-[#F1B82D] hover:brightness-110 text-[#0a1628] font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md transition-all hover:-translate-y-0.5 whitespace-nowrap"
+            >
+              🇦🇷 Volver al Mundial
+            </button>
+          )}
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-3 lg:gap-5">

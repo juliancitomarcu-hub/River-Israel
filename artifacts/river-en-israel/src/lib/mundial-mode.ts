@@ -66,3 +66,8 @@ export function useMundialMode(): boolean {
 export function mundialEndDate(): Date {
   return new Date(MUNDIAL_END_UTC_MS);
 }
+
+/** True si la fecha cae dentro del período del Mundial (ignora el override). */
+export function isMundialPeriod(): boolean {
+  return Date.now() < MUNDIAL_END_UTC_MS;
+}
