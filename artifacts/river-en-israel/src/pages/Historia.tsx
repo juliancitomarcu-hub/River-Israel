@@ -2,6 +2,107 @@ import { motion } from "framer-motion";
 import { Trophy, Star, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useMundialMode } from "@/lib/mundial-mode";
+import { SolDeMayo } from "@/components/SolDeMayo";
+import { HITOS_SELECCION } from "@/lib/mundial-data";
+
+function HistoriaSeleccion() {
+  return (
+    <div className="w-full bg-[#0a1628] text-white">
+      {/* HERO */}
+      <section className="relative bg-mundial-mesh overflow-hidden py-24 md:py-28">
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.08]">
+          <SolDeMayo size={520} spin />
+        </div>
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex justify-center mb-5">
+            <SolDeMayo size={56} />
+          </div>
+          <span className="bg-arg-celeste/20 border border-arg-celeste/40 text-arg-celeste text-xs font-bold uppercase tracking-[0.22em] px-4 py-1.5 rounded-full mb-5 inline-block">
+            Selección Argentina · Desde 1893
+          </span>
+          <h1 className="text-5xl md:text-7xl font-display font-black mb-5 leading-[0.95] text-shadow-cinema">
+            HISTORIA DE LA <br />
+            <span className="text-arg-celeste">SCALONETA</span>
+          </h1>
+          <p className="text-white/75 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+            Tres estrellas, dos Copa América consecutivas y la corona del mundo que vamos a defender en USA/Canadá/México.
+          </p>
+        </div>
+      </section>
+
+      {/* PALMARÉS */}
+      <section className="bg-gradient-to-r from-arg-celeste via-[#5b95c9] to-arg-celeste text-white py-10 border-y-2 border-arg-dorado/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-4 text-center">
+            {[
+              { n: 3, t: "Mundiales" },
+              { n: 16, t: "Copa América" },
+              { n: 1, t: "Finalissima" },
+              { n: 6, t: "Olímpicas (oro x2)" },
+              { n: 1, t: "Confederaciones" },
+            ].map((x) => (
+              <div key={x.t}>
+                <div className="text-4xl md:text-5xl font-display font-black drop-shadow-lg">{x.n}</div>
+                <div className="text-[10px] md:text-xs uppercase tracking-widest mt-1 opacity-90">{x.t}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TIMELINE */}
+      <section className="py-16 md:py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-center text-3xl md:text-5xl font-display font-bold mb-12">
+            HITOS DE LA <span className="text-arg-dorado">CELESTE Y BLANCA</span>
+          </h2>
+          <div className="space-y-6">
+            {HITOS_SELECCION.map((h, i) => (
+              <motion.div
+                key={h.año}
+                initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.04 }}
+                className={`relative rounded-2xl p-5 md:p-6 border overflow-hidden ${
+                  h.destacado
+                    ? "bg-gradient-to-r from-arg-celeste/15 via-arg-celeste/5 to-arg-dorado/15 border-arg-dorado/50 shadow-[0_0_30px_rgba(241,184,45,0.15)]"
+                    : "bg-white/5 border-white/10"
+                }`}
+              >
+                {h.destacado && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-arg-celeste via-arg-dorado to-arg-celeste" />
+                )}
+                <div className="flex items-start gap-4">
+                  <div className={`shrink-0 w-16 md:w-20 text-center ${h.destacado ? "text-arg-dorado" : "text-arg-celeste"}`}>
+                    <div className="font-display font-black text-2xl md:text-3xl leading-none">{h.año}</div>
+                    {h.emoji && <div className="text-xl mt-2">{h.emoji}</div>}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className={`font-display font-bold text-lg md:text-xl ${h.destacado ? "text-white" : "text-white/95"}`}>
+                        {h.titulo}
+                      </h3>
+                      {h.copa && (
+                        <span className="bg-arg-dorado/20 text-arg-dorado text-[10px] font-bold uppercase tracking-widest border border-arg-dorado/40 px-2 py-0.5 rounded-full">
+                          {h.copa}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-white/75 text-sm md:text-base leading-relaxed">
+                      {h.descripcion}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -280,6 +381,9 @@ function HitoCard({ hito, index }: { hito: Hito; index: number }) {
 }
 
 export default function Historia() {
+  const mundialActivo = useMundialMode();
+  if (mundialActivo) return <HistoriaSeleccion />;
+
   const { data: apiData } = useQuery<{ hitos: Hito[] }>({
     queryKey: ["historia"],
     queryFn: async () => {

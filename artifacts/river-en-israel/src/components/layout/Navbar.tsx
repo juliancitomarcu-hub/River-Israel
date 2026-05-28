@@ -6,12 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMundialMode, isMundialPeriod, setMundialOverride } from "@/lib/mundial-mode";
 import { SolDeMayo } from "@/components/SolDeMayo";
 
-const NAV_LINKS = [
+type NavLink = { name: string; href: string; hideOnMundial?: boolean };
+const NAV_LINKS: NavLink[] = [
   { name: "Inicio",          href: "/" },
-  { name: "Página en hebreo",href: "/hebreo" },
+  { name: "Página en hebreo",href: "/hebreo",   hideOnMundial: true },
   { name: "Historia",        href: "/historia" },
-  { name: "Plantel",       href: "/equipo" },
-  { name: "Nuestra Filial",href: "#filial" },
+  { name: "Plantel",         href: "/equipo" },
+  { name: "Nuestra Filial",  href: "#filial",   hideOnMundial: true },
   { name: "Galería",       href: "#galeria" },
   { name: "Videos",          href: "#videos" },
   { name: "Próximos Eventos",href: "#eventos" },
@@ -113,7 +114,7 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-3 lg:gap-5">
-            {NAV_LINKS.map((link) =>
+            {NAV_LINKS.filter((l) => !(mundialActivo && l.hideOnMundial)).map((link) =>
               link.href.startsWith("/") ? (
                 <Link
                   key={link.name}
@@ -170,7 +171,7 @@ export function Navbar() {
             className="md:hidden bg-river-black border-t border-white/10 overflow-hidden"
           >
             <div className="flex flex-col px-4 pt-2 pb-6 space-y-2">
-              {NAV_LINKS.map((link) =>
+              {NAV_LINKS.filter((l) => !(mundialActivo && l.hideOnMundial)).map((link) =>
                 link.href.startsWith("/") ? (
                   <Link
                     key={link.name}

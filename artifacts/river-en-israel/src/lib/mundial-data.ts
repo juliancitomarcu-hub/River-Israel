@@ -139,22 +139,95 @@ export const GRUPOS: Grupo[] = [
 // ──────────────────────────────────────────────────────────────
 
 export const ESTADIOS: EstadioInfo[] = [
-  { id: "azteca",       nombre: "Estadio Azteca",          ciudad: "Ciudad de México", pais: "México", capacidad: 87000, inaugurado: 1966, lat: 19.3029, lng: -99.1505, detalles: "Sede del partido inaugural el 11/06/26. Único estadio que albergó tres Mundiales (1970, 1986, 2026). Aquí Maradona hizo el gol del siglo." },
-  { id: "metlife",      nombre: "MetLife Stadium",         ciudad: "Nueva York / Nueva Jersey", pais: "USA", capacidad: 82500, inaugurado: 2010, lat: 40.8136, lng: -74.0744, detalles: "Sede de la FINAL el 19/07/26. Hogar de los New York Giants y Jets." },
-  { id: "att",          nombre: "AT&T Stadium",            ciudad: "Dallas",            pais: "USA", capacidad: 80000, inaugurado: 2009, lat: 32.7473, lng: -97.0945, detalles: "Hogar de los Dallas Cowboys. Será sede de una semifinal." },
-  { id: "sofi",         nombre: "SoFi Stadium",            ciudad: "Los Ángeles",       pais: "USA", capacidad: 70000, inaugurado: 2020, lat: 33.9534, lng: -118.3387, detalles: "Estadio futurista techado. Hogar de Rams y Chargers." },
-  { id: "mercedes",     nombre: "Mercedes-Benz Stadium",   ciudad: "Atlanta",           pais: "USA", capacidad: 71000, inaugurado: 2017, lat: 33.7553, lng: -84.4006, detalles: "Techo retráctil con apertura en pétalos. Sede de otra semifinal." },
-  { id: "arrowhead",    nombre: "Arrowhead Stadium",       ciudad: "Kansas City",       pais: "USA", capacidad: 76000, inaugurado: 1972, lat: 39.0489, lng: -94.4839, detalles: "El estadio más ruidoso del mundo según Guinness." },
-  { id: "lincoln",      nombre: "Lincoln Financial Field", ciudad: "Filadelfia",        pais: "USA", capacidad: 69000, inaugurado: 2003, lat: 39.9008, lng: -75.1675, detalles: "Hogar de los Philadelphia Eagles." },
-  { id: "gillette",     nombre: "Gillette Stadium",        ciudad: "Boston",            pais: "USA", capacidad: 65000, inaugurado: 2002, lat: 42.0909, lng: -71.2643, detalles: "Hogar de los New England Patriots." },
-  { id: "hardrock",     nombre: "Hard Rock Stadium",       ciudad: "Miami",             pais: "USA", capacidad: 65000, inaugurado: 1987, lat: 25.9580, lng: -80.2389, detalles: "Sede del partido por el TERCER PUESTO." },
-  { id: "nrg",          nombre: "NRG Stadium",             ciudad: "Houston",           pais: "USA", capacidad: 72000, inaugurado: 2002, lat: 29.6847, lng: -95.4107, detalles: "Estadio techado con clima controlado." },
-  { id: "levis",        nombre: "Levi's Stadium",          ciudad: "San Francisco Bay", pais: "USA", capacidad: 69000, inaugurado: 2014, lat: 37.4030, lng: -121.9700, detalles: "Hogar de los San Francisco 49ers." },
-  { id: "lumen",        nombre: "Lumen Field",             ciudad: "Seattle",           pais: "USA", capacidad: 69000, inaugurado: 2002, lat: 47.5952, lng: -122.3316, detalles: "Hogar de los Seattle Seahawks." },
-  { id: "bmo",          nombre: "BMO Field",               ciudad: "Toronto",           pais: "Canadá", capacidad: 45000, inaugurado: 2007, lat: 43.6332, lng: -79.4185, detalles: "Hogar del Toronto FC. Ampliado para el Mundial." },
-  { id: "bcplace",      nombre: "BC Place",                ciudad: "Vancouver",         pais: "Canadá", capacidad: 54000, inaugurado: 1983, lat: 49.2767, lng: -123.1119, detalles: "Estadio con techo retráctil sobre el Pacífico." },
-  { id: "akron",        nombre: "Estadio Akron",           ciudad: "Guadalajara",       pais: "México", capacidad: 49000, inaugurado: 2010, lat: 20.6818, lng: -103.4625, detalles: "Hogar de Chivas de Guadalajara." },
-  { id: "bbva",         nombre: "Estadio BBVA",            ciudad: "Monterrey",         pais: "México", capacidad: 53000, inaugurado: 2015, lat: 25.6692, lng: -100.2444, detalles: "Hogar de Rayados de Monterrey. Vista al Cerro de la Silla." },
+  { id: "azteca",       nombre: "Estadio Azteca",          ciudad: "Ciudad de México", pais: "México", capacidad: 87000, inaugurado: 1966, lat: 19.3029, lng: -99.1505, detalles: "Sede del partido inaugural el 11/06/26. Único estadio que albergó tres Mundiales (1970, 1986, 2026). Aquí Maradona hizo el gol del siglo.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Estadio_Azteca_2.JPG/640px-Estadio_Azteca_2.JPG" },
+  { id: "metlife",      nombre: "MetLife Stadium",         ciudad: "Nueva York / Nueva Jersey", pais: "USA", capacidad: 82500, inaugurado: 2010, lat: 40.8136, lng: -74.0744, detalles: "Sede de la FINAL el 19/07/26. Hogar de los New York Giants y Jets.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/MetLife_Stadium_%28September_2014%29.jpg/640px-MetLife_Stadium_%28September_2014%29.jpg" },
+  { id: "att",          nombre: "AT&T Stadium",            ciudad: "Dallas",            pais: "USA", capacidad: 80000, inaugurado: 2009, lat: 32.7473, lng: -97.0945, detalles: "Hogar de los Dallas Cowboys. Será sede de una semifinal.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Cowboys_Stadium_full_view.jpg/640px-Cowboys_Stadium_full_view.jpg" },
+  { id: "sofi",         nombre: "SoFi Stadium",            ciudad: "Los Ángeles",       pais: "USA", capacidad: 70000, inaugurado: 2020, lat: 33.9534, lng: -118.3387, detalles: "Estadio futurista techado. Hogar de Rams y Chargers.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/SoFi_Stadium_aerial.jpg/640px-SoFi_Stadium_aerial.jpg" },
+  { id: "mercedes",     nombre: "Mercedes-Benz Stadium",   ciudad: "Atlanta",           pais: "USA", capacidad: 71000, inaugurado: 2017, lat: 33.7553, lng: -84.4006, detalles: "Techo retráctil con apertura en pétalos. Sede de otra semifinal.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Mercedes-Benz_Stadium_%2829418248715%29.jpg/640px-Mercedes-Benz_Stadium_%2829418248715%29.jpg" },
+  { id: "arrowhead",    nombre: "Arrowhead Stadium",       ciudad: "Kansas City",       pais: "USA", capacidad: 76000, inaugurado: 1972, lat: 39.0489, lng: -94.4839, detalles: "El estadio más ruidoso del mundo según Guinness.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Arrowhead_Stadium_aerial-edit.jpg/640px-Arrowhead_Stadium_aerial-edit.jpg" },
+  { id: "lincoln",      nombre: "Lincoln Financial Field", ciudad: "Filadelfia",        pais: "USA", capacidad: 69000, inaugurado: 2003, lat: 39.9008, lng: -75.1675, detalles: "Hogar de los Philadelphia Eagles.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Lincoln_Financial_Field_Philly.jpg/640px-Lincoln_Financial_Field_Philly.jpg" },
+  { id: "gillette",     nombre: "Gillette Stadium",        ciudad: "Boston",            pais: "USA", capacidad: 65000, inaugurado: 2002, lat: 42.0909, lng: -71.2643, detalles: "Hogar de los New England Patriots.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Gillette_Stadium_field_view.jpg/640px-Gillette_Stadium_field_view.jpg" },
+  { id: "hardrock",     nombre: "Hard Rock Stadium",       ciudad: "Miami",             pais: "USA", capacidad: 65000, inaugurado: 1987, lat: 25.9580, lng: -80.2389, detalles: "Sede del partido por el TERCER PUESTO.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Hard_Rock_Stadium_aerial_view.jpg/640px-Hard_Rock_Stadium_aerial_view.jpg" },
+  { id: "nrg",          nombre: "NRG Stadium",             ciudad: "Houston",           pais: "USA", capacidad: 72000, inaugurado: 2002, lat: 29.6847, lng: -95.4107, detalles: "Estadio techado con clima controlado.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Reliant_Stadium.jpg/640px-Reliant_Stadium.jpg" },
+  { id: "levis",        nombre: "Levi's Stadium",          ciudad: "San Francisco Bay", pais: "USA", capacidad: 69000, inaugurado: 2014, lat: 37.4030, lng: -121.9700, detalles: "Hogar de los San Francisco 49ers.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Levi%27s_Stadium_field_view.jpg/640px-Levi%27s_Stadium_field_view.jpg" },
+  { id: "lumen",        nombre: "Lumen Field",             ciudad: "Seattle",           pais: "USA", capacidad: 69000, inaugurado: 2002, lat: 47.5952, lng: -122.3316, detalles: "Hogar de los Seattle Seahawks.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Lumen_Field_2020.jpg/640px-Lumen_Field_2020.jpg" },
+  { id: "bmo",          nombre: "BMO Field",               ciudad: "Toronto",           pais: "Canadá", capacidad: 45000, inaugurado: 2007, lat: 43.6332, lng: -79.4185, detalles: "Hogar del Toronto FC. Ampliado para el Mundial.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/BMO_Field_Toronto_Football_Club_panorama.jpg/640px-BMO_Field_Toronto_Football_Club_panorama.jpg" },
+  { id: "bcplace",      nombre: "BC Place",                ciudad: "Vancouver",         pais: "Canadá", capacidad: 54000, inaugurado: 1983, lat: 49.2767, lng: -123.1119, detalles: "Estadio con techo retráctil sobre el Pacífico.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BC_Place_Stadium_Vancouver_panorama_2.jpg/640px-BC_Place_Stadium_Vancouver_panorama_2.jpg" },
+  { id: "akron",        nombre: "Estadio Akron",           ciudad: "Guadalajara",       pais: "México", capacidad: 49000, inaugurado: 2010, lat: 20.6818, lng: -103.4625, detalles: "Hogar de Chivas de Guadalajara.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Estadio_Akron_Chivas.jpg/640px-Estadio_Akron_Chivas.jpg" },
+  { id: "bbva",         nombre: "Estadio BBVA",            ciudad: "Monterrey",         pais: "México", capacidad: 53000, inaugurado: 2015, lat: 25.6692, lng: -100.2444, detalles: "Hogar de Rayados de Monterrey. Vista al Cerro de la Silla.", imagen: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Estadio_BBVA_Bancomer_Rayados.jpg/640px-Estadio_BBVA_Bancomer_Rayados.jpg" },
+];
+
+// ──────────────────────────────────────────────────────────────
+// FIGURAS DE LA SCALONETA — núcleo del plantel campeón
+// ──────────────────────────────────────────────────────────────
+
+export type FiguraScaloneta = {
+  dorsal: number;
+  nombre: string;
+  apellido: string;
+  posicion: "DT" | "Arquero" | "Defensor" | "Mediocampista" | "Delantero";
+  club: string;
+  apodo?: string;
+  esCapitan?: boolean;
+};
+
+export const JUGADORES_SCALONETA: FiguraScaloneta[] = [
+  { dorsal: 10, nombre: "Lionel", apellido: "Messi",          posicion: "Delantero",     club: "Inter Miami",        apodo: "La Pulga · El GOAT", esCapitan: true },
+  { dorsal: 23, nombre: "Emiliano", apellido: "Martínez",     posicion: "Arquero",       club: "Aston Villa",        apodo: "Dibu" },
+  { dorsal: 7,  nombre: "Rodrigo", apellido: "De Paul",       posicion: "Mediocampista", club: "Atlético Madrid",    apodo: "Motorcito" },
+  { dorsal: 9,  nombre: "Julián", apellido: "Álvarez",        posicion: "Delantero",     club: "Atlético Madrid",    apodo: "La Araña" },
+  { dorsal: 22, nombre: "Lautaro", apellido: "Martínez",      posicion: "Delantero",     club: "Inter Milán",        apodo: "El Toro" },
+  { dorsal: 24, nombre: "Enzo", apellido: "Fernández",        posicion: "Mediocampista", club: "Chelsea",            apodo: "Enzo" },
+  { dorsal: 20, nombre: "Alexis", apellido: "Mac Allister",   posicion: "Mediocampista", club: "Liverpool",          apodo: "Colo" },
+  { dorsal: 13, nombre: "Cristian", apellido: "Romero",       posicion: "Defensor",      club: "Tottenham",          apodo: "Cuti" },
+  { dorsal: 26, nombre: "Nahuel", apellido: "Molina",         posicion: "Defensor",      club: "Atlético Madrid" },
+  { dorsal: 3,  nombre: "Nicolás", apellido: "Tagliafico",    posicion: "Defensor",      club: "Olympique Lyon" },
+  { dorsal: 19, nombre: "Nicolás", apellido: "Otamendi",      posicion: "Defensor",      club: "Benfica",            apodo: "El General" },
+  { dorsal: 11, nombre: "Ángel", apellido: "Di María",        posicion: "Delantero",     club: "Rosario Central",    apodo: "Fideo · Leyenda" },
+  { dorsal: 0,  nombre: "Lionel", apellido: "Scaloni",        posicion: "DT",            club: "Selección Argentina", apodo: "El estratega" },
+];
+
+// ──────────────────────────────────────────────────────────────
+// HISTORIA DE LA SELECCIÓN ARGENTINA — hitos clave
+// ──────────────────────────────────────────────────────────────
+
+export type HitoSeleccion = {
+  año: number;
+  titulo: string;
+  descripcion: string;
+  copa?: string;
+  emoji?: string;
+  destacado?: boolean;
+};
+
+export const HITOS_SELECCION: HitoSeleccion[] = [
+  { año: 1893, titulo: "Nace la AFA",
+    descripcion: "Se funda la Asociación del Fútbol Argentino, una de las más antiguas del mundo.",
+    emoji: "📜" },
+  { año: 1978, titulo: "Primer Mundial",
+    descripcion: "Argentina campeón del mundo en casa, dirigida por César Luis Menotti. Goleada 3-1 a Holanda en la final.",
+    copa: "Mundial 🏆", destacado: true, emoji: "⭐" },
+  { año: 1986, titulo: "La Mano y el Gol del Siglo",
+    descripcion: "Diego Armando Maradona lleva a Argentina al segundo Mundial. La obra de arte ante Inglaterra queda grabada en la historia.",
+    copa: "Mundial 🏆", destacado: true, emoji: "⭐⭐" },
+  { año: 1993, titulo: "Copa América",
+    descripcion: "Última gloria del siglo XX: Argentina campeón en Ecuador. Pasarían 28 años hasta el próximo título.",
+    copa: "Copa América", emoji: "🥇" },
+  { año: 2014, titulo: "Final en Maracaná",
+    descripcion: "Messi y compañía pierden la final del Mundial ante Alemania en tiempo extra. La final más cerca y más lejos a la vez.",
+    emoji: "💔" },
+  { año: 2021, titulo: "Maracanazo de la Scaloneta",
+    descripcion: "Argentina rompe la sequía: campeón de la Copa América en el Maracaná, ante Brasil. Comienza la era Scaloneta.",
+    copa: "Copa América 🏆", destacado: true, emoji: "🎉" },
+  { año: 2022, titulo: "TRICAMPEONES DEL MUNDO",
+    descripcion: "En Qatar, Argentina conquista la tercera estrella derrotando a Francia por penales tras un 3-3 épico. Messi alza la copa.",
+    copa: "Mundial 🏆🏆🏆", destacado: true, emoji: "🌟" },
+  { año: 2024, titulo: "Bicampeón de América",
+    descripcion: "Argentina retiene la Copa América venciendo a Colombia en la final disputada en el Hard Rock Stadium de Miami.",
+    copa: "Copa América 🏆", destacado: true, emoji: "🏆" },
+  { año: 2026, titulo: "DEFENDER LA CORONA",
+    descripcion: "Argentina llega al Mundial USA/Canadá/México como defensora del título, con Scaloni y el núcleo campeón. La Scaloneta va por más.",
+    emoji: "🇦🇷", destacado: true },
 ];
 
 // ──────────────────────────────────────────────────────────────

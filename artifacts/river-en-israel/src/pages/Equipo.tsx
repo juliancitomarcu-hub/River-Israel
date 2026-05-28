@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useMundialMode } from "@/lib/mundial-mode";
+import { SolDeMayo } from "@/components/SolDeMayo";
+import { CountdownArgentina } from "@/components/CountdownArgentina";
 
 type PosicionFiltro = "TODOS" | "ARQUEROS" | "DEFENSORES" | "MEDIOCAMPISTAS" | "DELANTEROS";
 type PosicionJugador = "ARQUEROS" | "DEFENSORES" | "MEDIOCAMPISTAS" | "DELANTEROS";
@@ -257,7 +260,42 @@ function CoudetCard() {
 }
 
 export default function Equipo() {
+  const mundialActivo = useMundialMode();
   const [filtro, setFiltro] = useState<PosicionFiltro>("TODOS");
+
+  if (mundialActivo) {
+    return (
+      <div className="min-h-screen bg-mundial-mesh text-white pt-28 pb-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex justify-center mb-6">
+            <SolDeMayo size={120} spin />
+          </div>
+          <span className="inline-flex items-center gap-2 bg-arg-dorado/95 text-[#0a1628] text-[10px] md:text-xs font-bold uppercase tracking-[0.22em] px-4 py-1.5 rounded-full mb-5 shadow-lg shadow-arg-dorado/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0a1628] animate-pulse" />
+            Plantel oficial · Mundial 2026
+          </span>
+          <h1 className="text-4xl md:text-6xl font-display font-black mb-4 leading-tight text-shadow-cinema">
+            ESPERANDO LA LISTA <br />
+            <span className="text-arg-celeste">DE SCALONI</span>
+          </h1>
+          <p className="text-white/75 text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-8">
+            El cuerpo técnico está terminando de definir los 26 convocados que defenderán
+            la corona en USA / Canadá / México. Apenas se publique la lista oficial, la vas
+            a ver acá con foto, dorsal, club y todo lo que necesitás saber.
+          </p>
+          <div className="bg-white/5 border border-arg-celeste/30 rounded-2xl p-6 md:p-8 backdrop-blur-sm mb-8">
+            <p className="text-arg-dorado font-bold text-xs uppercase tracking-widest mb-4">
+              Mientras tanto, contemos juntos al debut
+            </p>
+            <CountdownArgentina />
+          </div>
+          <p className="text-white/40 text-xs">
+            DT: Lionel Scaloni · Núcleo del plantel campeón Qatar 2022 + bicampeón Copa América 2024
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const jugadoresFiltrados =
     filtro === "TODOS"

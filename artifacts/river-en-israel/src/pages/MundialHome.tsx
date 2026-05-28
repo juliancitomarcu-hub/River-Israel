@@ -5,7 +5,7 @@ import { MapPin, Trophy, Calendar, ChevronRight } from "lucide-react";
 import { MapaEstadios } from "@/components/MapaEstadios";
 import { CountdownArgentina } from "@/components/CountdownArgentina";
 import { SolDeMayo } from "@/components/SolDeMayo";
-import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ } from "@/lib/mundial-data";
+import { GRUPOS, GRUPO_ARGENTINA, ESTADIOS, EQ, JUGADORES_SCALONETA } from "@/lib/mundial-data";
 import { setMundialOverride } from "@/lib/mundial-mode";
 
 const PAISES_COLORS: Record<string, string> = {
@@ -145,6 +145,97 @@ export default function MundialHome() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ═══════════ FIGURAS DE LA SCALONETA ═══════════ */}
+      <section className="relative py-16 bg-gradient-to-b from-[#091324] via-[#0a1f3a] to-[#091324] overflow-hidden">
+        <div className="pointer-events-none absolute -top-20 -right-20 opacity-[0.06]">
+          <SolDeMayo size={420} spin />
+        </div>
+        <div className="pointer-events-none absolute -bottom-32 -left-20 opacity-[0.05]">
+          <SolDeMayo size={360} />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="inline-flex items-center gap-2 bg-arg-celeste/15 text-arg-celeste border border-arg-celeste/40 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-arg-celeste animate-pulse" />
+              Plantel campeón · A defender la corona
+            </span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-2">
+              FIGURAS DE LA <span className="text-arg-celeste">SCALONETA</span>
+            </h2>
+            <p className="text-white/60 text-sm max-w-2xl mx-auto">
+              El núcleo del campeón de Qatar 2022 y bicampeón de América. Estos son los que van por la cuarta estrella.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+            {JUGADORES_SCALONETA.map((j, i) => {
+              const esDT = j.posicion === "DT";
+              return (
+                <motion.div
+                  key={`${j.apellido}-${j.dorsal}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.04 }}
+                  className={`group relative rounded-2xl overflow-hidden border transition-all hover:-translate-y-1 ${
+                    j.esCapitan
+                      ? "bg-gradient-to-br from-arg-dorado/30 via-arg-celeste/20 to-arg-dorado/10 border-arg-dorado shadow-[0_0_25px_rgba(241,184,45,0.25)]"
+                      : esDT
+                      ? "bg-gradient-to-br from-arg-celeste/25 to-[#0a1628] border-arg-celeste/50"
+                      : "bg-gradient-to-br from-arg-celeste/10 to-[#0a1628] border-white/10 hover:border-arg-celeste/50"
+                  }`}
+                >
+                  {j.esCapitan && (
+                    <span className="absolute top-2 right-2 bg-arg-dorado text-[#0a1628] text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">
+                      ⭐ Capitán
+                    </span>
+                  )}
+                  <div className="relative aspect-square flex items-center justify-center bg-gradient-to-br from-arg-celeste/30 via-white/5 to-[#0a1628] overflow-hidden">
+                    <div className="absolute inset-0 opacity-20 flex items-center justify-center">
+                      <SolDeMayo size={140} />
+                    </div>
+                    {esDT ? (
+                      <div className="relative font-display font-black text-arg-dorado text-3xl md:text-4xl text-center leading-none">
+                        DT<br />
+                        <span className="text-lg md:text-xl tracking-widest text-white/80">SCALONI</span>
+                      </div>
+                    ) : (
+                      <div className="relative font-display font-black text-white text-6xl md:text-7xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                        {j.dorsal}
+                      </div>
+                    )}
+                    <span className="absolute bottom-2 left-2 text-xl">🇦🇷</span>
+                  </div>
+                  <div className="p-3 md:p-4 text-center">
+                    <h3 className="font-display font-bold text-white text-sm md:text-base leading-tight uppercase tracking-wide">
+                      {j.nombre}
+                    </h3>
+                    <h3 className={`font-display font-black text-base md:text-lg leading-tight uppercase tracking-wide ${j.esCapitan ? "text-arg-dorado" : "text-arg-celeste"}`}>
+                      {j.apellido}
+                    </h3>
+                    <p className="text-white/55 text-[10px] md:text-[11px] uppercase tracking-widest mt-1.5">
+                      {j.posicion}
+                    </p>
+                    <p className="text-white/70 text-[11px] md:text-xs mt-0.5 font-medium">
+                      {j.club}
+                    </p>
+                    {j.apodo && (
+                      <p className="text-arg-dorado/90 text-[10px] italic mt-1 leading-tight">
+                        "{j.apodo}"
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <p className="text-center text-white/40 text-xs mt-8">
+            Lista completa de 26 convocados se confirma con el anuncio oficial de Scaloni.
+          </p>
         </div>
       </section>
 
