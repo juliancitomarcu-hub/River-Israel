@@ -1,18 +1,24 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { ejecutarCiclo, type EjecucionResultado } from "../scheduler";
+import { ejecutarCiclo, type EjecucionResultado, type Categoria } from "../scheduler";
 import { createEditToken } from "../lib/edit-tokens";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
 
 const router: IRouter = Router();
 
 // ─── ESTADO EN MEMORIA ────────────────────────────────────────────────────────
-// Map<chatId, noticiaId> — contextos de espera por acción del user
+// Map<clave, noticiaId> donde clave = `${categoria}:${chatId}`. Se namespacea por
+// bot porque el mismo admin tiene el mismo chatId en ambos bots (River y Selección)
+// y, sin el prefijo, el contexto de foto/edición se mezclaría entre bots.
 const esperandoFoto    = new Map<string, number>(); // espera foto para nota X
 const esperandoEdicion = new Map<string, number>(); // espera texto editado para nota X
+
+function claveEstado(categoria: Categoria, chatId: string): string {
+  return `${categoria}:${chatId}`;
+}
 
 // ─── HELPERS TELEGRAM ─────────────────────────────────────────────────────────
 
@@ -116,17 +122,18 @@ function mensajeDeResultado(r: EjecucionResultado): string {
 async function ejecutarBusquedaConReintentos(
   token: string,
   chatId: string,
+  categoria: Categoria,
   fuenteInicial?: string
 ): Promise<void> {
   const MAX_INTENTOS = 4;
   let fuentesIntentadas: string[] = [];
 
   // Si hay concurrencia, esperar 20s y reintentar una vez
-  const primerIntento = await ejecutarCiclo(fuenteInicial);
+  const primerIntento = await ejecutarCiclo(fuenteInicial, false, categoria);
   if (primerIntento.tipo === "concurrente") {
     await enviarMensajeTelegram(token, chatId, "⏳ Hay una búsqueda en curso. Reintentando en 20 segundos…");
     await new Promise(r => setTimeout(r, 20_000));
-    const reintento = await ejecutarCiclo(fuenteInicial);
+    const reintento = await ejecutarCiclo(fuenteInicial, false, categoria);
     if (reintento.tipo === "concurrente") {
       await enviarMensajeTelegram(token, chatId, "⏳ _El sistema sigue ocupado. La noticia llegará en cuanto termine el proceso actual._");
       return;
@@ -154,9 +161,9 @@ async function ejecutarBusquedaConReintentos(
       if (fuentesIntentadas.length >= MAX_INTENTOS) break;
 
       fuentesIntentadas.push(fuente);
-      logger.info({ fuente }, "Telegram /buscar: reintentando con fuente alternativa");
+      logger.info({ fuente, categoria }, "Telegram /buscar: reintentando con fuente alternativa");
 
-      const r = await ejecutarCiclo(fuente);
+      const r = await ejecutarCiclo(fuente, false, categoria);
       if (r.tipo === "ok") {
         await enviarMensajeTelegram(token, chatId, `✅ *¡Encontrada en ${fuente}!* La nota llegará con los botones de aprobación.`);
         return;
@@ -182,12 +189,12 @@ async function ejecutarBusquedaConReintentos(
 // Si hay una nota pendiente la muestra con botones.
 // Si no hay ninguna, dispara una búsqueda nueva automáticamente.
 
-async function handleComandoNoticia(token: string, chatId: string) {
+async function handleComandoNoticia(token: string, chatId: string, categoria: Categoria) {
   try {
     const [notaPendiente] = await db
       .select()
       .from(noticiasTable)
-      .where(eq(noticiasTable.pendiente, true))
+      .where(and(eq(noticiasTable.pendiente, true), eq(noticiasTable.categoria, categoria)))
       .orderBy(desc(noticiasTable.createdAt))
       .limit(1);
 
@@ -233,7 +240,7 @@ async function handleComandoNoticia(token: string, chatId: string) {
     await enviarMensajeTelegram(token, chatId,
       "🔍 No hay notas pendientes. *Buscando nueva noticia…*\n_Esto puede tardar hasta 1 minuto._"
     );
-    await ejecutarBusquedaConReintentos(token, chatId);
+    await ejecutarBusquedaConReintentos(token, chatId, categoria);
 
   } catch (err) {
     logger.error({ err }, "Telegram /noticia: error");
@@ -244,12 +251,13 @@ async function handleComandoNoticia(token: string, chatId: string) {
 // ─── COMANDO /buscar ──────────────────────────────────────────────────────────
 // Dispara una búsqueda nueva (ignorando notas pendientes existentes).
 
-async function handleComandoBuscar(token: string, chatId: string) {
+async function handleComandoBuscar(token: string, chatId: string, categoria: Categoria) {
+  const queBusca = categoria === "seleccion" ? "de la Selección" : "de River";
   await enviarMensajeTelegram(token, chatId,
-    "🔍 *Buscando nueva noticia de River…*\n_Escaneando medios y procesando con IA. Hasta 1 minuto._"
+    `🔍 *Buscando nueva noticia ${queBusca}…*\n_Escaneando medios y procesando con IA. Hasta 1 minuto._`
   );
   try {
-    await ejecutarBusquedaConReintentos(token, chatId);
+    await ejecutarBusquedaConReintentos(token, chatId, categoria);
   } catch (err) {
     logger.error({ err }, "Telegram /buscar: error en ciclo");
     await enviarMensajeTelegram(token, chatId, "❌ Hubo un error durante la búsqueda. Intentá de nuevo con /buscar.");
@@ -261,12 +269,14 @@ async function handleComandoBuscar(token: string, chatId: string) {
 async function procesarFotoEntrante(
   token: string,
   chatId: string,
+  categoria: Categoria,
   fileId: string
 ) {
-  const noticiaId = esperandoFoto.get(chatId);
+  const clave = claveEstado(categoria, chatId);
+  const noticiaId = esperandoFoto.get(clave);
   if (!noticiaId) return; // no hay contexto activo para este chat
 
-  esperandoFoto.delete(chatId);
+  esperandoFoto.delete(clave);
 
   try {
     const url = await obtenerUrlFoto(token, fileId);
@@ -351,6 +361,7 @@ async function procesarTextoEditado(
 async function procesarCallback(
   token: string,
   chatId: string,
+  categoria: Categoria,
   callbackId: string,
   data: string,
   messageId: string
@@ -362,8 +373,12 @@ async function procesarCallback(
 
       await responderCallback(token, callbackId, "✅ Publicando...");
 
-      const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
-      if (!actual) return;
+      const [actual] = await db.select().from(noticiasTable)
+        .where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.categoria, categoria)));
+      if (!actual) {
+        await responderCallback(token, callbackId, "❌ Esta nota no pertenece a este bot.");
+        return;
+      }
       if (actual.publicada) {
         await responderCallback(token, callbackId, "⚠️ Esta nota ya fue publicada.");
         return;
@@ -372,7 +387,7 @@ async function procesarCallback(
       const [noticia] = await db
         .update(noticiasTable)
         .set({ publicada: true, pendiente: false })
-        .where(eq(noticiasTable.id, noticiaId))
+        .where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.categoria, categoria)))
         .returning();
 
       // 🌐 Traducir al hebreo en background
@@ -395,7 +410,8 @@ async function procesarCallback(
 
       await responderCallback(token, callbackId, "✏️ Texto enviado — podés editarlo");
 
-      const [nota] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
+      const [nota] = await db.select().from(noticiasTable)
+        .where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.categoria, categoria)));
       if (!nota) {
         await enviarMensajeTelegram(token, chatId, "❌ No encontré la nota para editar.");
         return;
@@ -429,12 +445,13 @@ async function procesarCallback(
       }
 
       // Entrar en modo esperando edición
-      esperandoEdicion.set(chatId, noticiaId);
+      const claveEdicion = claveEstado(categoria, chatId);
+      esperandoEdicion.set(claveEdicion, noticiaId);
 
       // Auto-limpiar el estado después de 10 minutos
       setTimeout(() => {
-        if (esperandoEdicion.get(chatId) === noticiaId) {
-          esperandoEdicion.delete(chatId);
+        if (esperandoEdicion.get(claveEdicion) === noticiaId) {
+          esperandoEdicion.delete(claveEdicion);
         }
       }, 10 * 60 * 1000);
 
@@ -452,15 +469,23 @@ async function procesarCallback(
       const noticiaId = parseInt(data.replace("foto_", ""));
       if (isNaN(noticiaId)) return;
 
+      const [notaFoto] = await db.select().from(noticiasTable)
+        .where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.categoria, categoria)));
+      if (!notaFoto) {
+        await responderCallback(token, callbackId, "❌ Esta nota no pertenece a este bot.");
+        return;
+      }
+
       await responderCallback(token, callbackId, "📸 Enviame la foto");
 
       // Guardar el estado: este chat está esperando una foto para esta noticia
-      esperandoFoto.set(chatId, noticiaId);
+      const claveFoto = claveEstado(categoria, chatId);
+      esperandoFoto.set(claveFoto, noticiaId);
 
       // Auto-limpiar el estado después de 5 minutos si el usuario no envía nada
       setTimeout(() => {
-        if (esperandoFoto.get(chatId) === noticiaId) {
-          esperandoFoto.delete(chatId);
+        if (esperandoFoto.get(claveFoto) === noticiaId) {
+          esperandoFoto.delete(claveFoto);
         }
       }, 5 * 60 * 1000);
 
@@ -475,8 +500,12 @@ async function procesarCallback(
 
       await responderCallback(token, callbackId, "❌ Rechazando...");
 
-      const [actual] = await db.select().from(noticiasTable).where(eq(noticiasTable.id, noticiaId));
-      if (!actual) return;
+      const [actual] = await db.select().from(noticiasTable)
+        .where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.categoria, categoria)));
+      if (!actual) {
+        await responderCallback(token, callbackId, "❌ Esta nota no pertenece a este bot.");
+        return;
+      }
       if (!actual.pendiente) {
         // Ya procesada — avisar sin hacer nada
         await responderCallback(token, callbackId, "ℹ️ Esta nota ya fue procesada.");
@@ -486,7 +515,7 @@ async function procesarCallback(
       const [noticia] = await db
         .update(noticiasTable)
         .set({ publicada: false, pendiente: false })
-        .where(eq(noticiasTable.id, noticiaId))
+        .where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.categoria, categoria)))
         .returning();
 
       if (messageId) {
@@ -503,15 +532,14 @@ async function procesarCallback(
 
 // ─── ENDPOINT ─────────────────────────────────────────────────────────────────
 
-router.post("/telegram-webhook", (req, res) => {
-  res.status(200).json({ ok: true });
-
-  const token = process.env.TELEGRAM_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-
-  if (!token || !chatId) return;
-
-  const update = req.body as {
+// Procesa un update entrante usando el token/chat del bot que lo recibió.
+// `token`/`chatIdDefault` los define cada ruta (River vs Selección) para que
+// las respuestas, ediciones y descargas de foto salgan por el bot correcto.
+function procesarUpdate(
+  token: string,
+  chatIdDefault: string,
+  categoria: Categoria,
+  update: {
     callback_query?: {
       id: string;
       data?: string;
@@ -525,8 +553,8 @@ router.post("/telegram-webhook", (req, res) => {
       text?: string;
       photo?: { file_id: string; file_size?: number }[];
     };
-  };
-
+  },
+) {
   const msg = update.message;
   if (msg) {
     const fromChatId = String(msg.chat.id);
@@ -536,7 +564,7 @@ router.post("/telegram-webhook", (req, res) => {
       // Usar la foto de mayor resolución (último elemento)
       const mejorFoto = msg.photo[msg.photo.length - 1];
       setImmediate(() => {
-        procesarFotoEntrante(token, fromChatId, mejorFoto.file_id).catch((err) =>
+        procesarFotoEntrante(token, fromChatId, categoria, mejorFoto.file_id).catch((err) =>
           logger.error({ err }, "Telegram: error asíncrono procesando foto")
         );
       });
@@ -551,7 +579,7 @@ router.post("/telegram-webhook", (req, res) => {
       // /noticia y /noticias (singular y plural) → mostrar pendiente o buscar nueva
       if (textoLower.startsWith("/noticia")) {
         setImmediate(() => {
-          handleComandoNoticia(token, fromChatId).catch((err) =>
+          handleComandoNoticia(token, fromChatId, categoria).catch((err) =>
             logger.error({ err }, "Telegram /noticia: error asíncrono")
           );
         });
@@ -561,7 +589,7 @@ router.post("/telegram-webhook", (req, res) => {
       // /buscar → buscar nueva noticia en medios
       if (textoLower.startsWith("/buscar")) {
         setImmediate(() => {
-          handleComandoBuscar(token, fromChatId).catch((err) =>
+          handleComandoBuscar(token, fromChatId, categoria).catch((err) =>
             logger.error({ err }, "Telegram /buscar: error asíncrono")
           );
         });
@@ -582,9 +610,10 @@ router.post("/telegram-webhook", (req, res) => {
       }
 
       // ── Recibir texto editado (Versión Final) ────────────────────────
-      if (esperandoEdicion.has(fromChatId)) {
-        const noticiaId = esperandoEdicion.get(fromChatId)!;
-        esperandoEdicion.delete(fromChatId);
+      const claveMsg = claveEstado(categoria, fromChatId);
+      if (esperandoEdicion.has(claveMsg)) {
+        const noticiaId = esperandoEdicion.get(claveMsg)!;
+        esperandoEdicion.delete(claveMsg);
 
         setImmediate(() => {
           procesarTextoEditado(token, fromChatId, noticiaId, texto).catch((err) =>
@@ -595,8 +624,8 @@ router.post("/telegram-webhook", (req, res) => {
       }
 
       // ── Si esperaba foto y manda texto, cancelar la espera ───────────
-      if (esperandoFoto.has(fromChatId)) {
-        esperandoFoto.delete(fromChatId);
+      if (esperandoFoto.has(claveMsg)) {
+        esperandoFoto.delete(claveMsg);
         setImmediate(() => {
           enviarMensajeTelegram(token, fromChatId, "📸 Operación de foto cancelada. Usá /noticia para volver a ver la nota con los botones.").catch(() => {});
         });
@@ -610,13 +639,35 @@ router.post("/telegram-webhook", (req, res) => {
 
   const { id: callbackId, data, message } = callback;
   const messageId = String(message?.message_id ?? "");
-  const fromChatId = String(callback.from?.id ?? chatId);
+  const fromChatId = String(callback.from?.id ?? chatIdDefault);
 
   setImmediate(() => {
-    procesarCallback(token, fromChatId, callbackId, data, messageId).catch((err) =>
+    procesarCallback(token, fromChatId, categoria, callbackId, data, messageId).catch((err) =>
       logger.error({ err }, "Telegram webhook: error en procesamiento asíncrono")
     );
   });
+}
+
+// Bot de River — bot principal.
+router.post("/telegram-webhook", (req, res) => {
+  res.status(200).json({ ok: true });
+
+  const token = process.env.TELEGRAM_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+
+  procesarUpdate(token, chatId, "river", req.body);
+});
+
+// Bot de la Selección ("La Scaloneta en Israel") — bot dedicado.
+router.post("/telegram-webhook-seleccion", (req, res) => {
+  res.status(200).json({ ok: true });
+
+  const token = process.env.TELEGRAM_TOKEN_SELECCION;
+  const chatId = process.env.TELEGRAM_CHAT_SELECCION;
+  if (!token || !chatId) return;
+
+  procesarUpdate(token, chatId, "seleccion", req.body);
 });
 
 export default router;

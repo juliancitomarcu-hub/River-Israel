@@ -10,6 +10,7 @@ import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 import { createEditToken, purgeExpiredEditTokens } from "./lib/edit-tokens";
+import { credencialesTelegram } from "./lib/telegram-cred";
 
 export type Categoria = "river" | "seleccion";
 
@@ -544,13 +545,14 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     }
 
     // ── ENVIAR A TELEGRAM ─────────────────────────────────────────────────
-    const token = process.env.TELEGRAM_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
+    // Las notas de Selección van al bot de la Scaloneta; las de River al de River.
+    const cred = credencialesTelegram(categoria === "seleccion" ? "seleccion" : "river");
 
-    if (!token || !chatId) {
-      logger.warn("Scheduler: Telegram no configurado, nota guardada sin enviar");
+    if (!cred) {
+      logger.warn({ categoria }, "Scheduler: bot de Telegram para esta categoría no configurado, nota guardada sin enviar");
       return { tipo: "ok", titulo, id: savedNoticia.id, fuente: fuenteNombre };
     }
+    const { token, chatId } = cred;
 
     const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
     const TELEGRAM_MAX = 4096;

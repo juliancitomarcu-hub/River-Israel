@@ -30,6 +30,7 @@ timeoutMs = 20000
 
 [userenv.shared]
 TELEGRAM_CHAT_ID = "8412389155"
+TELEGRAM_CHAT_SELECCION = "8468989399:AAH9ZcdLjMhLmRb25r0Jxujcoa3xpmy4r_c"
 
 [userenv.production]
 TELEGRAM_WEBHOOK_DOMAIN = "riverplateisrael.com"

@@ -19,24 +19,8 @@ if (Number.isNaN(port) || port <= 0) {
 // Detectar producción por NODE_ENV o por TELEGRAM_WEBHOOK_DOMAIN (que solo existe en prod)
 const esProduccion = process.env.NODE_ENV === "production" || !!process.env.TELEGRAM_WEBHOOK_DOMAIN;
 
-async function registrarWebhookTelegram() {
-  // Solo registrar el webhook en producción para no sobreescribir el webhook de prod desde dev
-  if (!esProduccion) {
-    logger.info("Modo desarrollo: registro de webhook de Telegram omitido (evita sobreescribir producción)");
-    return;
-  }
-
-  const token = process.env.TELEGRAM_TOKEN;
-  // TELEGRAM_WEBHOOK_DOMAIN tiene prioridad (dominio de producción real: riverplatisrael.replit.app)
-  const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
-
-  if (!token || !domain) {
-    logger.warn("No se puede registrar webhook: falta TELEGRAM_TOKEN o dominio");
-    return;
-  }
-
-  const webhookUrl = `https://${domain}/api/telegram-webhook`;
-
+async function registrarUnWebhook(bot: string, token: string, domain: string, ruta: string) {
+  const webhookUrl = `https://${domain}${ruta}`;
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
       method: "POST",
@@ -48,12 +32,43 @@ async function registrarWebhookTelegram() {
     });
     const data = await res.json() as { ok: boolean; description?: string };
     if (data.ok) {
-      logger.info({ webhookUrl }, "Webhook de Telegram registrado exitosamente");
+      logger.info({ bot, webhookUrl }, "Webhook de Telegram registrado exitosamente");
     } else {
-      logger.warn({ data }, "No se pudo registrar el webhook de Telegram");
+      logger.warn({ bot, data }, "No se pudo registrar el webhook de Telegram");
     }
   } catch (err) {
-    logger.error({ err }, "Error registrando webhook de Telegram");
+    logger.error({ bot, err }, "Error registrando webhook de Telegram");
+  }
+}
+
+async function registrarWebhookTelegram() {
+  // Solo registrar el webhook en producción para no sobreescribir el webhook de prod desde dev
+  if (!esProduccion) {
+    logger.info("Modo desarrollo: registro de webhook de Telegram omitido (evita sobreescribir producción)");
+    return;
+  }
+
+  // TELEGRAM_WEBHOOK_DOMAIN tiene prioridad (dominio de producción real: riverplatisrael.replit.app)
+  const domain = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? process.env.REPLIT_DEV_DOMAIN;
+  if (!domain) {
+    logger.warn("No se puede registrar webhook: falta el dominio");
+    return;
+  }
+
+  // Bot de River — bot principal.
+  const tokenRiver = process.env.TELEGRAM_TOKEN;
+  if (tokenRiver) {
+    await registrarUnWebhook("river", tokenRiver, domain, "/api/telegram-webhook");
+  } else {
+    logger.warn("No se puede registrar webhook de River: falta TELEGRAM_TOKEN");
+  }
+
+  // Bot de la Selección ("La Scaloneta en Israel") — bot dedicado.
+  const tokenSeleccion = process.env.TELEGRAM_TOKEN_SELECCION;
+  if (tokenSeleccion) {
+    await registrarUnWebhook("seleccion", tokenSeleccion, domain, "/api/telegram-webhook-seleccion");
+  } else {
+    logger.warn("No se registra webhook de Selección: falta TELEGRAM_TOKEN_SELECCION");
   }
 }
 

@@ -7,6 +7,7 @@ import { PROMPT_MAESTRO } from "../lib/prompt-maestro";
 import { PROMPT_MAESTRO_SELECCION } from "../lib/prompt-maestro-seleccion";
 import { requireAdmin } from "../middleware/requireAdmin";
 import { type CategoriaImagen } from "../lib/generar-imagen-ig";
+import { credencialesTelegram } from "../lib/telegram-cred";
 
 function elegirPrompt(categoria: CategoriaImagen): string {
   return categoria === "seleccion" ? PROMPT_MAESTRO_SELECCION : PROMPT_MAESTRO;
@@ -93,13 +94,16 @@ router.post("/enviar-telegram", async (req, res) => {
   };
   const categoriaFinal: CategoriaImagen = categoria === "seleccion" ? "seleccion" : "river";
 
-  const token = process.env.TELEGRAM_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-
-  if (!token || !chatId) {
-    res.status(503).json({ error: "Telegram no está configurado." });
+  const cred = credencialesTelegram(categoriaFinal);
+  if (!cred) {
+    res.status(503).json({
+      error: categoriaFinal === "seleccion"
+        ? "El bot de Telegram de la Selección no está configurado."
+        : "Telegram no está configurado.",
+    });
     return;
   }
+  const { token, chatId } = cred;
 
   if (!texto || texto.trim().length < 5) {
     res.status(400).json({ error: "Falta el texto a enviar" });
@@ -156,7 +160,7 @@ router.post("/enviar-telegram", async (req, res) => {
     // La imagen se adjunta por separado vía el botón 📸 (telegram-webhook.ts).
     // Telegram admite hasta 4096 chars en sendMessage, vs 1024 en caption de imagen.
     const TELEGRAM_MAX = 4096;
-    const encabezado = `📰 *NUEVA NOTA — River en Israel*\n\n*${titulo}*\n\n`;
+    const encabezado = `📰 *NUEVA NOTA — ${cred.marca}*\n\n*${titulo}*\n\n`;
     const pie = `\n\n${tags}\n\n_¿Publicamos esta nota en el sitio?_`;
     const maxCuerpo = TELEGRAM_MAX - encabezado.length - pie.length - 5;
     const cuerpo = contenido.length > maxCuerpo ? contenido.slice(0, maxCuerpo) + "…" : contenido;

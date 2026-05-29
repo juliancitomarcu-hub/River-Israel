@@ -1594,7 +1594,8 @@ export default function Redactor() {
     setErrorBusqueda("");
     setNoticias([]);
     try {
-      const res = await fetch(`/api/noticias-river?fuente=${fuente}`);
+      const endpoint = categoria === "seleccion" ? "noticias-seleccion" : "noticias-river";
+      const res = await fetch(`/api/${endpoint}?fuente=${fuente}`);
       const data = await res.json() as { noticias?: NoticiaRaw[]; error?: string };
       if (!res.ok || !data.noticias) {
         setErrorBusqueda(data.error ?? "No se encontraron noticias");
