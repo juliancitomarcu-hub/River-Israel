@@ -10,7 +10,6 @@ type NavLink = { name: string; href: string };
 
 const NAV_LINKS_RIVER: NavLink[] = [
   { name: "Inicio",           href: "/river" },
-  { name: "Página en hebreo", href: "/hebreo" },
   { name: "Historia",         href: "/historia" },
   { name: "Plantel",          href: "/equipo" },
   { name: "Nuestra Filial",   href: "/river#filial" },
