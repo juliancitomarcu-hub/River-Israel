@@ -452,9 +452,18 @@ const FUENTES_SELECCION: Record<string, () => Promise<NoticiaRaw[]>> = {
 
 router.get("/noticias-seleccion", async (req, res) => {
   const fuente = (req.query.fuente as string) ?? "ole";
-  const scraper = FUENTES_SELECCION[fuente] ?? scrapearOleSeleccion;
   try {
-    const noticias = await scraper();
+    let noticias: NoticiaRaw[];
+    if (FUENTES_SELECCION[fuente]) {
+      // Fuente con scraper dedicado de Selección (sección /seleccion-argentina)
+      noticias = await FUENTES_SELECCION[fuente]();
+    } else if (FUENTES[fuente]) {
+      // Misma fuente que River, filtrando solo lo que es de la Selección
+      const todas = await FUENTES[fuente]();
+      noticias = todas.filter((n) => esNoticiaDeSeleccion(n.titulo, n.url));
+    } else {
+      noticias = await scrapearOleSeleccion();
+    }
     if (noticias.length === 0) {
       res.status(404).json({ error: "No se encontraron noticias de la Selección." });
       return;

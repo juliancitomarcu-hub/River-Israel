@@ -1948,7 +1948,7 @@ export default function Redactor() {
                   : "text-gray-500 hover:text-sky-500"
               }`}
             >
-              <span className="text-base leading-none">🇦🇷</span> Noticias Selección
+              <span className="text-base leading-none">🇦🇷</span> Mis publicaciones Selección
             </button>
             <button
               onClick={() => { setTab("publicaciones-libres"); setPlEstado("idle"); }}

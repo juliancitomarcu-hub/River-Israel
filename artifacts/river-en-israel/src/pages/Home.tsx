@@ -276,11 +276,6 @@ export default function Home() {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           style={{ minHeight: "100px" }}
                         />
-                        <div className="absolute top-2 left-2 z-10">
-                          <span className="bg-river-red text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">
-                            {item.category}
-                          </span>
-                        </div>
                       </div>
                       <div className="p-3 flex-1 flex flex-col justify-between min-w-0">
                         <div>

@@ -20,7 +20,14 @@ const FUENTES = [
   "bolavip", "as", "superdeportivo"
 ] as const;
 
-const FUENTES_SELECCION = ["ole", "tyc", "google"] as const;
+// Selección usa las mismas fuentes que River; el endpoint /noticias-seleccion
+// aplica el filtro de Argentina (esNoticiaDeSeleccion) sobre cada una.
+// Se excluyen "pagina" y "cariverplate" por ser sitios exclusivos de River.
+const FUENTES_SELECCION = [
+  "ole", "tyc", "google",
+  "infobae", "clarin", "lanacion",
+  "bolavip", "as", "superdeportivo",
+] as const;
 
 // ─── ESTADO PERSISTENTE ───────────────────────────────────────────────────────
 
@@ -783,6 +790,23 @@ function iniciarResumenHebreoDiario(): void {
 const INTERVALO_MS   = 2 * 60 * 60 * 1000; // 2 horas
 const PRIMER_CICLO_MS =  2 * 60 * 1000; // 2 minutos tras arrancar
 
+// Alterna River ↔ Selección en cada ciclo periódico para que el bot envíe
+// constantemente noticias de ambas categorías. El flip se persiste en el estado.
+function siguienteCategoriaPeriodica(): Categoria {
+  const estado = leerEstado();
+  const categoria: Categoria = estado.categoriaFlip % 2 === 0 ? "river" : "seleccion";
+  estado.categoriaFlip += 1;
+  guardarEstado(estado);
+  return categoria;
+}
+
+function ejecutarCicloPeriodico(): void {
+  const categoria = siguienteCategoriaPeriodica();
+  ejecutarCiclo(undefined, false, categoria).catch((err) =>
+    logger.error({ err, categoria }, "Scheduler: error no capturado en ciclo periódico"),
+  );
+}
+
 export function iniciarScheduler(): void {
   logger.info({ primerCicloMinutos: 2, intervaloHoras: 2 }, "Scheduler automático iniciado — primer ciclo en 2 min, luego cada 2 horas");
 
@@ -800,10 +824,10 @@ export function iniciarScheduler(): void {
   }, UNA_HORA_MS);
 
   setTimeout(() => {
-    ejecutarCiclo(undefined, false).catch((err) => logger.error({ err }, "Scheduler: error no capturado en primer ciclo"));
+    ejecutarCicloPeriodico();
 
     setInterval(() => {
-      ejecutarCiclo(undefined, false).catch((err) => logger.error({ err }, "Scheduler: error no capturado"));
+      ejecutarCicloPeriodico();
     }, INTERVALO_MS);
   }, PRIMER_CICLO_MS);
 }

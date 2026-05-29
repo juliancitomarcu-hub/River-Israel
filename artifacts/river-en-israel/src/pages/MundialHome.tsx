@@ -186,11 +186,6 @@ export default function MundialHome() {
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute top-2 left-2">
-                        <span className="bg-arg-celeste text-[#0a1628] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow">
-                          {item.category || "Selección"}
-                        </span>
-                      </div>
                     </div>
                     <div className="p-4">
                       <span className="text-[11px] text-white/40 flex items-center gap-1 mb-2">
@@ -213,17 +208,31 @@ export default function MundialHome() {
                   <button
                     onClick={() => setPaginaNoticias((p) => Math.max(0, p - 1))}
                     disabled={paginaNoticias === 0}
-                    className="px-3 py-1.5 rounded-full bg-arg-celeste/10 text-arg-celeste border border-arg-celeste/30 text-xs font-bold uppercase disabled:opacity-30 disabled:cursor-not-allowed hover:bg-arg-celeste/20 transition"
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-arg-celeste/10 text-arg-celeste border border-arg-celeste/30 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-arg-celeste/20 transition"
+                    aria-label="Página anterior"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className="text-white/60 text-xs font-bold px-2">
-                    {paginaNoticias + 1} / {totalPaginasNoticias}
-                  </span>
+
+                  {Array.from({ length: totalPaginasNoticias }, (_, i) => i).map((i) => (
+                    <button
+                      key={i}
+                      onClick={() => setPaginaNoticias(i)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-all border ${
+                        i === paginaNoticias
+                          ? "bg-arg-celeste text-[#0a1628] border-arg-celeste shadow"
+                          : "border-arg-celeste/30 text-arg-celeste hover:bg-arg-celeste/20"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
                   <button
                     onClick={() => setPaginaNoticias((p) => Math.min(totalPaginasNoticias - 1, p + 1))}
                     disabled={paginaNoticias >= totalPaginasNoticias - 1}
-                    className="px-3 py-1.5 rounded-full bg-arg-celeste/10 text-arg-celeste border border-arg-celeste/30 text-xs font-bold uppercase disabled:opacity-30 disabled:cursor-not-allowed hover:bg-arg-celeste/20 transition"
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-arg-celeste/10 text-arg-celeste border border-arg-celeste/30 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-arg-celeste/20 transition"
+                    aria-label="Página siguiente"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>

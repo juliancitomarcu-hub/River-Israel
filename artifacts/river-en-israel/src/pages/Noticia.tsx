@@ -94,9 +94,6 @@ function NoticiasRelacionadas({ currentId }: { currentId: number }) {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <span className="absolute top-2 left-2 bg-river-red text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
-                  {noticia.category}
-                </span>
               </div>
               <div className="p-3">
                 <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
@@ -183,11 +180,6 @@ export default function Noticia() {
                   <ArrowLeft className="w-4 h-4" /> Volver a Actualidad
                 </span>
               </Link>
-              <div className="mb-3">
-                <span className="bg-river-red text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                  {data.fuente || "Actualidad"}
-                </span>
-              </div>
               <h1 className="text-3xl md:text-5xl font-display font-bold text-white leading-tight">
                 {data.titulo}
               </h1>
