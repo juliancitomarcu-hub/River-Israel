@@ -229,7 +229,7 @@ export default function Home() {
                 <p className="text-gray-300 mt-2 text-lg">Lo último del mundo River y nuestra filial.</p>
                 <div className="flex flex-wrap gap-3 mt-4">
                   <a
-                    href="https://www.instagram.com/riverplateisr?igsh=ZGRpbXlhZnpsdjB5"
+                    href="https://www.instagram.com/lascalonetaenisrael?igsh=N2RlM2Y3Y25vdjMy&utm_source=qr"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-full border border-river-red text-river-red hover:bg-river-red hover:text-white px-5 py-2 text-sm font-bold uppercase tracking-wide transition-all"
