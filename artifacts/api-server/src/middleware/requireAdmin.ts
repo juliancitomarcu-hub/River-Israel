@@ -3,8 +3,11 @@ import { getAdminSession, getNoticiaSession } from "../lib/edit-tokens";
 
 function extractToken(req: Request): string | undefined {
   const header = req.header("x-admin-token");
+  const cookies = (req as Request & { cookies?: Record<string, unknown> }).cookies;
+  const cookie = typeof cookies?.admin_session === "string" ? cookies.admin_session : undefined;
   const query = typeof req.query.token === "string" ? req.query.token : undefined;
-  return header ?? query;
+  // Prioridad: header (curl / scripts) > cookie httpOnly (panel web) > query (?token=, links).
+  return header ?? cookie ?? query;
 }
 
 // Acepta el ADMIN_TOKEN permanente (env var, para curl / scripts) o un

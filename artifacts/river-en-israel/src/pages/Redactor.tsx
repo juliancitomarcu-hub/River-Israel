@@ -740,11 +740,10 @@ function VideosTab({ categoria = "river" }: { categoria?: "river" | "seleccion" 
 
 export default function Redactor() {
   const [tab, setTab] = useState<Tab>("redactor");
-  const [adminToken, setAdminToken] = useState<string>(() => {
-    try { return sessionStorage.getItem("river_admin_token") ?? ""; } catch { return ""; }
-  });
-  // Timestamp (ms) cuando caduca la sesión. null = sin caducidad conocida
-  // (ej: ADMIN_TOKEN permanente usado por dev). Se persiste junto al token.
+  // El token de admin ya NO vive en sessionStorage: ahora va en una cookie
+  // httpOnly seteada por /api/admin/login. Mantenemos sólo `expiresAt` en
+  // sessionStorage para poder mostrar el aviso amarillo de "tu sesión está
+  // por caducar" sin tener que hacer un check a cada tick.
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(() => {
     try {
       const raw = sessionStorage.getItem("river_admin_token_expires");
@@ -759,40 +758,38 @@ export default function Redactor() {
   const [loginLoading, setLoginLoading] = useState(false);
   // Tick para refrescar el countdown del aviso de caducidad
   const [now, setNow] = useState(() => Date.now());
-  const adminHeaders = (): Record<string, string> => adminToken ? { "x-admin-token": adminToken } : {};
+  // La cookie va sola en cada request same-origin: nada de inyectar headers.
+  const adminHeaders = (): Record<string, string> => ({});
   const pedirAdminToken = () => {
     setAuthStatus("needed");
     setLoginInput("");
   };
 
-  const guardarSesion = (token: string, expiresAt: number | null) => {
-    setAdminToken(token);
+  const guardarExpiracion = (expiresAt: number | null) => {
     setSessionExpiresAt(expiresAt);
     try {
-      sessionStorage.setItem("river_admin_token", token);
       if (expiresAt != null) sessionStorage.setItem("river_admin_token_expires", String(expiresAt));
       else sessionStorage.removeItem("river_admin_token_expires");
-      // Limpiar el viejo localStorage por si quedó de una versión anterior:
-      // ya no persistimos la contraseña indefinidamente.
+      // Limpiar restos de versiones anteriores que guardaban el token mismo.
+      sessionStorage.removeItem("river_admin_token");
       localStorage.removeItem("river_admin_token");
     } catch { /* ignore */ }
   };
 
   const limpiarSesion = () => {
-    setAdminToken("");
     setSessionExpiresAt(null);
     try {
-      sessionStorage.removeItem("river_admin_token");
       sessionStorage.removeItem("river_admin_token_expires");
+      sessionStorage.removeItem("river_admin_token");
       localStorage.removeItem("river_admin_token");
     } catch { /* ignore */ }
   };
 
-  // Verifica un token contra el backend. Devuelve null si inválido,
-  // o el expiresAt (number | null) si la sesión es válida.
-  const verificarToken = async (token: string): Promise<{ expiresAt: number | null } | null> => {
+  // Verifica la sesión actual (cookie) contra el backend. Devuelve null si
+  // inválida, o el expiresAt (number | null) si está viva.
+  const verificarSesion = async (): Promise<{ expiresAt: number | null } | null> => {
     try {
-      const res = await fetch("/api/admin/check", { headers: { "x-admin-token": token } });
+      const res = await fetch("/api/admin/check", { credentials: "same-origin" });
       if (!res.ok) return null;
       const data = await res.json() as { expiresAt?: number | null };
       return { expiresAt: typeof data.expiresAt === "number" ? data.expiresAt : null };
@@ -818,14 +815,16 @@ export default function Redactor() {
           try {
             const res = await fetch("/api/admin/exchange-edit-token", {
               method: "POST",
+              credentials: "same-origin",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token: editToken }),
             });
             if (res.ok) {
-              const data = await res.json() as { sessionToken?: string; expiresAt?: number };
-              if (data.sessionToken) {
+              const data = await res.json() as { ok?: boolean; expiresAt?: number };
+              if (data.ok) {
                 if (cancelled) return;
-                guardarSesion(data.sessionToken, typeof data.expiresAt === "number" ? data.expiresAt : null);
+                // La cookie ya viene seteada por el server; sólo guardamos el expiresAt visual.
+                guardarExpiracion(typeof data.expiresAt === "number" ? data.expiresAt : null);
                 setAuthStatus("ok");
                 return;
               }
@@ -835,15 +834,10 @@ export default function Redactor() {
         }
       } catch { /* ignore */ }
 
-      if (!adminToken) { setAuthStatus("needed"); return; }
-      const result = await verificarToken(adminToken);
+      const result = await verificarSesion();
       if (cancelled) return;
       if (result) {
-        setSessionExpiresAt(result.expiresAt);
-        try {
-          if (result.expiresAt != null) sessionStorage.setItem("river_admin_token_expires", String(result.expiresAt));
-          else sessionStorage.removeItem("river_admin_token_expires");
-        } catch { /* ignore */ }
+        guardarExpiracion(result.expiresAt);
         setAuthStatus("ok");
       } else {
         setAuthStatus("needed");
@@ -873,24 +867,8 @@ export default function Redactor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [now, sessionExpiresAt, authStatus]);
 
-  // Inyectar el x-admin-token en TODOS los fetch a /api/* mientras estamos en Redactor
-  useEffect(() => {
-    if (!adminToken) return;
-    const original = window.fetch.bind(window);
-    const patched: typeof window.fetch = (input, init) => {
-      const url = typeof input === "string"
-        ? input
-        : input instanceof URL ? input.href : input.url;
-      if (typeof url === "string" && (url.startsWith("/api/") || url.includes("/api/"))) {
-        const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
-        if (!headers.has("x-admin-token")) headers.set("x-admin-token", adminToken);
-        return original(input, { ...(init ?? {}), headers });
-      }
-      return original(input, init);
-    };
-    window.fetch = patched;
-    return () => { window.fetch = original; };
-  }, [adminToken]);
+  // Ya no inyectamos x-admin-token: la cookie httpOnly viaja sola en cada
+  // request same-origin al backend.
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -901,6 +879,7 @@ export default function Redactor() {
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: t }),
       });
@@ -909,10 +888,10 @@ export default function Redactor() {
         setLoginError(res.status === 401 ? "Contraseña incorrecta" : "No se pudo iniciar sesión");
         return;
       }
-      const data = await res.json() as { sessionToken?: string; expiresAt?: number };
+      const data = await res.json() as { ok?: boolean; expiresAt?: number };
       setLoginLoading(false);
-      if (!data.sessionToken) { setLoginError("Respuesta inválida del servidor"); return; }
-      guardarSesion(data.sessionToken, typeof data.expiresAt === "number" ? data.expiresAt : null);
+      if (!data.ok) { setLoginError("Respuesta inválida del servidor"); return; }
+      guardarExpiracion(typeof data.expiresAt === "number" ? data.expiresAt : null);
       setNow(Date.now());
       setAuthStatus("ok");
     } catch {
@@ -924,14 +903,14 @@ export default function Redactor() {
   const [renovandoSesion, setRenovandoSesion] = useState(false);
   const [errorRenovar, setErrorRenovar] = useState("");
   const renovarSesion = async () => {
-    if (!adminToken || renovandoSesion) return;
+    if (renovandoSesion) return;
     setRenovandoSesion(true);
     setErrorRenovar("");
     try {
       const res = await fetch("/api/admin/renew", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-token": adminToken },
-        body: JSON.stringify({ token: adminToken }),
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
       });
       if (!res.ok) {
         if (res.status === 401) {
@@ -946,11 +925,7 @@ export default function Redactor() {
       }
       const data = await res.json() as { expiresAt?: number | null };
       const nuevoExp = typeof data.expiresAt === "number" ? data.expiresAt : null;
-      setSessionExpiresAt(nuevoExp);
-      try {
-        if (nuevoExp != null) sessionStorage.setItem("river_admin_token_expires", String(nuevoExp));
-        else sessionStorage.removeItem("river_admin_token_expires");
-      } catch { /* ignore */ }
+      guardarExpiracion(nuevoExp);
       setNow(Date.now());
     } catch {
       setErrorRenovar("Error de conexión");
@@ -960,17 +935,13 @@ export default function Redactor() {
   };
 
   const handleLogout = () => {
-    const t = adminToken;
     limpiarSesion();
     setAuthStatus("needed");
-    if (t) {
-      // Best-effort: avisar al backend para revocar la sesión.
-      fetch("/api/admin/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-token": t },
-        body: JSON.stringify({ token: t }),
-      }).catch(() => { /* ignore */ });
-    }
+    // Best-effort: avisar al backend para revocar la sesión y borrar la cookie.
+    fetch("/api/admin/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    }).catch(() => { /* ignore */ });
   };
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");

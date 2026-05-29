@@ -1,5 +1,7 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import {
+  ADMIN_SESSION_TTL_MS,
+  SESSION_TTL_MS,
   consumeEditToken,
   createAdminSession,
   createNoticiaSession,
@@ -12,6 +14,48 @@ import {
 
 const router: IRouter = Router();
 
+// Nombre y opciones de la cookie httpOnly que reemplaza al sessionToken en
+// sessionStorage. SameSite=Strict porque el panel siempre se accede vía
+// navegación same-origin (incluso el link de Telegram lleva al dominio nuestro
+// y desde ahí se hace POST a /exchange-edit-token). Secure sólo en producción
+// para no romper el preview HTTP local.
+const COOKIE_NAME = "admin_session";
+const isProd = (): boolean => process.env.NODE_ENV === "production";
+
+function setSessionCookie(res: Response, token: string, maxAgeMs: number): void {
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: isProd(),
+    sameSite: "strict",
+    path: "/",
+    maxAge: maxAgeMs,
+  });
+}
+
+function clearSessionCookie(res: Response): void {
+  res.clearCookie(COOKIE_NAME, {
+    httpOnly: true,
+    secure: isProd(),
+    sameSite: "strict",
+    path: "/",
+  });
+}
+
+// Extrae el token desde header (curl / scripts), cookie httpOnly (panel),
+// body.token (compat) o query.token (links de Telegram). Cualquiera vale.
+function extractToken(req: Request): string {
+  const header = req.header("x-admin-token");
+  if (header) return header;
+  const cookies = (req as Request & { cookies?: Record<string, unknown> }).cookies;
+  const cookie = typeof cookies?.admin_session === "string" ? cookies.admin_session : "";
+  if (cookie) return cookie;
+  const body = (req.body ?? {}) as { token?: unknown };
+  const bodyTok = typeof body.token === "string" ? body.token : "";
+  if (bodyTok) return bodyTok;
+  const query = typeof req.query.token === "string" ? req.query.token : "";
+  return query;
+}
+
 // Acepta el ADMIN_TOKEN permanente (uso interno / curl), una sesión admin
 // creada vía /admin/login, O una sesión scoped (canjeada desde un edit_token
 // de Telegram). Las sesiones devuelven su expiresAt para que la UI pueda
@@ -22,9 +66,7 @@ router.get("/admin/check", (req, res) => {
     res.status(503).json({ error: "Auth admin no configurada en el servidor" });
     return;
   }
-  const header = req.header("x-admin-token");
-  const query = typeof req.query.token === "string" ? req.query.token : undefined;
-  const provided = header ?? query;
+  const provided = extractToken(req);
   if (!provided) {
     res.status(401).json({ error: "No autorizado" });
     return;
@@ -46,8 +88,9 @@ router.get("/admin/check", (req, res) => {
   res.status(401).json({ error: "No autorizado" });
 });
 
-// Login con la contraseña de admin: devuelve una sesión efímera. Así nunca
-// guardamos el ADMIN_TOKEN permanente en el navegador.
+// Login con la contraseña de admin: crea una sesión efímera y la guarda en una
+// cookie httpOnly. Ya no devolvemos el sessionToken en el body — así nunca
+// queda accesible para scripts (defensa contra XSS).
 router.post("/admin/login", (req, res) => {
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) {
@@ -66,15 +109,15 @@ router.post("/admin/login", (req, res) => {
     return;
   }
   const session = createAdminSession();
-  res.json({ sessionToken: session.token, expiresAt: session.expiresAt });
+  setSessionCookie(res, session.token, ADMIN_SESSION_TTL_MS);
+  res.json({ ok: true, expiresAt: session.expiresAt });
 });
 
-// Revoca la sesión admin actual (si la hay). Idempotente.
+// Revoca la sesión admin actual (si la hay) y borra la cookie. Idempotente.
 router.post("/admin/logout", (req, res) => {
-  const header = req.header("x-admin-token");
-  const body = (req.body ?? {}) as { token?: unknown };
-  const provided = header ?? (typeof body.token === "string" ? body.token : "");
+  const provided = extractToken(req);
   if (provided) revokeAdminSession(provided);
+  clearSessionCookie(res);
   res.json({ ok: true });
 });
 
@@ -89,9 +132,7 @@ router.post("/admin/renew", (req, res) => {
     res.status(503).json({ error: "Auth admin no configurada en el servidor" });
     return;
   }
-  const header = req.header("x-admin-token");
-  const body = (req.body ?? {}) as { token?: unknown };
-  const provided = header ?? (typeof body.token === "string" ? body.token : "");
+  const provided = extractToken(req);
   if (!provided) {
     res.status(401).json({ error: "No autorizado" });
     return;
@@ -104,11 +145,14 @@ router.post("/admin/renew", (req, res) => {
   }
   const renewedAdmin = extendAdminSession(provided);
   if (renewedAdmin) {
+    // Re-emitimos la cookie para refrescar también su maxAge en el navegador.
+    setSessionCookie(res, provided, ADMIN_SESSION_TTL_MS);
     res.json({ ok: true, scope: "admin", expiresAt: renewedAdmin.expiresAt });
     return;
   }
   const renewedNoticia = extendNoticiaSession(provided);
   if (renewedNoticia) {
+    setSessionCookie(res, provided, SESSION_TTL_MS);
     res.json({ ok: true, scope: "noticia", expiresAt: renewedNoticia.expiresAt });
     return;
   }
@@ -140,16 +184,18 @@ router.post("/admin/exchange-edit-token", async (req, res) => {
   // Si no (ej: link del resumen diario de hebreo) → sesión admin completa corta.
   if (consumed.noticiaId === null) {
     const session = createAdminSession();
+    setSessionCookie(res, session.token, ADMIN_SESSION_TTL_MS);
     res.json({
-      sessionToken: session.token,
+      ok: true,
       expiresAt: session.expiresAt,
       noticiaId: null,
     });
     return;
   }
   const session = createNoticiaSession(consumed.noticiaId);
+  setSessionCookie(res, session.token, SESSION_TTL_MS);
   res.json({
-    sessionToken: session.token,
+    ok: true,
     expiresAt: session.expiresAt,
     noticiaId: consumed.noticiaId,
   });

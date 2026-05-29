@@ -4,7 +4,7 @@ import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { logger } from "./logger";
 
 const EDIT_TOKEN_TTL_MS = 30 * 60 * 1000;
-const SESSION_TTL_MS = 30 * 60 * 1000;
+export const SESSION_TTL_MS = 30 * 60 * 1000;
 // Sesión completa de admin (login con contraseña). Más larga que la efímera
 // por noticia, pero finita: si dejás el panel abierto en una compu prestada,
 // caduca sola.
