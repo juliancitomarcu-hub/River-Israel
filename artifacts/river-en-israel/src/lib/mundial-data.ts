@@ -110,6 +110,16 @@ export const EQ = {
   CRC: { code: "CRC", nombre: "Costa Rica",  bandera: "🇨🇷" },
   JAM: { code: "JAM", nombre: "Jamaica",     bandera: "🇯🇲" },
   NZL: { code: "NZL", nombre: "Nueva Zelanda", bandera: "🇳🇿" },
+  BIH: { code: "BIH", nombre: "Bosnia y Herzegovina", bandera: "🇧🇦" },
+  QAT: { code: "QAT", nombre: "Catar",        bandera: "🇶🇦" },
+  HAI: { code: "HAI", nombre: "Haití",        bandera: "🇭🇹" },
+  CUW: { code: "CUW", nombre: "Curazao",      bandera: "🇨🇼" },
+  SWE: { code: "SWE", nombre: "Suecia",       bandera: "🇸🇪" },
+  CPV: { code: "CPV", nombre: "Cabo Verde",   bandera: "🇨🇻" },
+  IRQ: { code: "IRQ", nombre: "Irak",         bandera: "🇮🇶" },
+  JOR: { code: "JOR", nombre: "Jordania",     bandera: "🇯🇴" },
+  COD: { code: "COD", nombre: "RD Congo",     bandera: "🇨🇩" },
+  UZB: { code: "UZB", nombre: "Uzbekistán",   bandera: "🇺🇿" },
 } as const satisfies Record<string, Equipo>;
 
 // ──────────────────────────────────────────────────────────────
@@ -117,21 +127,21 @@ export const EQ = {
 // ⚠️ Datos en base a sorteo - EDITAR si cambia el bombo final
 // ──────────────────────────────────────────────────────────────
 
-export const GRUPO_ARGENTINA = "A";
+export const GRUPO_ARGENTINA = "J";
 
 export const GRUPOS: Grupo[] = [
-  { letra: "A", equipos: [EQ.ARG, EQ.MEX, EQ.KOR, EQ.GHA] },
-  { letra: "B", equipos: [EQ.ESP, EQ.MAR, EQ.JPN, EQ.NGA] },
-  { letra: "C", equipos: [EQ.FRA, EQ.CRO, EQ.AUS, EQ.PAN] },
-  { letra: "D", equipos: [EQ.ENG, EQ.SEN, EQ.IRN, EQ.NZL] },
-  { letra: "E", equipos: [EQ.BRA, EQ.SUI, EQ.EGY, EQ.JAM] },
-  { letra: "F", equipos: [EQ.POR, EQ.URU, EQ.CIV, EQ.HUN] },
-  { letra: "G", equipos: [EQ.GER, EQ.COL, EQ.TUN, EQ.ISL] },
-  { letra: "H", equipos: [EQ.NED, EQ.ECU, EQ.KSA, EQ.CRC] },
-  { letra: "I", equipos: [EQ.BEL, EQ.CHI, EQ.ALG, EQ.SCO] },
-  { letra: "J", equipos: [EQ.ITA, EQ.PAR, EQ.RSA, EQ.WAL] },
-  { letra: "K", equipos: [EQ.USA, EQ.POL, EQ.DEN, EQ.PER] },
-  { letra: "L", equipos: [EQ.CAN, EQ.TUR, EQ.SRB, EQ.NOR] },
+  { letra: "A", equipos: [EQ.MEX, EQ.RSA, EQ.KOR, EQ.CZE] },
+  { letra: "B", equipos: [EQ.CAN, EQ.BIH, EQ.QAT, EQ.SUI] },
+  { letra: "C", equipos: [EQ.BRA, EQ.MAR, EQ.HAI, EQ.SCO] },
+  { letra: "D", equipos: [EQ.USA, EQ.PAR, EQ.AUS, EQ.TUR] },
+  { letra: "E", equipos: [EQ.GER, EQ.CUW, EQ.CIV, EQ.ECU] },
+  { letra: "F", equipos: [EQ.NED, EQ.JPN, EQ.SWE, EQ.TUN] },
+  { letra: "G", equipos: [EQ.BEL, EQ.EGY, EQ.IRN, EQ.NZL] },
+  { letra: "H", equipos: [EQ.ESP, EQ.CPV, EQ.KSA, EQ.URU] },
+  { letra: "I", equipos: [EQ.FRA, EQ.SEN, EQ.IRQ, EQ.NOR] },
+  { letra: "J", equipos: [EQ.ARG, EQ.ALG, EQ.AUT, EQ.JOR] },
+  { letra: "K", equipos: [EQ.POR, EQ.COD, EQ.UZB, EQ.COL] },
+  { letra: "L", equipos: [EQ.ENG, EQ.CRO, EQ.GHA, EQ.PAN] },
 ];
 
 // ──────────────────────────────────────────────────────────────
@@ -260,93 +270,93 @@ export const HITOS_SELECCION: HitoSeleccion[] = [
 
 export const FIXTURE_ARGENTINA: PartidoMundial[] = [
   {
-    id: "arg-mex",
+    id: "arg-alg",
     fase: "Fase de Grupos",
-    grupo: "A",
+    grupo: "J",
     jornada: 1,
     fecha: "2026-06-11",
-    kickoffUTC: "2026-06-12T01:00:00Z", // 11/6 20:00 hora México / 12/6 04:00 Israel
-    local: EQ.MEX,
-    visitante: EQ.ARG,
-    estadioId: "azteca",
+    kickoffUTC: "2026-06-12T01:00:00Z", // 04:00 Israel
+    local: EQ.ARG,
+    visitante: EQ.ALG,
+    estadioId: "metlife",
   },
   {
-    id: "arg-kor",
+    id: "arg-aut",
     fase: "Fase de Grupos",
-    grupo: "A",
+    grupo: "J",
     jornada: 2,
     fecha: "2026-06-17",
     kickoffUTC: "2026-06-17T19:00:00Z", // 22:00 Israel
     local: EQ.ARG,
-    visitante: EQ.KOR,
+    visitante: EQ.AUT,
     estadioId: "sofi",
   },
   {
-    id: "arg-gha",
+    id: "arg-jor",
     fase: "Fase de Grupos",
-    grupo: "A",
+    grupo: "J",
     jornada: 3,
     fecha: "2026-06-23",
     kickoffUTC: "2026-06-23T20:00:00Z", // 23:00 Israel
     local: EQ.ARG,
-    visitante: EQ.GHA,
+    visitante: EQ.JOR,
     estadioId: "att",
   },
 ];
 
 /**
- * Fase de grupos COMPLETA del Grupo A (3 fechas, 6 partidos).
+ * Fase de grupos COMPLETA del Grupo J (3 fechas, 6 partidos).
  * Incluye los partidos que NO son de Argentina (los que definen rivales y tabla).
  */
-export const FIXTURE_GRUPO_A: PartidoMundial[] = [
+export const FIXTURE_GRUPO_J: PartidoMundial[] = [
   // Jornada 1
   FIXTURE_ARGENTINA[0]!,
   {
-    id: "kor-gha",
+    id: "aut-jor",
     fase: "Fase de Grupos",
-    grupo: "A",
+    grupo: "J",
     jornada: 1,
     fecha: "2026-06-12",
     kickoffUTC: "2026-06-13T00:00:00Z", // 03:00 Israel
-    local: EQ.KOR,
-    visitante: EQ.GHA,
-    estadioId: "metlife",
+    local: EQ.AUT,
+    visitante: EQ.JOR,
+    estadioId: "akron",
   },
   // Jornada 2
   FIXTURE_ARGENTINA[1]!,
   {
-    id: "mex-gha",
+    id: "jor-alg",
     fase: "Fase de Grupos",
-    grupo: "A",
+    grupo: "J",
     jornada: 2,
     fecha: "2026-06-18",
     kickoffUTC: "2026-06-18T19:00:00Z", // 22:00 Israel
-    local: EQ.MEX,
-    visitante: EQ.GHA,
-    estadioId: "akron",
+    local: EQ.JOR,
+    visitante: EQ.ALG,
+    estadioId: "bbva",
   },
   // Jornada 3 (los dos partidos del cierre se juegan en simultáneo)
   FIXTURE_ARGENTINA[2]!,
   {
-    id: "mex-kor",
+    id: "aut-alg",
     fase: "Fase de Grupos",
-    grupo: "A",
+    grupo: "J",
     jornada: 3,
     fecha: "2026-06-23",
     kickoffUTC: "2026-06-23T20:00:00Z", // 23:00 Israel
-    local: EQ.MEX,
-    visitante: EQ.KOR,
+    local: EQ.AUT,
+    visitante: EQ.ALG,
     estadioId: "azteca",
   },
 ];
 
-/** Tabla inicial del Grupo A. Editar manualmente desde el Redactor cuando avance el torneo. */
+/** Tabla inicial del Grupo J. Editar manualmente desde el Redactor cuando avance el torneo. */
 export type FilaTabla = { equipo: Equipo; pj: number; pg: number; pe: number; pp: number; gf: number; gc: number; pts: number };
-export const TABLA_GRUPO_A_INICIAL: FilaTabla[] = [
+export const TABLA_GRUPO_J_INICIAL: FilaTabla[] = [
   { equipo: EQ.ARG, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
-  { equipo: EQ.MEX, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
-  { equipo: EQ.KOR, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
-  { equipo: EQ.GHA, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
+  { equipo: EQ.ALG, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
+  { equipo: EQ.AUT, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
+  { equipo: EQ.JOR, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
 ];
 
 /**

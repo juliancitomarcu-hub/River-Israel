@@ -5,8 +5,8 @@ import { ArrowLeft, MapPin, Trophy, RefreshCw } from "lucide-react";
 import { SolDeMayo } from "@/components/SolDeMayo";
 import {
   FIXTURE_ARGENTINA,
-  FIXTURE_GRUPO_A,
-  TABLA_GRUPO_A_INICIAL,
+  FIXTURE_GRUPO_J,
+  TABLA_GRUPO_J_INICIAL,
   GRUPO_ARGENTINA,
   EQ,
   estadioPorId,
@@ -35,7 +35,7 @@ function calcularTabla(partidos: PartidoMundial[], resultados: ResultadosMap): F
   // Inicializar con todos los equipos presentes en el grupo (a partir de la tabla inicial,
   // así mantenemos el orden alfabético/canónico cuando todavía no hay puntos).
   const stats = new Map<string, FilaTabla>();
-  for (const fila of TABLA_GRUPO_A_INICIAL) {
+  for (const fila of TABLA_GRUPO_J_INICIAL) {
     stats.set(fila.equipo.code, {
       equipo: fila.equipo,
       pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0,
@@ -127,7 +127,7 @@ export default function MundialFixture() {
   // Agrupar por jornada
   const jornadas = useMemo(() => {
     const map = new Map<number, PartidoMundial[]>();
-    for (const p of FIXTURE_GRUPO_A) {
+    for (const p of FIXTURE_GRUPO_J) {
       const j = p.jornada ?? 0;
       const list = map.get(j) ?? [];
       list.push(p);
@@ -138,7 +138,7 @@ export default function MundialFixture() {
 
   // Tabla recalculada en vivo
   const tabla = useMemo(
-    () => calcularTabla(FIXTURE_GRUPO_A, resultados),
+    () => calcularTabla(FIXTURE_GRUPO_J, resultados),
     [resultados],
   );
 
@@ -147,7 +147,10 @@ export default function MundialFixture() {
     [resultados],
   );
 
-  const debutTxt = formatearHoraIsrael(FIXTURE_ARGENTINA[0]!.kickoffUTC);
+  const debutPartido = FIXTURE_ARGENTINA[0]!;
+  const debutTxt = formatearHoraIsrael(debutPartido.kickoffUTC);
+  const debutRival = debutPartido.local.code === "ARG" ? debutPartido.visitante : debutPartido.local;
+  const debutEstadio = estadioPorId(debutPartido.estadioId);
 
   return (
     <div className="min-h-screen bg-[#0a1628] text-white pt-20">
@@ -167,8 +170,8 @@ export default function MundialFixture() {
             FIXTURE DE LA <span className="text-arg-celeste">SCALONETA</span>
           </h1>
           <p className="text-white/70 text-sm md:text-base mt-3 max-w-2xl">
-            Todos los partidos del Grupo A en hora Israel (IDT, UTC+3). Argentina debuta vs México
-            en el legendario Estadio Azteca: <span className="text-arg-dorado font-semibold">{debutTxt}</span> hora Israel.
+            Todos los partidos del Grupo {GRUPO_ARGENTINA} en hora Israel (IDT, UTC+3). Argentina debuta vs {debutRival.nombre}
+            {debutEstadio ? ` en el ${debutEstadio.nombre}` : ""}: <span className="text-arg-dorado font-semibold">{debutTxt}</span> hora Israel.
           </p>
           {actualizadoEn && (
             <p className="text-white/40 text-[11px] mt-3 flex items-center gap-1.5">
@@ -341,7 +344,7 @@ export default function MundialFixture() {
       {/* Admin: edición rápida de resultados (solo si hay token) */}
       {adminToken && (
         <AdminResultadosPanel
-          partidos={FIXTURE_GRUPO_A}
+          partidos={FIXTURE_GRUPO_J}
           resultados={resultados}
           adminToken={adminToken}
           onSaved={(id, r) => setResultados(prev => ({ ...prev, [id]: r }))}

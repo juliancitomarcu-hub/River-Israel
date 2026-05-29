@@ -495,7 +495,7 @@ export default function MundialHome() {
               className="inline-flex items-center gap-2 bg-gradient-to-r from-arg-celeste to-arg-dorado text-[#0a1628] font-bold px-6 py-3 rounded-full uppercase tracking-wide text-sm shadow-lg hover:-translate-y-0.5 transition-transform"
             >
               <Calendar className="w-4 h-4" />
-              Ver fixture completo Grupo A
+              Ver fixture completo Grupo {GRUPO_ARGENTINA}
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
