@@ -14,6 +14,7 @@ interface NoticiaCompleta {
   textoOriginal: string;
   imagenPortada?: string;
   createdAt: string;
+  categoria?: "river" | "seleccion";
 }
 
 const IMAGENES = [
@@ -69,8 +70,8 @@ function renderContenido(texto: string) {
   });
 }
 
-function NoticiasRelacionadas({ currentId }: { currentId: number }) {
-  const { data: allNews } = useNews();
+function NoticiasRelacionadas({ currentId, categoria }: { currentId: number; categoria?: "river" | "seleccion" }) {
+  const { data: allNews } = useNews(0, categoria);
 
   const relacionadas: NewsItem[] = (allNews?.items ?? [])
     .filter((n) => n.id !== String(currentId) && !n.id.startsWith("mock"))
@@ -220,7 +221,7 @@ export default function Noticia() {
             )}
 
             {/* Noticias relacionadas */}
-            <NoticiasRelacionadas currentId={data.id} />
+            <NoticiasRelacionadas currentId={data.id} categoria={data.categoria} />
 
             {/* CTA Filial */}
             <div className="mt-10 bg-river-black rounded-2xl p-8 text-center text-white">

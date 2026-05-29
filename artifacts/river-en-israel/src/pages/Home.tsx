@@ -92,7 +92,7 @@ export default function Home() {
   }
 
   const [paginaActualidad, setPaginaActualidad] = useState(0);
-  const { data: newsData } = useNews(paginaActualidad);
+  const { data: newsData } = useNews(paginaActualidad, "river");
   const news = newsData?.items;
   const totalPaginasNoticias = newsData?.totalPages ?? 1;
   const { data: matches } = useMatches();
