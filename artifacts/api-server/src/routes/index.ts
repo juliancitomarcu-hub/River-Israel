@@ -19,6 +19,7 @@ import visitasRouter from "./visitas";
 import suscribirRouter from "./suscribir";
 import suscriptoresRouter from "./suscriptores";
 import noticiasHebreoRouter from "./noticias-hebreo";
+import redactorSettingsRouter from "./redactor-settings";
 import adminRouter from "./admin";
 
 const router: IRouter = Router();
@@ -43,6 +44,7 @@ router.use(visitasRouter);
 router.use(suscribirRouter);
 router.use(suscriptoresRouter);
 router.use(noticiasHebreoRouter);
+router.use(redactorSettingsRouter);
 router.use(adminRouter);
 
 export default router;

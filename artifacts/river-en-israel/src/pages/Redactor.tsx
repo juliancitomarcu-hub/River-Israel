@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages
+  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1062,6 +1062,10 @@ export default function Redactor() {
   const [editContenidoEs, setEditContenidoEs] = useState("");
   const [guardandoEdicionHe, setGuardandoEdicionHe] = useState(false);
   const [publicandoHebreoId, setPublicandoHebreoId] = useState<number | null>(null);
+  // Configuración del resumen diario de hebreo (hora Israel; "" = desactivado)
+  const [resumenHebreoHora, setResumenHebreoHora] = useState<string>("");
+  const [guardandoHoraResumen, setGuardandoHoraResumen] = useState(false);
+  const [mensajeHoraResumen, setMensajeHoraResumen] = useState("");
   const [parrafoActivoIdx, setParrafoActivoIdx] = useState<number | null>(null);
   const esParrafosScrollRef = useRef<HTMLDivElement | null>(null);
   const heParrafosScrollRef = useRef<HTMLDivElement | null>(null);
@@ -1187,6 +1191,51 @@ export default function Redactor() {
       setErrorHebreo("Error al cargar noticias");
     } finally {
       setCargandoHebreo(false);
+    }
+  };
+
+  const cargarHoraResumen = async () => {
+    try {
+      const res = await fetch("/api/redactor-settings", { headers: adminHeaders() });
+      if (res.status === 401) { pedirAdminToken(); return; }
+      if (res.ok) {
+        const data = await res.json() as { resumenHebreoHora?: number | null };
+        setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
+      }
+    } catch { /* ignore */ }
+  };
+
+  const guardarHoraResumen = async () => {
+    setGuardandoHoraResumen(true);
+    setMensajeHoraResumen("");
+    try {
+      const trimmed = resumenHebreoHora.trim();
+      const valor: number | null = trimmed === "" ? null : parseInt(trimmed, 10);
+      if (valor !== null && (isNaN(valor) || valor < 0 || valor > 23)) {
+        setMensajeHoraResumen("Ingresá una hora entre 0 y 23, o dejá vacío para desactivar");
+        return;
+      }
+      const res = await fetch("/api/redactor-settings", {
+        method: "PUT",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ resumenHebreoHora: valor }),
+      });
+      if (res.status === 401) { pedirAdminToken(); return; }
+      if (res.ok) {
+        const data = await res.json() as { resumenHebreoHora?: number | null };
+        setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
+        setMensajeHoraResumen(
+          data.resumenHebreoHora == null
+            ? "Resumen diario desactivado"
+            : `Resumen diario programado a las ${String(data.resumenHebreoHora).padStart(2, "0")}:00 (hora Israel)`,
+        );
+      } else {
+        setMensajeHoraResumen("No se pudo guardar la hora");
+      }
+    } catch {
+      setMensajeHoraResumen("Error al guardar la hora");
+    } finally {
+      setGuardandoHoraResumen(false);
     }
   };
 
@@ -1575,7 +1624,7 @@ export default function Redactor() {
     if (tabParam && (tabsValidos as string[]).includes(tabParam)) {
       const t = tabParam as Tab;
       setTab(t);
-      if (t === "publicaciones-hebreo") cargarNoticiasHebreo();
+      if (t === "publicaciones-hebreo") { cargarNoticiasHebreo(); cargarHoraResumen(); }
       else if (t === "publicaciones") cargarPublicaciones();
       else if (t === "publicaciones-seleccion") cargarPublicacionesSel();
       else if (t === "historia") cargarHistoria();
@@ -1974,7 +2023,7 @@ export default function Redactor() {
               <Users className="w-4 h-4" /> Suscriptores
             </button>
             <button
-              onClick={() => { setTab("publicaciones-hebreo"); cargarNoticiasHebreo(); }}
+              onClick={() => { setTab("publicaciones-hebreo"); cargarNoticiasHebreo(); cargarHoraResumen(); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                 tab === "publicaciones-hebreo"
                   ? "bg-river-red text-white shadow-sm"
@@ -3743,6 +3792,40 @@ export default function Redactor() {
                   Actualizar
                 </button>
               </div>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <div className="flex items-start sm:items-center gap-3 flex-wrap">
+                <Clock className="w-4 h-4 text-gray-400 shrink-0 mt-0.5 sm:mt-0" />
+                <div className="flex-1 min-w-[180px]">
+                  <p className="text-sm font-semibold text-river-black">Resumen diario por Telegram</p>
+                  <p className="text-xs text-gray-400">
+                    Hora (Israel) en que se envía el aviso de traducciones pendientes. Dejá vacío para desactivarlo.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={23}
+                    value={resumenHebreoHora}
+                    onChange={(e) => setResumenHebreoHora(e.target.value)}
+                    placeholder="Off"
+                    className="w-20 px-3 py-2 rounded-lg border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-river-red/30"
+                  />
+                  <span className="text-xs text-gray-400">:00</span>
+                  <button
+                    onClick={guardarHoraResumen}
+                    disabled={guardandoHoraResumen}
+                    className="px-3 py-2 rounded-lg bg-river-red text-white text-xs font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {guardandoHoraResumen ? "Guardando…" : "Guardar"}
+                  </button>
+                </div>
+              </div>
+              {mensajeHoraResumen && (
+                <p className="text-xs text-gray-500 mt-2">{mensajeHoraResumen}</p>
+              )}
             </div>
 
             {mensajeMasivo && (

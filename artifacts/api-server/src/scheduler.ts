@@ -11,6 +11,7 @@ import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 import { createEditToken, purgeExpiredEditTokens } from "./lib/edit-tokens";
 import { credencialesTelegram } from "./lib/telegram-cred";
+import { leerRedactorSettings, guardarRedactorSettings } from "./lib/redactor-settings";
 
 export type Categoria = "river" | "seleccion";
 
@@ -677,30 +678,17 @@ function israelOffsetHorasInterno(utcMs: number): number {
   return utcMs >= inicioIDT && utcMs < finIDT ? 3 : 2;
 }
 
-function msHastaProximaHoraIsrael(horaIsrael: number): number {
+// Devuelve la fecha (YYYY-MM-DD) y la hora (0-23) actuales en horario Israel.
+function israelAhora(): { fecha: string; hora: number } {
   const ahoraUtc = Date.now();
   const offset = israelOffsetHorasInterno(ahoraUtc);
-  // Hora actual en Israel
-  const ilNowMs = ahoraUtc + offset * 3600_000;
-  const ilNow = new Date(ilNowMs);
-  // Próximo "horaIsrael":00 en Israel
-  const objetivoIl = new Date(Date.UTC(
-    ilNow.getUTCFullYear(), ilNow.getUTCMonth(), ilNow.getUTCDate(),
-    horaIsrael, 0, 0, 0,
-  ));
-  if (objetivoIl.getTime() <= ilNowMs) {
-    objetivoIl.setUTCDate(objetivoIl.getUTCDate() + 1);
-  }
-  // Convertir el objetivo (expresado como ms "en Israel") a ms UTC reales
-  const objetivoUtcMs = objetivoIl.getTime() - offset * 3600_000;
-  return Math.max(1000, objetivoUtcMs - ahoraUtc);
+  const ilMs = ahoraUtc + offset * 3600_000;
+  const d = new Date(ilMs);
+  const fecha = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  return { fecha, hora: d.getUTCHours() };
 }
 
 export async function enviarResumenHebreoDiario(): Promise<void> {
-  if (process.env.RESUMEN_HEBREO_DIARIO === "0") {
-    logger.info("Resumen hebreo diario desactivado por RESUMEN_HEBREO_DIARIO=0");
-    return;
-  }
   const token = process.env.TELEGRAM_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) {
@@ -762,28 +750,31 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
   logger.info({ cantidad: pendientes.length }, "Resumen hebreo diario enviado");
 }
 
-function iniciarResumenHebreoDiario(): void {
-  if (process.env.RESUMEN_HEBREO_DIARIO === "0") {
-    logger.info("Resumen hebreo diario desactivado (RESUMEN_HEBREO_DIARIO=0), no se programa");
-    return;
-  }
-  const HORA_ISRAEL = 9;
-  const UN_DIA_MS = 24 * 60 * 60 * 1000;
-  const delay = msHastaProximaHoraIsrael(HORA_ISRAEL);
-  logger.info(
-    { horaIsrael: HORA_ISRAEL, minutosHastaPrimerEnvio: Math.round(delay / 60000) },
-    "Resumen hebreo diario programado",
+// Ticker que revisa cada minuto la hora configurada (en horario Israel) desde
+// los settings del panel. Cuando la hora actual coincide con la configurada y
+// no se envió ya hoy, dispara el resumen. La hora se relee en cada tick, por lo
+// que cambiarla desde /redactor surte efecto sin reiniciar el server.
+// Si la hora es null (vacío en el panel), el resumen queda desactivado.
+const CHECK_RESUMEN_MS = 60 * 1000;
+
+function tickResumenHebreoDiario(): void {
+  const settings = leerRedactorSettings();
+  const hora = settings.resumenHebreoHora;
+  if (hora === null) return; // desactivado desde el panel
+  const { fecha, hora: horaActual } = israelAhora();
+  if (horaActual !== hora) return; // todavía no es la hora configurada
+  if (settings.resumenHebreoUltimoEnvio === fecha) return; // ya se envió hoy
+  // Marcar como enviado ANTES de despachar para evitar dobles disparos.
+  guardarRedactorSettings({ resumenHebreoUltimoEnvio: fecha });
+  logger.info({ horaIsrael: hora, fecha }, "Resumen hebreo diario: hora alcanzada, enviando");
+  enviarResumenHebreoDiario().catch((err) =>
+    logger.error({ err }, "Resumen hebreo diario: error inesperado"),
   );
-  setTimeout(() => {
-    enviarResumenHebreoDiario().catch((err) =>
-      logger.error({ err }, "Resumen hebreo diario: error inesperado"),
-    );
-    setInterval(() => {
-      enviarResumenHebreoDiario().catch((err) =>
-        logger.error({ err }, "Resumen hebreo diario: error inesperado"),
-      );
-    }, UN_DIA_MS);
-  }, delay);
+}
+
+function iniciarResumenHebreoDiario(): void {
+  setInterval(tickResumenHebreoDiario, CHECK_RESUMEN_MS);
+  logger.info("Resumen hebreo diario: ticker iniciado (revisa la hora configurada cada minuto)");
 }
 
 // ─── INTERVALO: cada 2 horas ───────────────────────────────────────────────
