@@ -9,7 +9,7 @@ import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
-import { createEditToken, purgeExpiredEditTokens } from "./lib/edit-tokens";
+import { createEditToken, createLongEditToken, purgeExpiredEditTokens } from "./lib/edit-tokens";
 import { credencialesTelegram } from "./lib/telegram-cred";
 import { leerRedactorSettings, guardarRedactorSettings } from "./lib/redactor-settings";
 
@@ -733,7 +733,9 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
   // Token de un solo uso para que el admin entre directo al redactor sin tipear
   // la contraseña. Como el resumen abarca varias notas, el token no está scoped
   // a ninguna en particular: al canjearse genera una sesión admin corta.
-  const editToken = await createEditToken(null);
+  // TTL largo (24h): el admin puede ver el aviso a la noche y entrar a la mañana
+  // sin que el link caduque.
+  const editToken = await createLongEditToken(null);
 
   const secciones: string[] = [];
 

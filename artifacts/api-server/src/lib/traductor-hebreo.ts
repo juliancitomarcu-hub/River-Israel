@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { db, noticiasTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
-import { createEditToken } from "./edit-tokens";
+import { createLongEditToken } from "./edit-tokens";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? "" });
 
@@ -144,7 +144,9 @@ async function avisarTraduccionBorrador(input: {
   // todas las traducciones pendientes), así que el token no se ata a esta
   // nota: al canjearse crea una sesión admin corta y el admin puede revisar
   // y publicar cualquiera de las traducciones que tenga en borrador.
-  const editToken = await createEditToken(null);
+  // TTL largo (24h): es un aviso "de resumen" que el admin puede abrir horas
+  // después, no un link scoped a una nota recién creada.
+  const editToken = await createLongEditToken(null);
   const link = `https://${dominio}/redactor?tab=publicaciones-hebreo&edit_token=${editToken}`;
 
   const escape = (s: string) =>

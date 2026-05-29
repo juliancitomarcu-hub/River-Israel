@@ -4,6 +4,10 @@ import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { logger } from "./logger";
 
 const EDIT_TOKEN_TTL_MS = 30 * 60 * 1000;
+// TTL largo para links "de resumen" (resumen diario, aviso de traducción al
+// hebreo): el admin puede abrir el Telegram a la noche y entrar a la mañana
+// sin que el link caduque. No están scoped a una nota recién creada.
+export const LONG_EDIT_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 export const SESSION_TTL_MS = 30 * 60 * 1000;
 // Sesión completa de admin (login con contraseña). Más larga que la efímera
 // por noticia, pero finita: si dejás el panel abierto en una compu prestada,
@@ -51,11 +55,20 @@ export async function purgeExpiredEditTokens(): Promise<void> {
   }
 }
 
-export async function createEditToken(noticiaId: number | null): Promise<string> {
+export async function createEditToken(
+  noticiaId: number | null,
+  ttlMs: number = EDIT_TOKEN_TTL_MS,
+): Promise<string> {
   const token = randomBytes(24).toString("base64url");
-  const expiresAt = new Date(Date.now() + EDIT_TOKEN_TTL_MS);
+  const expiresAt = new Date(Date.now() + ttlMs);
   await db.insert(editTokensTable).values({ token, noticiaId, expiresAt });
   return token;
+}
+
+// Variante con TTL largo (24h) para links "de resumen" que el admin puede
+// abrir horas después de recibir el aviso.
+export async function createLongEditToken(noticiaId: number | null): Promise<string> {
+  return createEditToken(noticiaId, LONG_EDIT_TOKEN_TTL_MS);
 }
 
 export async function consumeEditToken(
