@@ -696,7 +696,12 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
     return;
   }
 
-  const pendientes = await db
+  const escape = (s: string) => s.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+  const MAX_LISTADO = 15;
+  const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+
+  // ── Traducciones al hebreo en borrador ──────────────────────────────────
+  const pendientesHebreo = await db
     .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
     .from(noticiasTable)
     .where(and(
@@ -705,32 +710,64 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
     ))
     .orderBy(desc(noticiasTable.id));
 
-  if (pendientes.length === 0) {
-    logger.info("Resumen hebreo diario: no hay traducciones pendientes, no se envía mensaje");
+  // ── Postulaciones de redactores sin revisar ─────────────────────────────
+  // Se identifican por `pendiente=true` y `fuente` que arranca con "Postulación".
+  // Desactivable con RESUMEN_POSTULACIONES_DIARIO=0.
+  const postulacionesActivas = process.env.RESUMEN_POSTULACIONES_DIARIO !== "0";
+  const pendientesPostulaciones = postulacionesActivas
+    ? await db
+        .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
+        .from(noticiasTable)
+        .where(and(
+          eq(noticiasTable.pendiente, true),
+          sqlRaw`${noticiasTable.fuente} LIKE 'Postulación%'`,
+        ))
+        .orderBy(desc(noticiasTable.id))
+    : [];
+
+  if (pendientesHebreo.length === 0 && pendientesPostulaciones.length === 0) {
+    logger.info("Resumen diario: no hay traducciones ni postulaciones pendientes, no se envía mensaje");
     return;
   }
 
-  const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
   // Token de un solo uso para que el admin entre directo al redactor sin tipear
   // la contraseña. Como el resumen abarca varias notas, el token no está scoped
   // a ninguna en particular: al canjearse genera una sesión admin corta.
   const editToken = await createEditToken(null);
-  const link = `https://${dominio}/redactor?tab=publicaciones-hebreo&edit_token=${editToken}`;
 
-  const escape = (s: string) => s.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+  const secciones: string[] = [];
 
-  const MAX_LISTADO = 15;
-  const listado = pendientes.slice(0, MAX_LISTADO)
-    .map((n) => `• ${escape(n.titulo)}`)
-    .join("\n");
-  const resto = pendientes.length - MAX_LISTADO;
-  const sufijo = resto > 0 ? `\n_…y ${resto} más_` : "";
+  if (pendientesHebreo.length > 0) {
+    const link = `https://${dominio}/redactor?tab=publicaciones-hebreo&edit_token=${editToken}`;
+    const listado = pendientesHebreo.slice(0, MAX_LISTADO)
+      .map((n) => `• ${escape(n.titulo)}`)
+      .join("\n");
+    const resto = pendientesHebreo.length - MAX_LISTADO;
+    const sufijo = resto > 0 ? `\n_…y ${resto} más_` : "";
+    secciones.push(
+      `✡ *Resumen diario — traducciones al hebreo pendientes*\n\n` +
+      `Hay *${pendientesHebreo.length}* ${pendientesHebreo.length === 1 ? "traducción" : "traducciones"} en borrador esperando revisión:\n\n` +
+      `${listado}${sufijo}\n\n` +
+      `[Revisar y publicar en /redactor](${link})`,
+    );
+  }
 
-  const cuerpo =
-    `✡ *Resumen diario — traducciones al hebreo pendientes*\n\n` +
-    `Hay *${pendientes.length}* ${pendientes.length === 1 ? "traducción" : "traducciones"} en borrador esperando revisión:\n\n` +
-    `${listado}${sufijo}\n\n` +
-    `[Revisar y publicar en /redactor](${link})`;
+  if (pendientesPostulaciones.length > 0) {
+    const link = `https://${dominio}/redactor?tab=postulantes&edit_token=${editToken}`;
+    const listado = pendientesPostulaciones.slice(0, MAX_LISTADO)
+      .map((n) => `• ${escape(n.titulo)}`)
+      .join("\n");
+    const resto = pendientesPostulaciones.length - MAX_LISTADO;
+    const sufijo = resto > 0 ? `\n_…y ${resto} más_` : "";
+    secciones.push(
+      `✍ *Postulaciones de redactores sin revisar*\n\n` +
+      `Hay *${pendientesPostulaciones.length}* ${pendientesPostulaciones.length === 1 ? "postulación" : "postulaciones"} esperando revisión:\n\n` +
+      `${listado}${sufijo}\n\n` +
+      `[Revisar en /redactor](${link})`,
+    );
+  }
+
+  const cuerpo = secciones.join("\n\n━━━━━━━━━━\n\n");
 
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
@@ -744,10 +781,13 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    logger.warn({ status: res.status, body }, "Resumen hebreo diario: Telegram sendMessage falló");
+    logger.warn({ status: res.status, body }, "Resumen diario: Telegram sendMessage falló");
     return;
   }
-  logger.info({ cantidad: pendientes.length }, "Resumen hebreo diario enviado");
+  logger.info(
+    { hebreo: pendientesHebreo.length, postulaciones: pendientesPostulaciones.length },
+    "Resumen diario enviado",
+  );
 }
 
 // Ticker que revisa cada minuto la hora configurada (en horario Israel) desde
