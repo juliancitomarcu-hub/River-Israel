@@ -507,10 +507,10 @@ export default function MundialHome() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Trophy className="w-12 h-12 text-arg-dorado mx-auto mb-4" />
           <h2 className="text-3xl md:text-5xl font-display font-bold mb-3">
-            COBERTURA <span className="text-arg-celeste">MILLONARIA</span>
+            COBERTURA <span className="text-arg-celeste">MUNDIALISTA</span>
           </h2>
           <p className="text-white/70 mb-8 max-w-2xl mx-auto">
-            Análisis tácticos, previas, post-partidos y todo lo que pasa con la Scaloneta y River durante el Mundial.
+            Análisis tácticos, previas, post-partidos y todo lo que pasa con la Scaloneta durante el Mundial.
           </p>
           <Link
             href="/actualidad"
