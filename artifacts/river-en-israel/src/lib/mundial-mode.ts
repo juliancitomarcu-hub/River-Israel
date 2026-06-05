@@ -11,13 +11,15 @@ import { useEffect } from "react";
  * El usuario alterna entre sitios desde el menú desplegable arriba a la derecha.
  */
 
-const RIVER_PREFIX = "/river";
+const SCALONETA_PREFIX = "/scaloneta";
 
 export function useMundialMode(): boolean {
   const [location] = useLocation();
-  // Activo en todas las rutas excepto las que viven bajo /river.
-  const enRiver = location === RIVER_PREFIX || location.startsWith(`${RIVER_PREFIX}/`);
-  const active = !enRiver;
+  // La Scaloneta queda "dormida": el modo Mundial sólo se activa si se entra
+  // explícitamente a /scaloneta. River es protagonista en la raíz "/".
+  const enScaloneta =
+    location === SCALONETA_PREFIX || location.startsWith(`${SCALONETA_PREFIX}/`);
+  const active = enScaloneta;
 
   useEffect(() => {
     const root = document.documentElement;

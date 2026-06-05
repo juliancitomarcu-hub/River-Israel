@@ -3,12 +3,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock
+  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock, MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "publicaciones-libres-seleccion" | "historia" | "postulantes" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
+type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "publicaciones-libres-seleccion" | "historia" | "postulantes" | "comentarios" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
+
+interface ComentarioAdmin {
+  id: number;
+  noticiaId: number;
+  autor: string;
+  contenido: string;
+  oculto: boolean;
+  createdAt: string;
+  noticiaTitulo: string | null;
+}
 
 interface Suscriptor {
   id: number;
@@ -998,6 +1008,12 @@ export default function Redactor() {
   const [postulSel, setPostulSel] = useState<PostulacionDB | null>(null);
   const [accionPostul, setAccionPostul] = useState<Record<number, "publicando" | "rechazando" | "ok" | "rechazado">>({});
 
+  // Comentarios (moderación)
+  const [comentariosAdmin, setComentariosAdmin] = useState<ComentarioAdmin[]>([]);
+  const [cargandoComentarios, setCargandoComentarios] = useState(false);
+  const [errorComentarios, setErrorComentarios] = useState("");
+  const [eliminandoComentario, setEliminandoComentario] = useState<Record<number, boolean>>({});
+
   // Publicaciones Libres
   const [plTitulo, setPlTitulo] = useState("");
   const [plContenido, setPlContenido] = useState("");
@@ -1299,6 +1315,35 @@ export default function Redactor() {
       setErrorPostul("Error al cargar postulaciones");
     } finally {
       setCargandoPostul(false);
+    }
+  };
+
+  const cargarComentarios = async () => {
+    setCargandoComentarios(true);
+    setErrorComentarios("");
+    try {
+      const res = await fetch("/api/comentarios", { headers: adminHeaders() });
+      if (!res.ok) throw new Error("error");
+      const data = await res.json() as { comentarios?: ComentarioAdmin[] };
+      setComentariosAdmin(data.comentarios ?? []);
+    } catch {
+      setErrorComentarios("Error al cargar comentarios");
+    } finally {
+      setCargandoComentarios(false);
+    }
+  };
+
+  const eliminarComentario = async (id: number) => {
+    if (!confirm("¿Eliminar este comentario? Esta acción no se puede deshacer.")) return;
+    setEliminandoComentario(prev => ({ ...prev, [id]: true }));
+    try {
+      const res = await fetch(`/api/comentarios/${id}`, { method: "DELETE", headers: adminHeaders() });
+      if (res.ok) {
+        setComentariosAdmin(prev => prev.filter(c => c.id !== id));
+      }
+    } catch { /* ignore */ }
+    finally {
+      setEliminandoComentario(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -1618,7 +1663,7 @@ export default function Redactor() {
     const tabParam = params.get("tab");
     const tabsValidos: Tab[] = [
       "redactor", "publicaciones", "publicaciones-seleccion", "publicaciones-libres", "publicaciones-libres-seleccion", "historia",
-      "postulantes", "galeria", "galeria-seleccion", "videos", "videos-seleccion", "analytics", "suscriptores",
+      "postulantes", "comentarios", "galeria", "galeria-seleccion", "videos", "videos-seleccion", "analytics", "suscriptores",
       "publicaciones-hebreo",
     ];
     if (tabParam && (tabsValidos as string[]).includes(tabParam)) {
@@ -1629,6 +1674,7 @@ export default function Redactor() {
       else if (t === "publicaciones-seleccion") cargarPublicacionesSel();
       else if (t === "historia") cargarHistoria();
       else if (t === "postulantes") cargarPostulaciones();
+      else if (t === "comentarios") cargarComentarios();
       else if (t === "suscriptores") cargarSuscriptores();
     }
     // Preseleccionar categoría al abrir desde /redactor?categoria=seleccion (Scaloneta) o ?categoria=river
@@ -2049,6 +2095,16 @@ export default function Redactor() {
                   {postulaciones.filter(p => p.pendiente).length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => { setTab("comentarios"); cargarComentarios(); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === "comentarios"
+                  ? "bg-river-red text-white shadow-sm"
+                  : "text-gray-500 hover:text-river-red"
+              }`}
+            >
+              <MessageCircle className="w-4 h-4" /> Comentarios
             </button>
             <button
               onClick={() => setTab("galeria")}
@@ -3468,6 +3524,86 @@ export default function Redactor() {
         </div>
 
         </>}
+
+        {/* ── COMENTARIOS ──────────────────────────────────────────────── */}
+        {tab === "comentarios" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h2 className="font-display text-xl font-bold text-river-black flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-river-red" /> Moderación de Comentarios
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {comentariosAdmin.length} {comentariosAdmin.length === 1 ? "comentario" : "comentarios"} en total
+                </p>
+              </div>
+              <button onClick={cargarComentarios} disabled={cargandoComentarios}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-river-red transition-colors">
+                <RefreshCw className={`w-3.5 h-3.5 ${cargandoComentarios ? "animate-spin" : ""}`} /> Actualizar
+              </button>
+            </div>
+
+            {errorComentarios && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {errorComentarios}
+              </div>
+            )}
+
+            {cargandoComentarios && (
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-white border border-gray-100 rounded-xl p-4 animate-pulse">
+                    <div className="h-4 bg-gray-100 rounded w-2/3 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/3" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!cargandoComentarios && !errorComentarios && comentariosAdmin.length === 0 && (
+              <div className="bg-white border border-gray-100 rounded-xl p-8 text-center text-gray-400 text-sm">
+                Todavía no hay comentarios.
+              </div>
+            )}
+
+            {!cargandoComentarios && comentariosAdmin.length > 0 && (
+              <div className="space-y-3">
+                {comentariosAdmin.map(c => (
+                  <div key={c.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-bold text-sm text-river-black">{c.autor}</span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(c.createdAt).toLocaleString("es-AR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        {c.noticiaTitulo && (
+                          <a
+                            href={`/noticia/${c.noticiaId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-river-red hover:underline mb-2"
+                          >
+                            <Newspaper className="w-3 h-3" /> {c.noticiaTitulo}
+                          </a>
+                        )}
+                        <p className="text-gray-700 text-sm whitespace-pre-wrap">{c.contenido}</p>
+                      </div>
+                      <button
+                        onClick={() => eliminarComentario(c.id)}
+                        disabled={eliminandoComentario[c.id]}
+                        className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-white hover:bg-red-500 border border-red-200 hover:border-red-500 rounded-lg px-3 py-2 transition-all disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> {eliminandoComentario[c.id] ? "..." : "Eliminar"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── ANALYTICS ────────────────────────────────────────────────── */}
         {tab === "analytics" && (

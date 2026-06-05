@@ -121,16 +121,14 @@ export function Footer() {
                 ? <>Sitio dedicado a <span className="text-arg-celeste">la Selección Argentina</span> rumbo al Mundial 2026, desde la Filial Ramat Gan. 🇦🇷 ❤️ 🇮🇱</>
                 : <>La filial oficial del Club Atlético River Plate en Medio Oriente. Viviendo la pasión por La Banda del Millonario desde la Tierra Santa. 🇦🇷 ❤️ 🇮🇱</>}
             </p>
-            <Link
-              href={mundialActivo ? "/river" : "/"}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-                mundialActivo
-                  ? "bg-river-red hover:bg-river-red/90 text-white"
-                  : "bg-gradient-to-r from-arg-celeste to-arg-dorado text-[#0a1628] hover:brightness-110"
-              }`}
-            >
-              {mundialActivo ? "⚪️🔴 Ir a River en Israel" : "🇦🇷 Ir a La Scaloneta"}
-            </Link>
+            {mundialActivo && (
+              <Link
+                href="/river"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all bg-river-red hover:bg-river-red/90 text-white"
+              >
+                ⚪️🔴 Ir a River en Israel
+              </Link>
+            )}
           </div>
 
           {/* Contact */}

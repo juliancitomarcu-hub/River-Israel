@@ -1,0 +1,1 @@
+- [Telegram Markdown injection](telegram-markdown.md) — user text forwarded to Telegram with parse_mode Markdown must be escaped + length-capped.

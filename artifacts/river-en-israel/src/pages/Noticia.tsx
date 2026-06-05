@@ -1,9 +1,121 @@
+import { useState } from "react";
 import { useRoute, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Calendar, ArrowLeft, Tag } from "lucide-react";
+import { Calendar, ArrowLeft, Tag, MessageCircle, Send, User } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
 import { useNews, type NewsItem } from "@/hooks/use-river-data";
+
+interface Comentario {
+  id: number;
+  autor: string;
+  contenido: string;
+  createdAt: string;
+}
+
+function Comentarios({ noticiaId }: { noticiaId: number }) {
+  const queryClient = useQueryClient();
+  const [autor, setAutor] = useState("");
+  const [contenido, setContenido] = useState("");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["comentarios", noticiaId],
+    queryFn: async (): Promise<Comentario[]> => {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/noticias/${noticiaId}/comentarios`);
+      if (!res.ok) throw new Error("Error al cargar comentarios");
+      const json = (await res.json()) as { comentarios: Comentario[] };
+      return json.comentarios;
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/noticias/${noticiaId}/comentarios`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ autor: autor.trim(), contenido: contenido.trim() }),
+      });
+      if (!res.ok) throw new Error("Error al publicar el comentario");
+      return res.json();
+    },
+    onSuccess: () => {
+      setContenido("");
+      queryClient.invalidateQueries({ queryKey: ["comentarios", noticiaId] });
+    },
+  });
+
+  const comentarios = data ?? [];
+
+  return (
+    <div className="mt-12 pt-10 border-t border-gray-100">
+      <h2 className="text-xl font-display font-bold text-river-black mb-6 uppercase tracking-wide flex items-center gap-2">
+        <MessageCircle className="w-5 h-5 text-river-red" />
+        Comentarios {comentarios.length > 0 && <span className="text-gray-400">({comentarios.length})</span>}
+      </h2>
+
+      {/* Formulario */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (contenido.trim() && !mutation.isPending) mutation.mutate();
+        }}
+        className="bg-gray-50 border border-gray-100 rounded-2xl p-5 mb-8"
+      >
+        <input
+          type="text"
+          value={autor}
+          onChange={(e) => setAutor(e.target.value)}
+          maxLength={60}
+          placeholder="Tu nombre (opcional)"
+          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-river-black placeholder:text-gray-400 focus:outline-none focus:border-river-red transition-colors mb-3"
+        />
+        <textarea
+          value={contenido}
+          onChange={(e) => setContenido(e.target.value)}
+          maxLength={1000}
+          rows={3}
+          required
+          placeholder="Escribí tu comentario..."
+          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-river-black placeholder:text-gray-400 focus:outline-none focus:border-river-red transition-colors resize-y"
+        />
+        {mutation.isError && (
+          <p className="text-red-500 text-sm mt-2">No se pudo publicar el comentario. Probá de nuevo.</p>
+        )}
+        <button
+          type="submit"
+          disabled={mutation.isPending || !contenido.trim()}
+          className="mt-3 inline-flex items-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold py-2.5 px-5 rounded-xl text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Send className="w-4 h-4" /> {mutation.isPending ? "Publicando..." : "Publicar comentario"}
+        </button>
+      </form>
+
+      {/* Lista */}
+      {isLoading ? (
+        <p className="text-gray-400 text-sm">Cargando comentarios...</p>
+      ) : comentarios.length === 0 ? (
+        <p className="text-gray-400 text-sm">Sé el primero en comentar.</p>
+      ) : (
+        <div className="space-y-4">
+          {comentarios.map((c) => (
+            <div key={c.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 rounded-full bg-river-red/10 flex items-center justify-center shrink-0">
+                  <User className="w-3.5 h-3.5 text-river-red" />
+                </div>
+                <span className="font-bold text-sm text-river-black">{c.autor}</span>
+                <span className="text-xs text-gray-400">
+                  {new Date(c.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              </div>
+              <p className="text-gray-700 text-sm whitespace-pre-wrap pl-9">{c.contenido}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface NoticiaCompleta {
   id: number;
@@ -219,6 +331,9 @@ export default function Noticia() {
                 </div>
               </div>
             )}
+
+            {/* Comentarios */}
+            <Comentarios noticiaId={data.id} />
 
             {/* Noticias relacionadas */}
             <NoticiasRelacionadas currentId={data.id} categoria={data.categoria} />

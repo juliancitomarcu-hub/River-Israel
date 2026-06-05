@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Send, AlertCircle, X, ChevronLeft, Download, ZoomIn, Bell, Mail, Phone, MapPin, Car, Shirt, Clock } from "lucide-react";
+import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Send, AlertCircle, X, ChevronLeft, Download, ZoomIn, Bell, Mail, Phone, MapPin } from "lucide-react";
 import { useNews, useMatches, useHistoryTimeline } from "@/hooks/use-river-data";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,6 +41,30 @@ export default function Home() {
   const [suscripEstado, setSuscripEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [suscripError, setSuscripError] = useState("");
   const [canales, setCanales] = useState<string[]>(["email", "whatsapp"]);
+
+  // Propuesta de evento
+  const [propNombre, setPropNombre] = useState("");
+  const [propTexto, setPropTexto] = useState("");
+  const [propEstado, setPropEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
+
+  async function enviarPropuestaEvento(e: React.FormEvent) {
+    e.preventDefault();
+    if (!propTexto.trim() || propEstado === "enviando") return;
+    setPropEstado("enviando");
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/propuesta-evento`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: propNombre.trim(), propuesta: propTexto.trim() }),
+      });
+      if (!res.ok) throw new Error("error");
+      setPropEstado("ok");
+      setPropNombre("");
+      setPropTexto("");
+    } catch {
+      setPropEstado("error");
+    }
+  }
 
   // Videos
   const [videos, setVideos] = useState<VideoGaleria[]>([]);
@@ -455,87 +479,81 @@ export default function Home() {
               Próximos <span className="text-river-red">Eventos</span>
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              Encuentros para ver partidos, asados millonarios, eventos sociales y todo lo que se viene para la familia riverplatense en Israel.
+              Pronto vamos a publicar los próximos eventos de la filial. Mientras tanto, ¿tenés una idea? Dejanos tu propuesta y la sumamos a la agenda.
             </p>
           </div>
 
           <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-river-red/30 rounded-3xl overflow-hidden backdrop-blur shadow-2xl">
-            {/* Header del evento */}
+            {/* Header */}
             <div className="bg-gradient-to-r from-river-red via-river-red to-[#a30000] p-6 md:p-7">
               <div className="flex items-center gap-3 mb-2">
-                <span className="bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">Próximo evento</span>
-                <span className="text-white/80 text-xs font-semibold">Convocatoria oficial</span>
+                <span className="bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">Próximamente</span>
+                <span className="text-white/80 text-xs font-semibold">Agenda en preparación</span>
               </div>
               <h3 className="text-2xl md:text-3xl font-display font-bold text-white leading-tight">
-                River Plate vs. Belgrano de Córdoba
+                Dejá tu propuesta de evento
               </h3>
-              <p className="text-white/90 text-sm mt-1">Vení a ver el partido con la Filial Ramat Gan ⚪️🔴</p>
+              <p className="text-white/90 text-sm mt-1">Partidos para ver juntos, asados millonarios, encuentros sociales... contanos qué te gustaría ⚪️🔴</p>
             </div>
 
-            {/* Detalles */}
-            <div className="p-6 md:p-8 grid sm:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Fecha</p>
-                  <p className="text-white font-semibold">Domingo 24 de Mayo de 2026</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Convocatoria</p>
-                  <p className="text-white font-semibold">21:00 hs (hora de Israel)</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 sm:col-span-2">
-                <MapPin className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Lugar</p>
-                  <p className="text-white font-semibold">Meltzer Beer</p>
-                  <p className="text-gray-400 text-sm">Merkaz Ben Gurion · Ben Gurion 4, Rishon LeZion</p>
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=Meltzer+Beer+Ben+Gurion+4+Rishon+LeZion"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 mt-1.5 text-river-red hover:text-white text-xs font-semibold transition-colors"
+            {/* Formulario de propuesta */}
+            <div className="p-6 md:p-8">
+              {propEstado === "ok" ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-green-500/10 border border-green-500/30 text-green-300 p-6 rounded-2xl text-center"
+                >
+                  <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                  <h4 className="text-xl font-bold mb-1 text-white">¡Gracias por tu propuesta!</h4>
+                  <p className="text-sm text-gray-300">La recibimos y la vamos a tener en cuenta para los próximos eventos.</p>
+                  <button
+                    type="button"
+                    onClick={() => setPropEstado("idle")}
+                    className="mt-4 text-river-red hover:text-white text-sm font-semibold transition-colors"
                   >
-                    Ver en Google Maps <ChevronRight className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Car className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Beneficio</p>
-                  <p className="text-white font-semibold">Estacionamiento gratuito en el lugar</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Shirt className="w-5 h-5 text-river-red mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Vestimenta</p>
-                  <p className="text-white font-semibold">Camisetas, banderas y distintivos Rojos y Blancos</p>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="px-6 pb-6 md:px-8 md:pb-8 flex flex-col sm:flex-row gap-3">
-              <a
-                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-3 px-5 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 text-sm"
-              >
-                Confirmar asistencia por WhatsApp
-              </a>
-              <a
-                href="#suscribite"
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-bold py-3 px-5 rounded-xl transition-all border border-white/20 text-sm"
-              >
-                <Bell className="w-4 h-4" /> Recibir avisos
-              </a>
+                    Enviar otra propuesta
+                  </button>
+                </motion.div>
+              ) : (
+                <form onSubmit={enviarPropuestaEvento} className="space-y-4">
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold block mb-1.5">Tu nombre (opcional)</label>
+                    <input
+                      type="text"
+                      value={propNombre}
+                      onChange={(e) => setPropNombre(e.target.value)}
+                      maxLength={60}
+                      placeholder="Cómo te llamás"
+                      className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-river-red transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold block mb-1.5">Tu propuesta</label>
+                    <textarea
+                      value={propTexto}
+                      onChange={(e) => setPropTexto(e.target.value)}
+                      maxLength={1000}
+                      rows={4}
+                      required
+                      placeholder="Contanos qué evento te gustaría que organicemos..."
+                      className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-river-red transition-colors resize-y"
+                    />
+                  </div>
+                  {propEstado === "error" && (
+                    <p className="text-red-400 text-sm flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4" /> No se pudo enviar. Probá de nuevo en un momento.
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={propEstado === "enviando" || !propTexto.trim()}
+                    className="w-full inline-flex items-center justify-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold py-3 px-5 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
+                    <Send className="w-4 h-4" /> {propEstado === "enviando" ? "Enviando..." : "Enviar propuesta"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>

@@ -23,3 +23,4 @@ export * from "./videos";
 export * from "./visitas";
 export * from "./suscriptores";
 export * from "./edit-tokens";
+export * from "./comentarios";
