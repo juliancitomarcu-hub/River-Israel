@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Calendar, ArrowLeft, Tag, MessageCircle, Send, User } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
 import { useNews, type NewsItem } from "@/hooks/use-river-data";
+import { setPageMeta, resetPageMeta, extraerDescripcion } from "@/lib/seo";
 
 interface Comentario {
   id: number;
@@ -239,6 +240,21 @@ export default function Noticia() {
     },
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (!data) return;
+    const image = data.imagenPortada
+      ? `${window.location.origin}/api/storage${data.imagenPortada}`
+      : "https://riverplateisrael.com/opengraph.jpg";
+    setPageMeta({
+      title: `${data.titulo} | River Plate en Israel`,
+      description: extraerDescripcion(data.contenido),
+      image,
+      url: window.location.href,
+      type: "article",
+    });
+    return () => resetPageMeta();
+  }, [data]);
 
   if (!match) return null;
 
