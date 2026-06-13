@@ -243,8 +243,11 @@ export default function Noticia() {
 
   useEffect(() => {
     if (!data) return;
-    const image = data.imagenPortada
-      ? `${window.location.origin}/api/storage${data.imagenPortada}`
+    const portada = data.imagenPortada;
+    const image = portada
+      ? portada.startsWith("http")
+        ? portada
+        : `${window.location.origin}/api/storage${portada}`
       : "https://riverplateisrael.com/opengraph.jpg";
     setPageMeta({
       title: `${data.titulo} | River Plate en Israel`,

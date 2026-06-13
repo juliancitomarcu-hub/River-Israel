@@ -1,1 +1,2 @@
 - [Telegram Markdown injection](telegram-markdown.md) — user text forwarded to Telegram with parse_mode Markdown must be escaped + length-capped.
+- [SEO en SPA estático](seo-static-spa.md) — sitemap/root dinámicos salen del api-server (path en artifact.toml + ruta fuera de /api); meta por nota es client-side (no llega a WhatsApp).
