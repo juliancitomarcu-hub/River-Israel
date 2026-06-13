@@ -28,14 +28,16 @@ if (!process.env.BASE_PATH && !isBuild) {
   );
 }
 
-// Inyecta Google Analytics (GA4) en el HTML construido cuando GOOGLE_ANALYTICS_ID
-// está definido en el entorno de build. Sin la variable, no inyecta nada.
+// Inyecta Google Analytics (GA4) en el <head> del HTML construido.
+// Measurement ID por defecto G-PJ83KTTX5D (sobreescribible con GOOGLE_ANALYTICS_ID).
+// Sólo se inyecta en el build de producción para no contar el tráfico del preview
+// de desarrollo en las métricas.
 function googleAnalyticsPlugin(): Plugin {
-  const gaId = process.env.GOOGLE_ANALYTICS_ID;
+  const gaId = process.env.GOOGLE_ANALYTICS_ID ?? "G-PJ83KTTX5D";
   return {
     name: "inject-google-analytics",
     transformIndexHtml(html) {
-      if (!gaId) return html;
+      if (!gaId || !isBuild) return html;
       const snippet = `    <script async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
