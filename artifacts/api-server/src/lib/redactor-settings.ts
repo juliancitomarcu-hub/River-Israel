@@ -8,6 +8,13 @@ import { logger } from "./logger";
 
 const SETTINGS_FILE = path.resolve("./redactor_settings.json");
 
+// Rango permitido para la duración (en horas) de los links "de resumen".
+// 1h mínimo (que sea útil) y 168h = 7 días máximo (más allá no tiene sentido
+// para un aviso operativo y deja tokens vivos demasiado tiempo).
+export const LINK_RESUMEN_TTL_HORAS_MIN = 1;
+export const LINK_RESUMEN_TTL_HORAS_MAX = 168;
+export const LINK_RESUMEN_TTL_HORAS_DEFAULT = 24;
+
 export interface RedactorSettings {
   // Hora (0-23) en horario Israel para el resumen diario de hebreo.
   // null = desactivado (equivalente a RESUMEN_HEBREO_DIARIO=0).
@@ -15,6 +22,17 @@ export interface RedactorSettings {
   // Última fecha (YYYY-MM-DD en horario Israel) en que se envió el resumen.
   // Evita doble envío durante la hora configurada y sobrevive reinicios.
   resumenHebreoUltimoEnvio: string | null;
+  // Duración (en horas) de los links "de resumen" (resumen diario + aviso de
+  // traducción al hebreo). Configurable desde el panel o por env. Reemplaza la
+  // constante fija de 24h.
+  linkResumenTtlHoras: number;
+}
+
+function ttlHorasPorEnv(): number {
+  const raw = process.env.LINK_RESUMEN_TTL_HORAS;
+  if (raw === undefined) return LINK_RESUMEN_TTL_HORAS_DEFAULT;
+  const n = Number.parseInt(raw, 10);
+  return ttlHorasValido(n) ? n : LINK_RESUMEN_TTL_HORAS_DEFAULT;
 }
 
 function defaults(): RedactorSettings {
@@ -22,11 +40,21 @@ function defaults(): RedactorSettings {
   return {
     resumenHebreoHora: desactivadoPorEnv ? null : 9,
     resumenHebreoUltimoEnvio: null,
+    linkResumenTtlHoras: ttlHorasPorEnv(),
   };
 }
 
 function horaValida(h: unknown): h is number {
   return typeof h === "number" && Number.isInteger(h) && h >= 0 && h <= 23;
+}
+
+export function ttlHorasValido(h: unknown): h is number {
+  return (
+    typeof h === "number" &&
+    Number.isInteger(h) &&
+    h >= LINK_RESUMEN_TTL_HORAS_MIN &&
+    h <= LINK_RESUMEN_TTL_HORAS_MAX
+  );
 }
 
 export function leerRedactorSettings(): RedactorSettings {
@@ -40,6 +68,8 @@ export function leerRedactorSettings(): RedactorSettings {
           : def.resumenHebreoHora,
       resumenHebreoUltimoEnvio:
         typeof raw.resumenHebreoUltimoEnvio === "string" ? raw.resumenHebreoUltimoEnvio : null,
+      linkResumenTtlHoras:
+        ttlHorasValido(raw.linkResumenTtlHoras) ? raw.linkResumenTtlHoras : def.linkResumenTtlHoras,
     };
   } catch {
     // Archivo ausente o ilegible → usar defaults derivados del env.

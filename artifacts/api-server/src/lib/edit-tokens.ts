@@ -2,11 +2,14 @@ import { randomBytes } from "node:crypto";
 import { db, editTokensTable, panelSessionsTable } from "@workspace/db";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { logger } from "./logger";
+import { leerRedactorSettings } from "./redactor-settings";
 
 const EDIT_TOKEN_TTL_MS = 30 * 60 * 1000;
-// TTL largo para links "de resumen" (resumen diario, aviso de traducción al
-// hebreo): el admin puede abrir el Telegram a la noche y entrar a la mañana
-// sin que el link caduque. No están scoped a una nota recién creada.
+// TTL largo POR DEFECTO para links "de resumen" (resumen diario, aviso de
+// traducción al hebreo): el admin puede abrir el Telegram a la noche y entrar a
+// la mañana sin que el link caduque. No están scoped a una nota recién creada.
+// La duración real es configurable desde el panel /redactor (o por la env
+// LINK_RESUMEN_TTL_HORAS); este valor es sólo el fallback.
 export const LONG_EDIT_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 export const SESSION_TTL_MS = 30 * 60 * 1000;
 // Sesión completa de admin (login con contraseña). Más larga que la efímera
@@ -58,10 +61,16 @@ export async function createEditToken(
   return token;
 }
 
-// Variante con TTL largo (24h) para links "de resumen" que el admin puede
-// abrir horas después de recibir el aviso.
+// Variante con TTL largo para links "de resumen" que el admin puede abrir horas
+// después de recibir el aviso. La duración se lee de los settings del panel
+// /redactor (configurable sin redeploy); si por algún motivo no hay un valor
+// válido, cae al fallback de 24h.
 export async function createLongEditToken(noticiaId: number | null): Promise<string> {
-  return createEditToken(noticiaId, LONG_EDIT_TOKEN_TTL_MS);
+  const horas = leerRedactorSettings().linkResumenTtlHoras;
+  const ttlMs = Number.isFinite(horas) && horas > 0
+    ? horas * 60 * 60 * 1000
+    : LONG_EDIT_TOKEN_TTL_MS;
+  return createEditToken(noticiaId, ttlMs);
 }
 
 export async function consumeEditToken(

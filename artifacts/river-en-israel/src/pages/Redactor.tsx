@@ -1096,6 +1096,10 @@ export default function Redactor() {
   const [resumenHebreoHora, setResumenHebreoHora] = useState<string>("");
   const [guardandoHoraResumen, setGuardandoHoraResumen] = useState(false);
   const [mensajeHoraResumen, setMensajeHoraResumen] = useState("");
+  // Duración (en horas) de los links de los avisos "de resumen" del bot.
+  const [linkResumenTtlHoras, setLinkResumenTtlHoras] = useState<string>("");
+  const [guardandoTtlResumen, setGuardandoTtlResumen] = useState(false);
+  const [mensajeTtlResumen, setMensajeTtlResumen] = useState("");
   const [parrafoActivoIdx, setParrafoActivoIdx] = useState<number | null>(null);
   const esParrafosScrollRef = useRef<HTMLDivElement | null>(null);
   const heParrafosScrollRef = useRef<HTMLDivElement | null>(null);
@@ -1229,10 +1233,44 @@ export default function Redactor() {
       const res = await fetch("/api/redactor-settings", { headers: adminHeaders() });
       if (res.status === 401) { pedirAdminToken(); return; }
       if (res.ok) {
-        const data = await res.json() as { resumenHebreoHora?: number | null };
+        const data = await res.json() as { resumenHebreoHora?: number | null; linkResumenTtlHoras?: number };
         setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
+        if (typeof data.linkResumenTtlHoras === "number") {
+          setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
+        }
       }
     } catch { /* ignore */ }
+  };
+
+  const guardarTtlResumen = async () => {
+    setGuardandoTtlResumen(true);
+    setMensajeTtlResumen("");
+    try {
+      const valor = parseInt(linkResumenTtlHoras.trim(), 10);
+      if (isNaN(valor) || valor < 1 || valor > 168) {
+        setMensajeTtlResumen("Ingresá una cantidad de horas entre 1 y 168 (7 días)");
+        return;
+      }
+      const res = await fetch("/api/redactor-settings", {
+        method: "PUT",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ linkResumenTtlHoras: valor }),
+      });
+      if (res.status === 401) { pedirAdminToken(); return; }
+      if (res.ok) {
+        const data = await res.json() as { linkResumenTtlHoras?: number };
+        if (typeof data.linkResumenTtlHoras === "number") {
+          setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
+          setMensajeTtlResumen(`Los links del bot ahora duran ${data.linkResumenTtlHoras} ${data.linkResumenTtlHoras === 1 ? "hora" : "horas"}`);
+        }
+      } else {
+        setMensajeTtlResumen("No se pudo guardar la duración");
+      }
+    } catch {
+      setMensajeTtlResumen("Error al guardar la duración");
+    } finally {
+      setGuardandoTtlResumen(false);
+    }
   };
 
   const guardarHoraResumen = async () => {
@@ -4042,6 +4080,40 @@ export default function Redactor() {
               </div>
               {mensajeHoraResumen && (
                 <p className="text-xs text-gray-500 mt-2">{mensajeHoraResumen}</p>
+              )}
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <div className="flex items-start sm:items-center gap-3 flex-wrap">
+                <Clock className="w-4 h-4 text-gray-400 shrink-0 mt-0.5 sm:mt-0" />
+                <div className="flex-1 min-w-[180px]">
+                  <p className="text-sm font-semibold text-river-black">Duración de los links del bot</p>
+                  <p className="text-xs text-gray-400">
+                    Horas que sigue funcionando el link de "Revisar en /redactor" del resumen diario y del aviso de traducción. Entre 1 y 168 (7 días).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={168}
+                    value={linkResumenTtlHoras}
+                    onChange={(e) => setLinkResumenTtlHoras(e.target.value)}
+                    placeholder="24"
+                    className="w-20 px-3 py-2 rounded-lg border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-river-red/30"
+                  />
+                  <span className="text-xs text-gray-400">hs</span>
+                  <button
+                    onClick={guardarTtlResumen}
+                    disabled={guardandoTtlResumen}
+                    className="px-3 py-2 rounded-lg bg-river-red text-white text-xs font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {guardandoTtlResumen ? "Guardando…" : "Guardar"}
+                  </button>
+                </div>
+              </div>
+              {mensajeTtlResumen && (
+                <p className="text-xs text-gray-500 mt-2">{mensajeTtlResumen}</p>
               )}
             </div>
 
