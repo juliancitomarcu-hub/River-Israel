@@ -159,80 +159,6 @@ export default function Home() {
     <>
     <div className="w-full bg-background overflow-hidden">
 
-      {/* ================= HERO / PORTADA ================= */}
-      <section className="relative w-full bg-river-black overflow-hidden" style={{ aspectRatio: "1200/420", maxHeight: "520px", minHeight: "260px" }}>
-        {/* Banner de portada */}
-        <img
-          src={`${import.meta.env.BASE_URL}images/hero-monumental.png?v=2`}
-          alt="Portada River en Israel"
-          className="absolute inset-0 w-full h-full object-cover"
-          draggable={false}
-        />
-
-        {/* Layout: texto izquierda, escudo derecha */}
-        <div className="absolute inset-0 z-10 flex items-end justify-between px-6 sm:px-10 md:px-16 pb-5 sm:pb-7 bg-gradient-to-t from-black/75 via-black/20 to-transparent">
-
-          {/* Texto — izquierda */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-col max-w-[58%]"
-          >
-            <p className="text-[11px] sm:text-sm md:text-base text-gray-100 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] font-medium leading-snug">
-              La Banda del Millonario,<br />
-              latiendo fuerte desde Tierra Santa.<br />
-              La misma pasión a miles de kilómetros.
-            </p>
-            <div className="flex flex-row flex-wrap gap-2">
-              <a
-                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all hover:scale-105"
-              >
-                Súmate a la Filial
-              </a>
-              <div className="flex gap-2">
-                <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-river-red text-white font-bold rounded-full text-xs uppercase tracking-wide hover:bg-river-red-hover transition-all shadow-[0_0_12px_rgba(204,0,0,0.5)]">
-                  Últimas Noticias
-                </a>
-                <a href="#suscribite" className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all">
-                  Recibí Noticias
-                </a>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Escudos — derecha (filial + CARP) */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="relative flex-shrink-0 self-center flex items-center gap-1 sm:gap-4"
-          >
-            <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
-            <img
-              src={`${import.meta.env.BASE_URL}filial-logo.jpeg`}
-              alt="Escudo Filial River Plate Israel - Gaby El Tucu Sajnin"
-              className="relative z-10 w-14 h-14 sm:w-36 sm:h-36 md:w-48 md:h-48 object-contain rounded-full"
-              style={{ filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.7))" }}
-              draggable={false}
-            />
-            <img
-              src={`${import.meta.env.BASE_URL}images/escudo-carp.png?v=4`}
-              alt="Escudo Club Atlético River Plate"
-              className="relative z-10 w-16 h-16 sm:w-44 sm:h-44 md:w-56 md:h-56 object-contain"
-              style={{ filter: "drop-shadow(0 4px 28px rgba(204,0,0,0.9))" }}
-              draggable={false}
-            />
-          </motion.div>
-        </div>
-
-        {/* Línea roja inferior */}
-        <div className="absolute bottom-0 inset-x-0 h-1 bg-river-red z-20" />
-      </section>
-
       {/* ================= ACTUALIDAD SECTION ================= */}
       <section id="actualidad" className="bg-[#111] relative">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-river-red to-transparent z-10"></div>
@@ -323,42 +249,53 @@ export default function Home() {
                 </motion.div>
               ))}
 
-              {/* ── Paginación Actualidad ── */}
-              {totalPaginasNoticias > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                  <button
-                    onClick={() => { setPaginaActualidad(p => Math.max(0, p - 1)); window.location.hash = "actualidad"; }}
-                    disabled={paginaActualidad === 0}
-                    className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:border-river-red hover:text-river-red disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-bold"
-                    aria-label="Página anterior"
-                  >
-                    ‹
-                  </button>
+              {/* ── Paginación Actualidad (ventana de 6) ── */}
+              {totalPaginasNoticias > 1 && (() => {
+                const VENTANA = 6;
+                const inicio = Math.floor(paginaActualidad / VENTANA) * VENTANA;
+                const fin = Math.min(inicio + VENTANA, totalPaginasNoticias);
+                const paginas = Array.from({ length: fin - inicio }, (_, k) => inicio + k);
+                const hayPrevios = inicio > 0;
+                const hayMas = fin < totalPaginasNoticias;
+                const ir = (i: number) => { setPaginaActualidad(i); window.location.hash = "actualidad"; };
+                return (
+                  <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                    {hayPrevios && (
+                      <button
+                        onClick={() => ir(inicio - 1)}
+                        className="px-3 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:border-river-red hover:text-river-red transition-all text-xs font-bold uppercase tracking-wide"
+                        aria-label="Páginas anteriores"
+                      >
+                        ‹ Anteriores
+                      </button>
+                    )}
 
-                  {Array.from({ length: totalPaginasNoticias }, (_, i) => i).map(i => (
-                    <button
-                      key={i}
-                      onClick={() => { setPaginaActualidad(i); window.location.hash = "actualidad"; }}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-all border ${
-                        i === paginaActualidad
-                          ? "bg-river-red text-white border-river-red shadow"
-                          : "border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+                    {paginas.map(i => (
+                      <button
+                        key={i}
+                        onClick={() => ir(i)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-all border ${
+                          i === paginaActualidad
+                            ? "bg-river-red text-white border-river-red shadow"
+                            : "border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
 
-                  <button
-                    onClick={() => { setPaginaActualidad(p => Math.min(totalPaginasNoticias - 1, p + 1)); window.location.hash = "actualidad"; }}
-                    disabled={paginaActualidad === totalPaginasNoticias - 1}
-                    className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:border-river-red hover:text-river-red disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-bold"
-                    aria-label="Página siguiente"
-                  >
-                    ›
-                  </button>
-                </div>
-              )}
+                    {hayMas && (
+                      <button
+                        onClick={() => ir(fin)}
+                        className="px-3 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:border-river-red hover:text-river-red transition-all text-xs font-bold uppercase tracking-wide"
+                        aria-label="Páginas siguientes"
+                      >
+                        Siguiente ›
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Matches Sidebar */}
@@ -557,6 +494,82 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ================= HERO / IDENTIDAD ================= */}
+      <section className="relative w-full bg-river-black overflow-hidden" style={{ aspectRatio: "1200/420", maxHeight: "520px", minHeight: "260px" }}>
+        {/* Banner de portada */}
+        <img
+          src={`${import.meta.env.BASE_URL}images/hero-monumental.png?v=2`}
+          alt="Portada River en Israel"
+          className="absolute inset-0 w-full h-full object-cover"
+          draggable={false}
+        />
+
+        {/* Layout: texto izquierda, escudo derecha */}
+        <div className="absolute inset-0 z-10 flex items-end justify-between px-6 sm:px-10 md:px-16 pb-5 sm:pb-7 bg-gradient-to-t from-black/75 via-black/20 to-transparent">
+
+          {/* Texto — izquierda */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="flex flex-col max-w-[58%]"
+          >
+            <p className="text-[11px] sm:text-sm md:text-base text-gray-100 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] font-medium leading-snug">
+              La Banda del Millonario,<br />
+              latiendo fuerte desde Tierra Santa.<br />
+              La misma pasión a miles de kilómetros.
+            </p>
+            <div className="flex flex-row flex-wrap gap-2">
+              <a
+                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all hover:scale-105"
+              >
+                Súmate a la Filial
+              </a>
+              <div className="flex gap-2">
+                <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-river-red text-white font-bold rounded-full text-xs uppercase tracking-wide hover:bg-river-red-hover transition-all shadow-[0_0_12px_rgba(204,0,0,0.5)]">
+                  Últimas Noticias
+                </a>
+                <a href="#suscribite" className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all">
+                  Recibí Noticias
+                </a>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Escudos — derecha (filial + CARP) */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+            className="relative flex-shrink-0 self-center flex items-center gap-1 sm:gap-4"
+          >
+            <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
+            <img
+              src={`${import.meta.env.BASE_URL}filial-logo.jpeg`}
+              alt="Escudo Filial River Plate Israel - Gaby El Tucu Sajnin"
+              className="relative z-10 w-14 h-14 sm:w-36 sm:h-36 md:w-48 md:h-48 object-contain rounded-full"
+              style={{ filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.7))" }}
+              draggable={false}
+            />
+            <img
+              src={`${import.meta.env.BASE_URL}images/escudo-carp.png?v=4`}
+              alt="Escudo Club Atlético River Plate"
+              className="relative z-10 w-16 h-16 sm:w-44 sm:h-44 md:w-56 md:h-56 object-contain"
+              style={{ filter: "drop-shadow(0 4px 28px rgba(204,0,0,0.9))" }}
+              draggable={false}
+            />
+          </motion.div>
+        </div>
+
+        {/* Línea roja inferior */}
+        <div className="absolute bottom-0 inset-x-0 h-1 bg-river-red z-20" />
       </section>
 
       {/* ================= FILIAL RAMAT GAN SECTION ================= */}
