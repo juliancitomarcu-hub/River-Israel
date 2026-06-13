@@ -485,7 +485,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
 
     // ── CONTROL DE CALIDAD PRE-GUARDADO ───────────────────────────────────
     let parsed = parsearResultado(resultado);
-    const MINIMO_CHARS = 2000;
+    const MINIMO_CHARS = 1400;
     const cortada = /[…\.]{3,}\s*$/.test(parsed.contenido.trimEnd());
     const corta   = parsed.contenido.length < MINIMO_CHARS;
 
@@ -499,7 +499,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         contents: [
           { role: "user",  parts: [{ text: `${contextoSitio}:\n\n${textoParaIA}` }] },
           { role: "model", parts: [{ text: resultado }] },
-          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 2000 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial Ramat Gan. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
+          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 1400 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial Ramat Gan. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
         ],
         config: { systemInstruction: promptSistema, maxOutputTokens: 8000 },
       });
