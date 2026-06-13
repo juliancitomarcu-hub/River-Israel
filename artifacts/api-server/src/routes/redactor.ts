@@ -8,6 +8,7 @@ import { PROMPT_MAESTRO_SELECCION } from "../lib/prompt-maestro-seleccion";
 import { requireAdmin } from "../middleware/requireAdmin";
 import { type CategoriaImagen } from "../lib/generar-imagen-ig";
 import { credencialesTelegram, estadoTelegram } from "../lib/telegram-cred";
+import { estadoWebhookPanel, registrarWebhook } from "../lib/telegram-webhook-registro";
 
 function elegirPrompt(categoria: CategoriaImagen): string {
   return categoria === "seleccion" ? PROMPT_MAESTRO_SELECCION : PROMPT_MAESTRO;
@@ -20,6 +21,8 @@ router.use("/enviar-telegram", requireAdmin);
 router.use("/test-scheduler", requireAdmin);
 router.use("/estado-bots", requireAdmin);
 router.use("/probar-bot", requireAdmin);
+router.use("/webhook-info", requireAdmin);
+router.use("/registrar-webhook", requireAdmin);
 
 /**
  * Estado de configuración de los bots de Telegram (River / Selección) para que
@@ -31,6 +34,49 @@ router.get("/estado-bots", (_req, res) => {
     river: estadoTelegram("river"),
     seleccion: estadoTelegram("seleccion"),
   });
+});
+
+/**
+ * Estado en vivo de los webhooks de Telegram (River / Selección). Consulta
+ * getWebhookInfo de Telegram y lo combina con el registro en memoria de este
+ * proceso para avisar si cada webhook está realmente protegido (registrado con
+ * la URL esperada y con secret_token). Telegram no expone el secret, así que la
+ * señal de protección depende de que este proceso lo haya registrado con éxito.
+ */
+router.get("/webhook-info", async (req, res) => {
+  try {
+    const [river, seleccion] = await Promise.all([
+      estadoWebhookPanel("river"),
+      estadoWebhookPanel("seleccion"),
+    ]);
+    res.json({ river, seleccion });
+  } catch (err) {
+    req.log.error({ err }, "Error consultando estado de webhooks de Telegram");
+    res.status(502).json({ error: "No se pudo consultar el estado de los webhooks." });
+  }
+});
+
+/**
+ * Re-registra el webhook de un bot con su secret_token. Útil cuando el panel
+ * detecta que un webhook quedó sin proteger (registro previo o fallo de red al
+ * arrancar). Devuelve el estado actualizado tras re-registrar.
+ */
+router.post("/registrar-webhook", async (req, res) => {
+  const { categoria } = req.body as { categoria?: CategoriaImagen };
+  const categoriaFinal = categoria === "seleccion" ? "seleccion" : "river";
+
+  const registro = await registrarWebhook(categoriaFinal);
+  if (!registro.ok) {
+    req.log.warn({ categoria: categoriaFinal, error: registro.error }, "No se pudo re-registrar el webhook");
+    res.status(502).json({
+      ok: false,
+      error: registro.error ?? "No se pudo registrar el webhook.",
+    });
+    return;
+  }
+
+  const estado = await estadoWebhookPanel(categoriaFinal);
+  res.json({ ok: true, estado });
 });
 
 /**

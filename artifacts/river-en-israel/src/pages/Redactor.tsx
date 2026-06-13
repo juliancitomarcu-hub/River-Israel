@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock, MessageCircle, Loader2
+  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock, MessageCircle, Loader2, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -115,6 +115,23 @@ interface EstadoBot {
 interface EstadoBots {
   river: EstadoBot;
   seleccion: EstadoBot;
+}
+interface WebhookEstado {
+  categoria: "river" | "seleccion";
+  consultaOk: boolean;
+  errorConsulta: string | null;
+  registrado: boolean;
+  url: string | null;
+  urlEsperada: string | null;
+  urlCoincide: boolean;
+  pendingUpdateCount: number | null;
+  ultimoError: string | null;
+  registradoConSecret: boolean;
+  protegido: boolean;
+}
+interface WebhookEstados {
+  river: WebhookEstado;
+  seleccion: WebhookEstado;
 }
 type EstadoPublicar = "idle" | "publicando" | "publicado" | "error";
 type FuenteNoticias = "google" | "tyc" | "ole" | "infobae" | "clarin" | "lanacion" | "bolavip" | "as" | "superdeportivo";
@@ -1003,6 +1020,10 @@ export default function Redactor() {
   const [estadoBots, setEstadoBots] = useState<EstadoBots | null>(null);
   const [probandoBot, setProbandoBot] = useState<"river" | "seleccion" | null>(null);
   const [resultadoPrueba, setResultadoPrueba] = useState<Record<"river" | "seleccion", { ok: boolean; msg: string } | undefined>>({ river: undefined, seleccion: undefined });
+  const [webhookEstados, setWebhookEstados] = useState<WebhookEstados | null>(null);
+  const [webhookCargando, setWebhookCargando] = useState(false);
+  const [reRegistrando, setReRegistrando] = useState<"river" | "seleccion" | null>(null);
+  const [reRegistroMsg, setReRegistroMsg] = useState<Record<"river" | "seleccion", { ok: boolean; msg: string } | undefined>>({ river: undefined, seleccion: undefined });
   const resultadoRef = useRef<HTMLDivElement>(null);
   const [editando, setEditando] = useState(false);
   const [resultadoEditado, setResultadoEditado] = useState("");
@@ -1770,6 +1791,50 @@ export default function Redactor() {
       setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al probar el bot." } }));
     } finally {
       setProbandoBot(null);
+    }
+  };
+
+  // Estado en vivo de los webhooks de Telegram (getWebhookInfo + si están protegidos).
+  const cargarWebhookEstados = async () => {
+    setWebhookCargando(true);
+    try {
+      const res = await fetch("/api/webhook-info", { headers: adminHeaders() });
+      if (!res.ok) return;
+      const data = await res.json() as WebhookEstados;
+      setWebhookEstados(data);
+    } catch {
+      // Silencioso: la tarjeta simplemente no se muestra si falla.
+    } finally {
+      setWebhookCargando(false);
+    }
+  };
+  useEffect(() => {
+    if (authStatus !== "ok") return;
+    cargarWebhookEstados();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus]);
+
+  // Re-registra el webhook de un bot con su secret cuando quedó sin proteger.
+  const reRegistrarWebhook = async (cat: "river" | "seleccion") => {
+    setReRegistrando(cat);
+    setReRegistroMsg((prev) => ({ ...prev, [cat]: undefined }));
+    try {
+      const res = await fetch("/api/registrar-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
+        body: JSON.stringify({ categoria: cat }),
+      });
+      const data = await res.json() as { ok?: boolean; estado?: WebhookEstado; error?: string };
+      if (res.ok && data.ok && data.estado) {
+        setWebhookEstados((prev) => (prev ? { ...prev, [cat]: data.estado! } : prev));
+        setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: true, msg: "Webhook re-registrado con secret." } }));
+      } else {
+        setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: data.error ?? "No se pudo re-registrar el webhook." } }));
+      }
+    } catch {
+      setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al re-registrar." } }));
+    } finally {
+      setReRegistrando(null);
     }
   };
 
@@ -3016,6 +3081,102 @@ export default function Redactor() {
                       ? "."
                       : ` — pero ${faltante(botActual)}, así que el envío fallará hasta configurarlo.`}
                   </p>
+                </div>
+              );
+            })()}
+
+            {/* Protección de los webhooks de Telegram (secret_token) */}
+            {webhookEstados && (() => {
+              const FilaWebhook = ({ w }: { w: WebhookEstado }) => {
+                const marca = w.categoria === "seleccion" ? "La Scaloneta en Israel" : "River en Israel";
+                const emoji = w.categoria === "seleccion" ? "🇦🇷" : "🔴⚪";
+                const msg = reRegistroMsg[w.categoria];
+                const reReg = reRegistrando === w.categoria;
+                let etiqueta: string;
+                let clases: string;
+                if (!w.consultaOk) {
+                  etiqueta = "no se pudo consultar";
+                  clases = "bg-gray-100 text-gray-500 border-gray-200";
+                } else if (!w.registrado) {
+                  etiqueta = "sin webhook";
+                  clases = "bg-red-50 text-red-700 border-red-200";
+                } else if (w.protegido) {
+                  etiqueta = "protegido";
+                  clases = "bg-green-50 text-green-700 border-green-200";
+                } else {
+                  etiqueta = "sin proteger";
+                  clases = "bg-amber-50 text-amber-700 border-amber-200";
+                }
+                const detalle = !w.consultaOk
+                  ? (w.errorConsulta ?? "Error consultando Telegram")
+                  : !w.registrado
+                    ? "No hay webhook registrado en Telegram."
+                    : w.protegido
+                      ? "Webhook registrado con secret_token."
+                      : !w.urlCoincide
+                        ? "El webhook apunta a otra URL."
+                        : "El webhook no tiene secret_token activo (quedó sin proteger).";
+                return (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${clases}`}
+                        title={detalle}
+                      >
+                        <span>{emoji}</span>
+                        {marca}
+                        {w.protegido ? (
+                          <span className="inline-flex items-center gap-0.5"><Check className="w-3 h-3" /> {etiqueta}</span>
+                        ) : (
+                          <span>⚠️ {etiqueta}</span>
+                        )}
+                      </span>
+                      {w.consultaOk && !w.protegido && (
+                        <button
+                          type="button"
+                          onClick={() => reRegistrarWebhook(w.categoria)}
+                          disabled={reReg}
+                          title="Volver a registrar el webhook con su secret_token"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-gray-300 bg-white text-gray-600 hover:border-river-red hover:text-river-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {reReg ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Re-registrando…</>
+                          ) : (
+                            <><RefreshCw className="w-3 h-3" /> Re-registrar con secret</>
+                          )}
+                        </button>
+                      )}
+                      {msg && (
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${msg.ok ? "text-green-700" : "text-red-600"}`}>
+                          {msg.ok ? <Check className="w-3 h-3" /> : <span>✗</span>}
+                          {msg.msg}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-gray-500 pl-1">{detalle}</span>
+                  </div>
+                );
+              };
+              return (
+                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                      <Shield className="w-3 h-3" /> Protección de webhooks
+                    </p>
+                    <button
+                      type="button"
+                      onClick={cargarWebhookEstados}
+                      disabled={webhookCargando}
+                      title="Volver a consultar el estado en Telegram"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-river-red disabled:opacity-50 transition-colors"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${webhookCargando ? "animate-spin" : ""}`} /> Actualizar
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    <FilaWebhook w={webhookEstados.river} />
+                    <FilaWebhook w={webhookEstados.seleccion} />
+                  </div>
                 </div>
               );
             })()}
