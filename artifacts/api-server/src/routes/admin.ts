@@ -10,6 +10,7 @@ import {
   getAdminSession,
   getNoticiaSession,
   revokeAdminSession,
+  revokeAllAdminSessions,
 } from "../lib/edit-tokens";
 
 const router: IRouter = Router();
@@ -119,6 +120,31 @@ router.post("/admin/logout", async (req, res) => {
   if (provided) await revokeAdminSession(provided);
   clearSessionCookie(res);
   res.json({ ok: true });
+});
+
+// Cierra la sesión en TODOS los dispositivos: borra todas las sesiones admin
+// de la DB (incluida la del que pide) y limpia la cookie de este navegador.
+// Requiere una sesión/credencial admin válida; las sesiones scoped a una
+// noticia (links de Telegram) no alcanzan.
+router.post("/admin/logout-all", async (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const provided = extractToken(req);
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const autorizado = provided === expected || (await getAdminSession(provided)) !== null;
+  if (!autorizado) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const revocadas = await revokeAllAdminSessions();
+  clearSessionCookie(res);
+  res.json({ ok: true, revocadas });
 });
 
 // Renueva la sesión actual sin pedir la contraseña: empuja el expiresAt

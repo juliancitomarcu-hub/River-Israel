@@ -163,6 +163,18 @@ export async function revokeAdminSession(token: string): Promise<void> {
   await db.delete(panelSessionsTable).where(eq(panelSessionsTable.token, token));
 }
 
+// Revoca TODAS las sesiones admin de golpe ("cerrar sesión en todos los
+// dispositivos"). Borra cada fila con scope 'admin', incluida la del que pide.
+// Las sesiones scoped a una noticia (links de Telegram) no se tocan. Devuelve
+// cuántas filas se borraron para que la UI pueda mostrarlo si quiere.
+export async function revokeAllAdminSessions(): Promise<number> {
+  const rows = await db
+    .delete(panelSessionsTable)
+    .where(eq(panelSessionsTable.scope, "admin"))
+    .returning({ token: panelSessionsTable.token });
+  return rows.length;
+}
+
 // Renueva una sesión admin viva: empuja el expiresAt hasta ahora + TTL completo.
 // No emite un token nuevo (la UI ya lo tiene guardado). Si la sesión no existe
 // o ya caducó devuelve null y la UI tiene que mandar al login.

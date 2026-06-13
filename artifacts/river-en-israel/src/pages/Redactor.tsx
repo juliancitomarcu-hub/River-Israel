@@ -966,6 +966,27 @@ export default function Redactor() {
       credentials: "same-origin",
     }).catch(() => { /* ignore */ });
   };
+
+  const [cerrandoTodo, setCerrandoTodo] = useState(false);
+  const handleLogoutAll = async () => {
+    if (cerrandoTodo) return;
+    const ok = window.confirm(
+      "Esto cerrará la sesión del panel en TODOS los dispositivos (incluido este). Vas a tener que volver a ingresar la contraseña. ¿Continuar?",
+    );
+    if (!ok) return;
+    setCerrandoTodo(true);
+    try {
+      await fetch("/api/admin/logout-all", {
+        method: "POST",
+        credentials: "same-origin",
+      }).catch(() => { /* best-effort */ });
+    } finally {
+      setCerrandoTodo(false);
+      limpiarSesion();
+      setAuthStatus("needed");
+      setLoginError("Cerraste la sesión en todos los dispositivos. Volvé a ingresar la contraseña.");
+    }
+  };
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
@@ -2042,6 +2063,15 @@ export default function Redactor() {
               title="Cerrar sesión de admin"
             >
               salir
+            </button>
+            <button
+              type="button"
+              onClick={handleLogoutAll}
+              disabled={cerrandoTodo}
+              className="text-[10px] font-bold underline opacity-70 hover:opacity-100 disabled:opacity-40"
+              title="Cerrar sesión en todos los dispositivos"
+            >
+              {cerrandoTodo ? "cerrando..." : "salir de todos"}
             </button>
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">
