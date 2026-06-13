@@ -725,8 +725,29 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
         .orderBy(desc(noticiasTable.id))
     : [];
 
-  if (pendientesHebreo.length === 0 && pendientesPostulaciones.length === 0) {
-    logger.info("Resumen diario: no hay traducciones ni postulaciones pendientes, no se envía mensaje");
+  // ── Borradores en español sin publicar (modo manual, esperando aprobación) ─
+  // Noticias generadas por la IA con `pendiente=true`, `publicada=false` y
+  // `fuente` que NO arranca con "Postulación" (esas ya van en su propia sección).
+  // Desactivable con RESUMEN_BORRADORES_ES_DIARIO=0.
+  const borradoresEsActivos = process.env.RESUMEN_BORRADORES_ES_DIARIO !== "0";
+  const pendientesBorradoresEs = borradoresEsActivos
+    ? await db
+        .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
+        .from(noticiasTable)
+        .where(and(
+          eq(noticiasTable.pendiente, true),
+          eq(noticiasTable.publicada, false),
+          sqlRaw`${noticiasTable.fuente} NOT LIKE 'Postulación%'`,
+        ))
+        .orderBy(desc(noticiasTable.id))
+    : [];
+
+  if (
+    pendientesHebreo.length === 0 &&
+    pendientesPostulaciones.length === 0 &&
+    pendientesBorradoresEs.length === 0
+  ) {
+    logger.info("Resumen diario: no hay traducciones, postulaciones ni borradores pendientes, no se envía mensaje");
     return;
   }
 
@@ -769,6 +790,21 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
     );
   }
 
+  if (pendientesBorradoresEs.length > 0) {
+    const link = `https://${dominio}/redactor?tab=publicaciones&edit_token=${editToken}`;
+    const listado = pendientesBorradoresEs.slice(0, MAX_LISTADO)
+      .map((n) => `• ${escape(n.titulo)}`)
+      .join("\n");
+    const resto = pendientesBorradoresEs.length - MAX_LISTADO;
+    const sufijo = resto > 0 ? `\n_…y ${resto} más_` : "";
+    secciones.push(
+      `📝 *Borradores en español sin publicar*\n\n` +
+      `Hay *${pendientesBorradoresEs.length}* ${pendientesBorradoresEs.length === 1 ? "nota" : "notas"} esperando aprobación:\n\n` +
+      `${listado}${sufijo}\n\n` +
+      `[Revisar y publicar en /redactor](${link})`,
+    );
+  }
+
   const cuerpo = secciones.join("\n\n━━━━━━━━━━\n\n");
 
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -787,7 +823,11 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
     return;
   }
   logger.info(
-    { hebreo: pendientesHebreo.length, postulaciones: pendientesPostulaciones.length },
+    {
+      hebreo: pendientesHebreo.length,
+      postulaciones: pendientesPostulaciones.length,
+      borradoresEs: pendientesBorradoresEs.length,
+    },
     "Resumen diario enviado",
   );
 }
