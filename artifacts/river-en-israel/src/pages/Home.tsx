@@ -157,7 +157,7 @@ export default function Home() {
 
   return (
     <>
-    <div className="w-full bg-background overflow-hidden">
+    <div className="w-full bg-background">
 
       {/* ================= ACTUALIDAD SECTION ================= */}
       <section id="actualidad" className="bg-[#111] relative">
@@ -224,7 +224,7 @@ export default function Home() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* News List — compact horizontal cards */}
             <div className="lg:col-span-2 flex flex-col gap-3">
               {news?.map((item, i) => (
@@ -236,13 +236,12 @@ export default function Home() {
                   variants={fadeIn}
                 >
                   <div className="group bg-white rounded-xl overflow-hidden shadow border border-gray-100 hover:shadow-md transition-all duration-300">
-                    <Link href={`/noticia/${item.id}`} className="flex gap-0">
+                    <Link href={`/noticia/${item.id}`} className="flex gap-0 h-32 md:h-36">
                       <div className="relative overflow-hidden w-32 md:w-44 flex-shrink-0">
                         <img
                           src={item.imageUrl}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          style={{ minHeight: "100px" }}
                         />
                       </div>
                       <div className="p-3 flex-1 flex flex-col justify-between min-w-0">
@@ -322,7 +321,7 @@ export default function Home() {
               whileInView="show"
               viewport={{ once: true }}
               variants={fadeIn}
-              className="bg-river-black rounded-2xl p-4 shadow-2xl text-white relative overflow-hidden"
+              className="bg-river-black rounded-2xl p-4 shadow-2xl text-white relative overflow-hidden lg:sticky lg:top-24 self-start"
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-river-red blur-[60px] rounded-full opacity-40"></div>
 

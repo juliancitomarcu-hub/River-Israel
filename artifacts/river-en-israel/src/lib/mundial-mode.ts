@@ -2,13 +2,13 @@ import { useLocation } from "wouter";
 import { useEffect } from "react";
 
 /**
- * Modo Mundial = el usuario está en La Scaloneta (home por defecto).
- * Dos sitios paralelos:
- *   /         → La Scaloneta en Israel (default)
- *   /river    → River en Israel
- *   /scaloneta (legacy) → mismo home que /
+ * Modo Mundial = el usuario está en La Scaloneta.
+ * River es el sitio protagonista; La Scaloneta queda "dormida":
+ *   /          → River en Israel (default)
+ *   /river     → River en Israel (alias)
+ *   /scaloneta → La Scaloneta en Israel (sólo acceso directo)
  *
- * El usuario alterna entre sitios desde el menú desplegable arriba a la derecha.
+ * El modo Mundial sólo se activa al entrar explícitamente a /scaloneta.
  */
 
 const SCALONETA_PREFIX = "/scaloneta";
