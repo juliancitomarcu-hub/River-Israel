@@ -7,7 +7,7 @@ import { PROMPT_MAESTRO } from "../lib/prompt-maestro";
 import { PROMPT_MAESTRO_SELECCION } from "../lib/prompt-maestro-seleccion";
 import { requireAdmin } from "../middleware/requireAdmin";
 import { type CategoriaImagen } from "../lib/generar-imagen-ig";
-import { credencialesTelegram } from "../lib/telegram-cred";
+import { credencialesTelegram, estadoTelegram } from "../lib/telegram-cred";
 
 function elegirPrompt(categoria: CategoriaImagen): string {
   return categoria === "seleccion" ? PROMPT_MAESTRO_SELECCION : PROMPT_MAESTRO;
@@ -18,6 +18,19 @@ const router: IRouter = Router();
 router.use("/procesar-noticia", requireAdmin);
 router.use("/enviar-telegram", requireAdmin);
 router.use("/test-scheduler", requireAdmin);
+router.use("/estado-bots", requireAdmin);
+
+/**
+ * Estado de configuración de los bots de Telegram (River / Selección) para que
+ * el panel del redactor muestre si cada uno está listo o le falta token/chat.
+ * No expone tokens ni chat_ids, sólo flags booleanos.
+ */
+router.get("/estado-bots", (_req, res) => {
+  res.json({
+    river: estadoTelegram("river"),
+    seleccion: estadoTelegram("seleccion"),
+  });
+});
 
 function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
   const tituloMatch = texto.match(/\*\*Título:\*\*\s*(.+)/);

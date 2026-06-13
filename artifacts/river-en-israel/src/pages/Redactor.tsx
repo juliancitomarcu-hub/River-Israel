@@ -103,6 +103,19 @@ interface HitoEdit {
 }
 type Estado = "idle" | "procesando" | "listo" | "error";
 type EstadoTelegram = "idle" | "enviando" | "enviado" | "error";
+
+interface EstadoBot {
+  categoria: "river" | "seleccion";
+  marca: string;
+  configurado: boolean;
+  faltaToken: boolean;
+  faltaChat: boolean;
+  chatInvalido: boolean;
+}
+interface EstadoBots {
+  river: EstadoBot;
+  seleccion: EstadoBot;
+}
 type EstadoPublicar = "idle" | "publicando" | "publicado" | "error";
 type FuenteNoticias = "google" | "tyc" | "ole" | "infobae" | "clarin" | "lanacion" | "bolavip" | "as" | "superdeportivo";
 
@@ -966,6 +979,7 @@ export default function Redactor() {
   const [errorBusqueda, setErrorBusqueda] = useState("");
   const [fuente, setFuente] = useState<FuenteNoticias>("tyc");
   const [categoria, setCategoria] = useState<"river" | "seleccion">("river");
+  const [estadoBots, setEstadoBots] = useState<EstadoBots | null>(null);
   const resultadoRef = useRef<HTMLDivElement>(null);
   const [editando, setEditando] = useState(false);
   const [resultadoEditado, setResultadoEditado] = useState("");
@@ -1656,6 +1670,23 @@ export default function Redactor() {
         cargarParaEditar(id);
       }
     }
+  }, [authStatus]);
+
+  // Estado de los bots de Telegram (River / Selección): ¿tienen token + chat?
+  const cargarEstadoBots = async () => {
+    try {
+      const res = await fetch("/api/estado-bots", { headers: adminHeaders() });
+      if (!res.ok) return;
+      const data = await res.json() as EstadoBots;
+      setEstadoBots(data);
+    } catch {
+      // Silencioso: el indicador simplemente no se muestra si falla.
+    }
+  };
+  useEffect(() => {
+    if (authStatus !== "ok") return;
+    cargarEstadoBots();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authStatus]);
 
   useEffect(() => {
@@ -2820,6 +2851,56 @@ export default function Redactor() {
                 ? "La imagen 1:1 para IG saldrá con paleta celeste/dorado, sin marcas FIFA."
                 : "La imagen 1:1 para IG saldrá con paleta River."}
             </p>
+
+            {/* Estado de los bots de Telegram + a cuál llega la categoría elegida */}
+            {estadoBots && (() => {
+              const botActual = categoria === "seleccion" ? estadoBots.seleccion : estadoBots.river;
+              const faltante = (b: EstadoBot): string => {
+                if (b.faltaToken && b.faltaChat) return "falta token y chat";
+                if (b.faltaToken) return "falta token";
+                if (b.faltaChat) return "falta chat";
+                if (b.chatInvalido) return "chat inválido";
+                return "";
+              };
+              const Badge = ({ b }: { b: EstadoBot }) => (
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                    b.configurado
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : "bg-amber-50 text-amber-700 border-amber-200"
+                  }`}
+                  title={b.configurado ? `${b.marca}: listo para enviar` : `${b.marca}: ${faltante(b)}`}
+                >
+                  <span>{b.categoria === "seleccion" ? "🇦🇷" : "🔴⚪"}</span>
+                  {b.marca}
+                  {b.configurado ? (
+                    <span className="inline-flex items-center gap-0.5"><Check className="w-3 h-3" /> configurado</span>
+                  ) : (
+                    <span>⚠️ {faltante(b)}</span>
+                  )}
+                </span>
+              );
+              return (
+                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">
+                    <Send className="w-3 h-3" /> Bots de Telegram
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge b={estadoBots.river} />
+                    <Badge b={estadoBots.seleccion} />
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    Esta nota se enviará al bot{" "}
+                    <strong className={categoria === "seleccion" ? "text-[#74ACDF]" : "text-river-red"}>
+                      {botActual.marca}
+                    </strong>
+                    {botActual.configurado
+                      ? "."
+                      : ` — pero ${faltante(botActual)}, así que el envío fallará hasta configurarlo.`}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="mb-4">
