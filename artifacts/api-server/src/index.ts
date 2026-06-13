@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { iniciarScheduler } from "./scheduler";
+import { webhookSecretParaToken } from "./lib/telegram-webhook-secret";
 
 const rawPort = process.env["PORT"];
 
@@ -21,6 +22,7 @@ const esProduccion = process.env.NODE_ENV === "production" || !!process.env.TELE
 
 async function registrarUnWebhook(bot: string, token: string, domain: string, ruta: string) {
   const webhookUrl = `https://${domain}${ruta}`;
+  const secretToken = webhookSecretParaToken(token);
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
       method: "POST",
@@ -28,6 +30,7 @@ async function registrarUnWebhook(bot: string, token: string, domain: string, ru
       body: JSON.stringify({
         url: webhookUrl,
         allowed_updates: ["message", "callback_query"],
+        ...(secretToken ? { secret_token: secretToken } : {}),
       }),
     });
     const data = await res.json() as { ok: boolean; description?: string };

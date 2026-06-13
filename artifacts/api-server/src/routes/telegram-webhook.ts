@@ -6,8 +6,25 @@ import { logger } from "../lib/logger";
 import { ejecutarCiclo, type EjecucionResultado, type Categoria } from "../scheduler";
 import { createEditToken } from "../lib/edit-tokens";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
+import { webhookSecretParaToken } from "../lib/telegram-webhook-secret";
 
 const router: IRouter = Router();
+
+// ─── VALIDACIÓN DE SECRET TOKEN ───────────────────────────────────────────────
+// Telegram envía el secret_token registrado en setWebhook en este header. Si no
+// coincide con el derivado del token del bot, rechazamos el request (no viene de
+// Telegram). Devuelve true si la request es válida; si no, responde 401 y false.
+function validarSecretToken(req: { header(name: string): string | undefined }, res: { status(code: number): { json(body: unknown): void } }, botToken: string | undefined): boolean {
+  const esperado = webhookSecretParaToken(botToken);
+  // Si el bot no está configurado no podemos validar; las rutas ya cortan abajo.
+  if (!esperado) return true;
+  const recibido = req.header("X-Telegram-Bot-Api-Secret-Token");
+  if (recibido !== esperado) {
+    res.status(401).json({ ok: false });
+    return false;
+  }
+  return true;
+}
 
 // ─── ESTADO EN MEMORIA ────────────────────────────────────────────────────────
 // Map<clave, noticiaId> donde clave = `${categoria}:${chatId}`. Se namespacea por
@@ -650,9 +667,11 @@ function procesarUpdate(
 
 // Bot de River — bot principal.
 router.post("/telegram-webhook", (req, res) => {
+  const token = process.env.TELEGRAM_TOKEN;
+  if (!validarSecretToken(req, res, token)) return;
+
   res.status(200).json({ ok: true });
 
-  const token = process.env.TELEGRAM_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
 
@@ -661,9 +680,11 @@ router.post("/telegram-webhook", (req, res) => {
 
 // Bot de la Selección ("La Scaloneta en Israel") — bot dedicado.
 router.post("/telegram-webhook-seleccion", (req, res) => {
+  const token = process.env.TELEGRAM_TOKEN_SELECCION;
+  if (!validarSecretToken(req, res, token)) return;
+
   res.status(200).json({ ok: true });
 
-  const token = process.env.TELEGRAM_TOKEN_SELECCION;
   const chatId = process.env.TELEGRAM_CHAT_SELECCION;
   if (!token || !chatId) return;
 
