@@ -19,6 +19,7 @@ router.use("/procesar-noticia", requireAdmin);
 router.use("/enviar-telegram", requireAdmin);
 router.use("/test-scheduler", requireAdmin);
 router.use("/estado-bots", requireAdmin);
+router.use("/probar-bot", requireAdmin);
 
 /**
  * Estado de configuración de los bots de Telegram (River / Selección) para que
@@ -30,6 +31,63 @@ router.get("/estado-bots", (_req, res) => {
     river: estadoTelegram("river"),
     seleccion: estadoTelegram("seleccion"),
   });
+});
+
+/**
+ * Prueba de envío real de un bot de Telegram. A diferencia de /estado-bots
+ * (que sólo verifica que las env vars existan y el chat_id tenga formato
+ * válido), esto pega de verdad contra la API de Telegram y confirma de punta a
+ * punta que el bot puede enviar: detecta tokens revocados, chats equivocados o
+ * bots expulsados del grupo. Reporta éxito o el motivo real del fallo.
+ */
+router.post("/probar-bot", async (req, res) => {
+  const { categoria } = req.body as { categoria?: CategoriaImagen };
+  const categoriaFinal: CategoriaImagen = categoria === "seleccion" ? "seleccion" : "river";
+
+  const cred = credencialesTelegram(categoriaFinal);
+  if (!cred) {
+    res.status(503).json({
+      ok: false,
+      error: categoriaFinal === "seleccion"
+        ? "El bot de la Selección no está configurado (falta token o chat)."
+        : "El bot de River no está configurado (falta token o chat).",
+    });
+    return;
+  }
+  const { token, chatId, marca } = cred;
+
+  const ahora = new Date().toLocaleString("es-AR", { timeZone: "Asia/Jerusalem" });
+  const mensaje = `✅ *Prueba de envío — ${marca}*\n\nEste es un mensaje de prueba enviado desde el panel del redactor. Si lo ves, el bot funciona correctamente.\n\n_${ahora} (hora Israel)_`;
+
+  try {
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: mensaje,
+        parse_mode: "Markdown",
+      }),
+    });
+
+    const tgData = await tgRes.json() as { ok: boolean; description?: string };
+
+    if (!tgRes.ok || !tgData.ok) {
+      req.log.warn({ categoria: categoriaFinal, description: tgData.description }, "Prueba de bot de Telegram falló");
+      res.status(502).json({
+        ok: false,
+        error: tgData.description
+          ? `Telegram rechazó el envío: ${tgData.description}`
+          : "Telegram rechazó el envío.",
+      });
+      return;
+    }
+
+    res.json({ ok: true, mensaje: `Mensaje de prueba enviado a ${marca}.` });
+  } catch (err) {
+    req.log.error({ err, categoria: categoriaFinal }, "Error de conexión probando bot de Telegram");
+    res.status(502).json({ ok: false, error: "No se pudo conectar con Telegram." });
+  }
 });
 
 function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {

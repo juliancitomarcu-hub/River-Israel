@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock, MessageCircle
+  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock, MessageCircle, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1001,6 +1001,8 @@ export default function Redactor() {
   const [fuente, setFuente] = useState<FuenteNoticias>("tyc");
   const [categoria, setCategoria] = useState<"river" | "seleccion">("river");
   const [estadoBots, setEstadoBots] = useState<EstadoBots | null>(null);
+  const [probandoBot, setProbandoBot] = useState<"river" | "seleccion" | null>(null);
+  const [resultadoPrueba, setResultadoPrueba] = useState<Record<"river" | "seleccion", { ok: boolean; msg: string } | undefined>>({ river: undefined, seleccion: undefined });
   const resultadoRef = useRef<HTMLDivElement>(null);
   const [editando, setEditando] = useState(false);
   const [resultadoEditado, setResultadoEditado] = useState("");
@@ -1747,6 +1749,29 @@ export default function Redactor() {
     cargarEstadoBots();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authStatus]);
+
+  // Prueba de envío real de un bot: pega contra Telegram y reporta éxito/fallo.
+  const probarBot = async (cat: "river" | "seleccion") => {
+    setProbandoBot(cat);
+    setResultadoPrueba((prev) => ({ ...prev, [cat]: undefined }));
+    try {
+      const res = await fetch("/api/probar-bot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
+        body: JSON.stringify({ categoria: cat }),
+      });
+      const data = await res.json() as { ok?: boolean; mensaje?: string; error?: string };
+      if (res.ok && data.ok) {
+        setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: true, msg: data.mensaje ?? "Mensaje de prueba enviado." } }));
+      } else {
+        setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: false, msg: data.error ?? "No se pudo enviar la prueba." } }));
+      }
+    } catch {
+      setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al probar el bot." } }));
+    } finally {
+      setProbandoBot(null);
+    }
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2930,32 +2955,57 @@ export default function Redactor() {
                 if (b.chatInvalido) return "chat inválido";
                 return "";
               };
-              const Badge = ({ b }: { b: EstadoBot }) => (
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                    b.configurado
-                      ? "bg-green-50 text-green-700 border-green-200"
-                      : "bg-amber-50 text-amber-700 border-amber-200"
-                  }`}
-                  title={b.configurado ? `${b.marca}: listo para enviar` : `${b.marca}: ${faltante(b)}`}
-                >
-                  <span>{b.categoria === "seleccion" ? "🇦🇷" : "🔴⚪"}</span>
-                  {b.marca}
-                  {b.configurado ? (
-                    <span className="inline-flex items-center gap-0.5"><Check className="w-3 h-3" /> configurado</span>
-                  ) : (
-                    <span>⚠️ {faltante(b)}</span>
-                  )}
-                </span>
-              );
+              const FilaBot = ({ b }: { b: EstadoBot }) => {
+                const prueba = resultadoPrueba[b.categoria];
+                const probando = probandoBot === b.categoria;
+                return (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                        b.configurado
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
+                      }`}
+                      title={b.configurado ? `${b.marca}: listo para enviar` : `${b.marca}: ${faltante(b)}`}
+                    >
+                      <span>{b.categoria === "seleccion" ? "🇦🇷" : "🔴⚪"}</span>
+                      {b.marca}
+                      {b.configurado ? (
+                        <span className="inline-flex items-center gap-0.5"><Check className="w-3 h-3" /> configurado</span>
+                      ) : (
+                        <span>⚠️ {faltante(b)}</span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => probarBot(b.categoria)}
+                      disabled={probando || !b.configurado}
+                      title={b.configurado ? "Enviar un mensaje de prueba a este bot" : "Configurá el bot antes de probarlo"}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-gray-300 bg-white text-gray-600 hover:border-river-red hover:text-river-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {probando ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Enviando…</>
+                      ) : (
+                        <><Send className="w-3 h-3" /> Enviar prueba</>
+                      )}
+                    </button>
+                    {prueba && (
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${prueba.ok ? "text-green-700" : "text-red-600"}`}>
+                        {prueba.ok ? <Check className="w-3 h-3" /> : <span>✗</span>}
+                        {prueba.msg}
+                      </span>
+                    )}
+                  </div>
+                );
+              };
               return (
                 <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">
                     <Send className="w-3 h-3" /> Bots de Telegram
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge b={estadoBots.river} />
-                    <Badge b={estadoBots.seleccion} />
+                  <div className="flex flex-col gap-2">
+                    <FilaBot b={estadoBots.river} />
+                    <FilaBot b={estadoBots.seleccion} />
                   </div>
                   <p className="text-[11px] text-gray-500 mt-2">
                     Esta nota se enviará al bot{" "}
