@@ -60,7 +60,7 @@ function extractToken(req: Request): string {
 // creada vía /admin/login, O una sesión scoped (canjeada desde un edit_token
 // de Telegram). Las sesiones devuelven su expiresAt para que la UI pueda
 // avisar antes de que caduque.
-router.get("/admin/check", (req, res) => {
+router.get("/admin/check", async (req, res) => {
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) {
     res.status(503).json({ error: "Auth admin no configurada en el servidor" });
@@ -75,12 +75,12 @@ router.get("/admin/check", (req, res) => {
     res.json({ ok: true, scope: "admin", expiresAt: null });
     return;
   }
-  const adminSession = getAdminSession(provided);
+  const adminSession = await getAdminSession(provided);
   if (adminSession) {
     res.json({ ok: true, scope: "admin", expiresAt: adminSession.expiresAt });
     return;
   }
-  const session = getNoticiaSession(provided);
+  const session = await getNoticiaSession(provided);
   if (session) {
     res.json({ ok: true, scope: "noticia", noticiaId: session.noticiaId });
     return;
@@ -91,7 +91,7 @@ router.get("/admin/check", (req, res) => {
 // Login con la contraseña de admin: crea una sesión efímera y la guarda en una
 // cookie httpOnly. Ya no devolvemos el sessionToken en el body — así nunca
 // queda accesible para scripts (defensa contra XSS).
-router.post("/admin/login", (req, res) => {
+router.post("/admin/login", async (req, res) => {
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) {
     req.log.error("ADMIN_TOKEN no está configurado — rechazando login");
@@ -108,15 +108,15 @@ router.post("/admin/login", (req, res) => {
     res.status(401).json({ error: "Contraseña incorrecta" });
     return;
   }
-  const session = createAdminSession();
+  const session = await createAdminSession();
   setSessionCookie(res, session.token, ADMIN_SESSION_TTL_MS);
   res.json({ ok: true, expiresAt: session.expiresAt });
 });
 
 // Revoca la sesión admin actual (si la hay) y borra la cookie. Idempotente.
-router.post("/admin/logout", (req, res) => {
+router.post("/admin/logout", async (req, res) => {
   const provided = extractToken(req);
-  if (provided) revokeAdminSession(provided);
+  if (provided) await revokeAdminSession(provided);
   clearSessionCookie(res);
   res.json({ ok: true });
 });
@@ -126,7 +126,7 @@ router.post("/admin/logout", (req, res) => {
 // aviso amarillo en el Redactor, así el editor no pierde lo que está
 // escribiendo. Sólo funciona con sesiones efímeras (admin o noticia); el
 // ADMIN_TOKEN permanente no tiene caducidad y devuelve expiresAt=null.
-router.post("/admin/renew", (req, res) => {
+router.post("/admin/renew", async (req, res) => {
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) {
     res.status(503).json({ error: "Auth admin no configurada en el servidor" });
@@ -143,14 +143,14 @@ router.post("/admin/renew", (req, res) => {
     res.json({ ok: true, scope: "admin", expiresAt: null });
     return;
   }
-  const renewedAdmin = extendAdminSession(provided);
+  const renewedAdmin = await extendAdminSession(provided);
   if (renewedAdmin) {
     // Re-emitimos la cookie para refrescar también su maxAge en el navegador.
     setSessionCookie(res, provided, ADMIN_SESSION_TTL_MS);
     res.json({ ok: true, scope: "admin", expiresAt: renewedAdmin.expiresAt });
     return;
   }
-  const renewedNoticia = extendNoticiaSession(provided);
+  const renewedNoticia = await extendNoticiaSession(provided);
   if (renewedNoticia) {
     setSessionCookie(res, provided, SESSION_TTL_MS);
     res.json({ ok: true, scope: "noticia", expiresAt: renewedNoticia.expiresAt });
@@ -183,7 +183,7 @@ router.post("/admin/exchange-edit-token", async (req, res) => {
   // Si el token estaba scoped a una noticia → sesión efímera scoped a esa nota.
   // Si no (ej: link del resumen diario de hebreo) → sesión admin completa corta.
   if (consumed.noticiaId === null) {
-    const session = createAdminSession();
+    const session = await createAdminSession();
     setSessionCookie(res, session.token, ADMIN_SESSION_TTL_MS);
     res.json({
       ok: true,
@@ -192,7 +192,7 @@ router.post("/admin/exchange-edit-token", async (req, res) => {
     });
     return;
   }
-  const session = createNoticiaSession(consumed.noticiaId);
+  const session = await createNoticiaSession(consumed.noticiaId);
   setSessionCookie(res, session.token, SESSION_TTL_MS);
   res.json({
     ok: true,

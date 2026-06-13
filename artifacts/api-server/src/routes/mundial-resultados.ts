@@ -60,13 +60,13 @@ function escribir(store: Store): void {
   fs.writeFileSync(FILE, JSON.stringify(store, null, 2), "utf-8");
 }
 
-function autorizado(req: Parameters<Parameters<IRouter["get"]>[1]>[0]): boolean {
+async function autorizado(req: Parameters<Parameters<IRouter["get"]>[1]>[0]): Promise<boolean> {
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) return false;
   const provided = req.header("x-admin-token");
   if (!provided) return false;
   if (provided === expected) return true;
-  return getAdminSession(provided) !== null;
+  return (await getAdminSession(provided)) !== null;
 }
 
 router.get("/mundial/resultados", (_req, res) => {
@@ -75,8 +75,8 @@ router.get("/mundial/resultados", (_req, res) => {
   res.json({ resultados: store, actualizadoEn: new Date().toISOString() });
 });
 
-router.post("/mundial/resultado/:id", (req, res) => {
-  if (!autorizado(req)) {
+router.post("/mundial/resultado/:id", async (req, res) => {
+  if (!(await autorizado(req))) {
     res.status(401).json({ error: "No autorizado" });
     return;
   }
@@ -97,8 +97,8 @@ router.post("/mundial/resultado/:id", (req, res) => {
   res.json({ ok: true, id, resultado: store[id] });
 });
 
-router.delete("/mundial/resultado/:id", (req, res) => {
-  if (!autorizado(req)) {
+router.delete("/mundial/resultado/:id", async (req, res) => {
+  if (!(await autorizado(req))) {
     res.status(401).json({ error: "No autorizado" });
     return;
   }

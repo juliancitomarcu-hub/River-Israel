@@ -9,7 +9,7 @@ import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
-import { createEditToken, createLongEditToken, purgeExpiredEditTokens } from "./lib/edit-tokens";
+import { createEditToken, createLongEditToken, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
 import { credencialesTelegram } from "./lib/telegram-cred";
 import { leerRedactorSettings, guardarRedactorSettings } from "./lib/redactor-settings";
 
@@ -847,16 +847,18 @@ export function iniciarScheduler(): void {
 
   iniciarResumenHebreoDiario();
 
-  // Limpieza de edit_tokens expirados/usados — corre cada hora.
+  // Limpieza de edit_tokens y sesiones del panel expirados — corre cada hora.
   const UNA_HORA_MS = 60 * 60 * 1000;
-  purgeExpiredEditTokens().catch((err) =>
-    logger.error({ err }, "purgeExpiredEditTokens: error inicial"),
-  );
-  setInterval(() => {
+  const purgar = (etapa: string): void => {
     purgeExpiredEditTokens().catch((err) =>
-      logger.error({ err }, "purgeExpiredEditTokens: error periódico"),
+      logger.error({ err }, `purgeExpiredEditTokens: error ${etapa}`),
     );
-  }, UNA_HORA_MS);
+    purgeExpiredSessions().catch((err) =>
+      logger.error({ err }, `purgeExpiredSessions: error ${etapa}`),
+    );
+  };
+  purgar("inicial");
+  setInterval(() => purgar("periódico"), UNA_HORA_MS);
 
   setTimeout(() => {
     ejecutarCicloPeriodico();

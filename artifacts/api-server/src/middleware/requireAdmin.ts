@@ -13,9 +13,9 @@ function extractToken(req: Request): string | undefined {
 // Acepta el ADMIN_TOKEN permanente (env var, para curl / scripts) o un
 // sessionToken de admin canjeado vía /admin/login. Las sesiones caducan
 // solas; el ADMIN_TOKEN sigue siendo válido para uso interno.
-function isFullAdmin(provided: string, expected: string): boolean {
+async function isFullAdmin(provided: string, expected: string): Promise<boolean> {
   if (provided === expected) return true;
-  if (getAdminSession(provided)) return true;
+  if (await getAdminSession(provided)) return true;
   return false;
 }
 
@@ -27,11 +27,20 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
   const provided = extractToken(req);
-  if (!provided || !isFullAdmin(provided, expected)) {
+  if (!provided) {
     res.status(401).json({ error: "No autorizado" });
     return;
   }
-  next();
+  void (async () => {
+    if (!(await isFullAdmin(provided, expected))) {
+      res.status(401).json({ error: "No autorizado" });
+      return;
+    }
+    next();
+  })().catch((err: unknown) => {
+    req.log.error({ err }, "requireAdmin falló");
+    res.status(500).json({ error: "Error interno" });
+  });
 }
 
 // Permite acceso si:
@@ -55,9 +64,14 @@ export function requireAdminOrAnyNoticiaSession(req: Request, res: Response, nex
     res.status(401).json({ error: "No autorizado" });
     return;
   }
-  if (isFullAdmin(provided, expected)) { next(); return; }
-  if (getNoticiaSession(provided)) { next(); return; }
-  res.status(401).json({ error: "No autorizado" });
+  void (async () => {
+    if (await isFullAdmin(provided, expected)) { next(); return; }
+    if (await getNoticiaSession(provided)) { next(); return; }
+    res.status(401).json({ error: "No autorizado" });
+  })().catch((err: unknown) => {
+    req.log.error({ err }, "requireAdminOrAnyNoticiaSession falló");
+    res.status(500).json({ error: "Error interno" });
+  });
 }
 
 export function requireAdminOrNoticiaSession(getNoticiaId: (req: Request) => number | null): RequestHandler {
@@ -73,20 +87,25 @@ export function requireAdminOrNoticiaSession(getNoticiaId: (req: Request) => num
       res.status(401).json({ error: "No autorizado" });
       return;
     }
-    if (isFullAdmin(provided, expected)) {
+    void (async () => {
+      if (await isFullAdmin(provided, expected)) {
+        next();
+        return;
+      }
+      const session = await getNoticiaSession(provided);
+      if (!session) {
+        res.status(401).json({ error: "No autorizado" });
+        return;
+      }
+      const reqNoticiaId = getNoticiaId(req);
+      if (reqNoticiaId === null || reqNoticiaId !== session.noticiaId) {
+        res.status(403).json({ error: "Sesión no autorizada para este recurso" });
+        return;
+      }
       next();
-      return;
-    }
-    const session = getNoticiaSession(provided);
-    if (!session) {
-      res.status(401).json({ error: "No autorizado" });
-      return;
-    }
-    const reqNoticiaId = getNoticiaId(req);
-    if (reqNoticiaId === null || reqNoticiaId !== session.noticiaId) {
-      res.status(403).json({ error: "Sesión no autorizada para este recurso" });
-      return;
-    }
-    next();
+    })().catch((err: unknown) => {
+      req.log.error({ err }, "requireAdminOrNoticiaSession falló");
+      res.status(500).json({ error: "Error interno" });
+    });
   };
 }

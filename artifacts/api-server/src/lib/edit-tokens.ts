@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { db, editTokensTable } from "@workspace/db";
+import { db, editTokensTable, panelSessionsTable } from "@workspace/db";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { logger } from "./logger";
 
@@ -14,23 +14,16 @@ export const SESSION_TTL_MS = 30 * 60 * 1000;
 // caduca sola.
 export const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
-interface SessionEntry {
-  noticiaId: number;
-  expiresAt: number;
-}
-
-interface AdminSessionEntry {
-  expiresAt: number;
-}
-
-// Sessions siguen en memoria (otra tarea: pasarlas a cookies seguras).
-const sessions = new Map<string, SessionEntry>();
-const adminSessions = new Map<string, AdminSessionEntry>();
-
-function purgeExpiredSessions(): void {
-  const now = Date.now();
-  for (const [k, v] of sessions) if (v.expiresAt <= now) sessions.delete(k);
-  for (const [k, v] of adminSessions) if (v.expiresAt <= now) adminSessions.delete(k);
+// Limpia sesiones del panel (admin + noticia) ya caducadas. Se llama desde el
+// scheduler junto con purgeExpiredEditTokens para que la tabla no crezca.
+export async function purgeExpiredSessions(): Promise<void> {
+  try {
+    await db
+      .delete(panelSessionsTable)
+      .where(lt(panelSessionsTable.expiresAt, new Date()));
+  } catch (err) {
+    logger.error({ err }, "purgeExpiredSessions falló");
+  }
 }
 
 // Limpia tokens expirados o ya usados hace más de un día. Se llama desde el
@@ -93,76 +86,110 @@ export async function consumeEditToken(
   return { noticiaId: row.noticiaId };
 }
 
-export function createNoticiaSession(noticiaId: number): { token: string; expiresAt: number } {
-  purgeExpiredSessions();
+export async function createNoticiaSession(
+  noticiaId: number,
+): Promise<{ token: string; expiresAt: number }> {
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = Date.now() + SESSION_TTL_MS;
-  sessions.set(token, { noticiaId, expiresAt });
-  return { token, expiresAt };
+  const expiresAtMs = Date.now() + SESSION_TTL_MS;
+  await db.insert(panelSessionsTable).values({
+    token,
+    scope: "noticia",
+    noticiaId,
+    expiresAt: new Date(expiresAtMs),
+  });
+  return { token, expiresAt: expiresAtMs };
 }
 
-export function getNoticiaSession(token: string): { noticiaId: number } | null {
-  purgeExpiredSessions();
-  const entry = sessions.get(token);
-  if (!entry) return null;
-  if (entry.expiresAt <= Date.now()) {
-    sessions.delete(token);
-    return null;
-  }
-  return { noticiaId: entry.noticiaId };
+export async function getNoticiaSession(token: string): Promise<{ noticiaId: number } | null> {
+  const now = new Date();
+  const rows = await db
+    .select({ noticiaId: panelSessionsTable.noticiaId })
+    .from(panelSessionsTable)
+    .where(
+      and(
+        eq(panelSessionsTable.token, token),
+        eq(panelSessionsTable.scope, "noticia"),
+        sql`${panelSessionsTable.expiresAt} > ${now}`,
+      ),
+    )
+    .limit(1);
+  const row = rows[0];
+  if (!row || row.noticiaId === null) return null;
+  return { noticiaId: row.noticiaId };
 }
 
 // Sesión completa de admin (creada vía /admin/login con la contraseña).
 // Tiene mismos permisos que el ADMIN_TOKEN permanente pero caduca sola.
-export function createAdminSession(): { token: string; expiresAt: number } {
-  purgeExpiredSessions();
+export async function createAdminSession(): Promise<{ token: string; expiresAt: number }> {
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
-  adminSessions.set(token, { expiresAt });
-  return { token, expiresAt };
+  const expiresAtMs = Date.now() + ADMIN_SESSION_TTL_MS;
+  await db.insert(panelSessionsTable).values({
+    token,
+    scope: "admin",
+    noticiaId: null,
+    expiresAt: new Date(expiresAtMs),
+  });
+  return { token, expiresAt: expiresAtMs };
 }
 
-export function getAdminSession(token: string): { expiresAt: number } | null {
-  purgeExpiredSessions();
-  const entry = adminSessions.get(token);
-  if (!entry) return null;
-  if (entry.expiresAt <= Date.now()) {
-    adminSessions.delete(token);
-    return null;
-  }
-  return { expiresAt: entry.expiresAt };
+export async function getAdminSession(token: string): Promise<{ expiresAt: number } | null> {
+  const now = new Date();
+  const rows = await db
+    .select({ expiresAt: panelSessionsTable.expiresAt })
+    .from(panelSessionsTable)
+    .where(
+      and(
+        eq(panelSessionsTable.token, token),
+        eq(panelSessionsTable.scope, "admin"),
+        sql`${panelSessionsTable.expiresAt} > ${now}`,
+      ),
+    )
+    .limit(1);
+  const row = rows[0];
+  if (!row) return null;
+  return { expiresAt: row.expiresAt.getTime() };
 }
 
-export function revokeAdminSession(token: string): void {
-  adminSessions.delete(token);
+export async function revokeAdminSession(token: string): Promise<void> {
+  await db.delete(panelSessionsTable).where(eq(panelSessionsTable.token, token));
 }
 
 // Renueva una sesión admin viva: empuja el expiresAt hasta ahora + TTL completo.
 // No emite un token nuevo (la UI ya lo tiene guardado). Si la sesión no existe
 // o ya caducó devuelve null y la UI tiene que mandar al login.
-export function extendAdminSession(token: string): { expiresAt: number } | null {
-  purgeExpiredSessions();
-  const entry = adminSessions.get(token);
-  if (!entry) return null;
-  if (entry.expiresAt <= Date.now()) {
-    adminSessions.delete(token);
-    return null;
-  }
-  const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
-  entry.expiresAt = expiresAt;
-  return { expiresAt };
+export async function extendAdminSession(token: string): Promise<{ expiresAt: number } | null> {
+  const now = new Date();
+  const expiresAtMs = Date.now() + ADMIN_SESSION_TTL_MS;
+  const rows = await db
+    .update(panelSessionsTable)
+    .set({ expiresAt: new Date(expiresAtMs) })
+    .where(
+      and(
+        eq(panelSessionsTable.token, token),
+        eq(panelSessionsTable.scope, "admin"),
+        sql`${panelSessionsTable.expiresAt} > ${now}`,
+      ),
+    )
+    .returning({ token: panelSessionsTable.token });
+  if (!rows[0]) return null;
+  return { expiresAt: expiresAtMs };
 }
 
 // Mismo concepto para sesiones scoped a una noticia (links de Telegram).
-export function extendNoticiaSession(token: string): { expiresAt: number } | null {
-  purgeExpiredSessions();
-  const entry = sessions.get(token);
-  if (!entry) return null;
-  if (entry.expiresAt <= Date.now()) {
-    sessions.delete(token);
-    return null;
-  }
-  const expiresAt = Date.now() + SESSION_TTL_MS;
-  entry.expiresAt = expiresAt;
-  return { expiresAt };
+export async function extendNoticiaSession(token: string): Promise<{ expiresAt: number } | null> {
+  const now = new Date();
+  const expiresAtMs = Date.now() + SESSION_TTL_MS;
+  const rows = await db
+    .update(panelSessionsTable)
+    .set({ expiresAt: new Date(expiresAtMs) })
+    .where(
+      and(
+        eq(panelSessionsTable.token, token),
+        eq(panelSessionsTable.scope, "noticia"),
+        sql`${panelSessionsTable.expiresAt} > ${now}`,
+      ),
+    )
+    .returning({ token: panelSessionsTable.token });
+  if (!rows[0]) return null;
+  return { expiresAt: expiresAtMs };
 }

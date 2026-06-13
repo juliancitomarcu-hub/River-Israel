@@ -24,3 +24,4 @@ export * from "./visitas";
 export * from "./suscriptores";
 export * from "./edit-tokens";
 export * from "./comentarios";
+export * from "./panel-sessions";
