@@ -6,6 +6,7 @@ import {
   BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock, MessageCircle, Loader2, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { resolverPortada } from "@/hooks/use-river-data";
 import { Textarea } from "@/components/ui/textarea";
 
 type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "publicaciones-libres-seleccion" | "historia" | "postulantes" | "comentarios" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
@@ -1673,7 +1674,7 @@ export default function Redactor() {
     try {
       let blob: Blob;
       if (imagenPortada) {
-        const res = await fetch(`/api/storage${imagenPortada}`);
+        const res = await fetch(resolverPortada(imagenPortada));
         if (!res.ok) throw new Error("No se pudo cargar la imagen desde el servidor");
         blob = await res.blob();
       } else {
@@ -1709,7 +1710,7 @@ export default function Redactor() {
         // Cargar imagen existente si la hay
         if (n.imagenPortada) {
           setImagenPortada(n.imagenPortada);
-          setImagenPreview(`/api/storage${n.imagenPortada}`);
+          setImagenPreview(resolverPortada(n.imagenPortada));
         }
       }
     } catch { /* silencioso */ }
@@ -2516,7 +2517,7 @@ export default function Redactor() {
                 <div className="flex gap-4 p-4">
                   {n.imagenPortada && (
                     <img
-                      src={`/api/storage${n.imagenPortada}`}
+                      src={resolverPortada(n.imagenPortada)}
                       alt=""
                       className="w-24 h-16 object-cover rounded-xl shrink-0"
                     />
@@ -2636,7 +2637,7 @@ export default function Redactor() {
                 <div className="flex gap-4 p-4">
                   {n.imagenPortada && (
                     <img
-                      src={`/api/storage${n.imagenPortada}`}
+                      src={resolverPortada(n.imagenPortada)}
                       alt=""
                       className="w-24 h-16 object-cover rounded-xl shrink-0"
                     />
@@ -4399,7 +4400,7 @@ export default function Redactor() {
                 <div className="flex gap-4 p-4">
                   {n.imagenPortada && (
                     <img
-                      src={`/api/storage${n.imagenPortada}`}
+                      src={resolverPortada(n.imagenPortada)}
                       alt=""
                       className="w-24 h-16 object-cover rounded-xl shrink-0"
                     />

@@ -74,6 +74,17 @@ function formatearFecha(dateStr: string): string {
   });
 }
 
+// Resuelve la URL de una imagen de portada según su formato:
+// - /objects/...  → servida por la API desde object storage
+// - /images/...   → asset estático del frontend (respeta BASE_URL)
+// - http(s)://... → URL externa (notas viejas), se usa tal cual
+export function resolverPortada(url: string): string {
+  if (url.startsWith("http")) return url;
+  if (url.startsWith("/objects/")) return `/api/storage${url}`;
+  if (url.startsWith("/images/")) return `${import.meta.env.BASE_URL}${url.slice(1)}`;
+  return `/api/storage${url}`;
+}
+
 function noticiaANewsItem(n: NoticiaPublicada): NewsItem {
   const primerParrafo = n.contenido
     .split("\n")
@@ -94,7 +105,7 @@ function noticiaANewsItem(n: NoticiaPublicada): NewsItem {
   ];
 
   const imageUrl = n.imagenPortada
-    ? `/api/storage${n.imagenPortada}`
+    ? resolverPortada(n.imagenPortada)
     : IMAGENES[n.id % IMAGENES.length];
 
   return {

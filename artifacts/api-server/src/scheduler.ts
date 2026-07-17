@@ -12,6 +12,7 @@ import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 import { createEditToken, createLongEditToken, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
 import { credencialesTelegram } from "./lib/telegram-cred";
 import { leerRedactorSettings, guardarRedactorSettings } from "./lib/redactor-settings";
+import { ObjectStorageService } from "./lib/objectStorage";
 
 export type Categoria = "river" | "seleccion";
 
@@ -340,6 +341,79 @@ export type EjecucionResultado =
   | { tipo: "ok"; titulo: string; id: number; fuente: string }
   | { tipo: "error"; mensaje: string };
 
+// ─── PORTADA GARANTIZADA ──────────────────────────────────────────────────────
+// Toda nota publicada debe tener foto de portada:
+// 1. Se descarga la imagen scrapeada del artículo y se guarda en object storage
+//    (URL /objects/... que el frontend ya sabe resolver).
+// 2. Si no hay imagen o falla la descarga, se usa una foto de respaldo de la
+//    galería del sitio (estáticas en /images/galeria/).
+const PORTADAS_FALLBACK = Array.from({ length: 12 }, (_, i) =>
+  `/images/galeria/foto-${String(i + 1).padStart(2, "0")}.jpeg`,
+);
+
+function portadaFallback(): string {
+  return PORTADAS_FALLBACK[Math.floor(Math.random() * PORTADAS_FALLBACK.length)];
+}
+
+const EXT_POR_MIME: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/avif": "avif",
+};
+
+// Solo se descargan imágenes de URLs http(s) públicas — nunca hosts internos
+// (protección SSRF: la URL viene de una página externa scrapeada).
+function urlImagenSegura(imagenUrl: string): boolean {
+  try {
+    const u = new URL(imagenUrl);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    const host = u.hostname.toLowerCase();
+    if (host === "localhost" || host.endsWith(".local") || host.endsWith(".internal")) return false;
+    // IPv4 literal: bloquear rangos privados/loopback/link-local/metadata
+    const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+    if (ipv4) {
+      const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+      if (a === 10 || a === 127 || a === 0) return false;
+      if (a === 169 && b === 254) return false;
+      if (a === 172 && b >= 16 && b <= 31) return false;
+      if (a === 192 && b === 168) return false;
+    }
+    // IPv6 literal: bloquear todas (las fuentes de noticias no usan IPs literales)
+    if (host.includes(":")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function guardarPortadaEnStorage(imagenUrl: string): Promise<string | null> {
+  if (!urlImagenSegura(imagenUrl)) {
+    logger.warn({ imagenUrl }, "Scheduler: URL de imagen rechazada por seguridad");
+    return null;
+  }
+  try {
+    const res = await fetch(imagenUrl, {
+      headers: { "User-Agent": UA },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return null;
+    const contentType = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    const ext = EXT_POR_MIME[contentType];
+    if (!ext) return null;
+    const buffer = Buffer.from(await res.arrayBuffer());
+    // Sanidad: entre 1KB y 15MB
+    if (buffer.length < 1024 || buffer.length > 15 * 1024 * 1024) return null;
+    const storage = new ObjectStorageService();
+    const subPath = `portadas/portada-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    return await storage.uploadBuffer(subPath, buffer, contentType);
+  } catch (err) {
+    logger.warn({ err, imagenUrl }, "Scheduler: no se pudo guardar la portada en storage");
+    return null;
+  }
+}
+
 // ─── FLAG ANTI-CONCURRENCIA ───────────────────────────────────────────────────
 let enEjecucion = false;
 
@@ -520,8 +594,20 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     }
     const fuenteNombre = noticiaElegida.fuente ?? fuente;
 
+    // ── PORTADA GARANTIZADA ───────────────────────────────────────────────
+    // Descargamos la imagen del artículo al object storage; si no hay o falla,
+    // usamos una foto de respaldo de la galería. Nunca se publica sin foto.
+    let imagenPortadaFinal: string | null = null;
+    if (imagenAutoUrl) {
+      imagenPortadaFinal = await guardarPortadaEnStorage(imagenAutoUrl);
+    }
+    const usoFallback = !imagenPortadaFinal;
+    if (!imagenPortadaFinal) {
+      imagenPortadaFinal = portadaFallback();
+      logger.info({ portada: imagenPortadaFinal }, "Scheduler: usando foto de portada de respaldo");
+    }
+
     // ── GUARDAR EN DB ─────────────────────────────────────────────────────
-    // Siempre guardamos la imagen extraída automáticamente.
     // Modo automático: autopublicación directa.
     // Modo manual (/buscar, /noticia): pendiente de aprobación.
     const [savedNoticia] = await db
@@ -535,7 +621,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         categoria,
         publicada: esAutomatico,
         pendiente: !esAutomatico,
-        imagenPortada: imagenAutoUrl ?? "",
+        imagenPortada: imagenPortadaFinal,
       })
       .returning();
 
@@ -565,7 +651,9 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
 
     if (esAutomatico) {
       // ── MODO AUTOMÁTICO: FYI solo, ya está publicada ──────────────────
-      const fotoTexto = imagenAutoUrl ? "\n🖼 _Foto de portada incluida_" : "\n📷 _Sin foto (podés agregar desde el Redactor)_";
+      const fotoTexto = usoFallback
+        ? "\n🖼 _Foto de portada de respaldo (podés cambiarla desde el Redactor)_"
+        : "\n🖼 _Foto de portada del artículo incluida_";
       const etiquetaCat = categoria === "seleccion" ? "🇦🇷 _Categoría: Selección Argentina_\n" : "⚪️🔴 _Categoría: River_\n";
       const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n${etiquetaCat}📡 _Fuente: ${fuenteNombre}_${fotoTexto}`;
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -877,7 +965,9 @@ function siguienteCategoriaPeriodica(): Categoria {
 
 function ejecutarCicloPeriodico(): void {
   const categoria = siguienteCategoriaPeriodica();
-  ejecutarCiclo(undefined, false, categoria).catch((err) =>
+  // Modo automático: la nota se publica directamente en el sitio (con foto de
+  // portada garantizada) y el bot de Telegram avisa con un link de edición.
+  ejecutarCiclo(undefined, true, categoria).catch((err) =>
     logger.error({ err, categoria }, "Scheduler: error no capturado en ciclo periódico"),
   );
 }
