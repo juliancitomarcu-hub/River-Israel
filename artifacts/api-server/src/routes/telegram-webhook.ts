@@ -412,13 +412,15 @@ async function procesarCallback(
 
       const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
       const fotoTexto = noticia?.imagenPortada ? "\n🖼 _Publicada con foto de portada._" : "";
-      const linkSitio = `\n\n🌐 [Ver en el sitio](https://${dominioTelegram}/actualidad)`;
+      const linkSitio = `\n\n🌐 [Ver la nota](https://${dominioTelegram}/noticia/${noticiaId})`;
 
+      const textoPublicada = `✅ *PUBLICADA* — ${noticia?.titulo ?? "Nota publicada"}${fotoTexto}${linkSitio}`;
       if (messageId) {
-        await editarMensajeTelegram(
-          token, chatId, messageId,
-          `✅ *PUBLICADA* — ${noticia?.titulo ?? "Nota publicada"}${fotoTexto}${linkSitio}`
-        );
+        await editarMensajeTelegram(token, chatId, messageId, textoPublicada);
+      } else {
+        // Fallback: sin messageId no se puede editar — enviamos aviso nuevo
+        // para que la publicación siempre quede notificada.
+        await enviarMensajeTelegram(token, chatId, textoPublicada);
       }
 
     } else if (data.startsWith("editar_")) {

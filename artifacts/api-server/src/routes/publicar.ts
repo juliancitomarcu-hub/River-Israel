@@ -5,6 +5,7 @@ import { count as drizzleCount, desc, eq, and, sql } from "drizzle-orm";
 import { sql as sqlRaw } from "drizzle-orm";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
 import { requireAdmin, requireAdminOrNoticiaSession } from "../middleware/requireAdmin";
+import { notificarNotaPublicada } from "../lib/notificar-publicacion";
 
 const requireAdminOrThisNoticia = requireAdminOrNoticiaSession((req) => {
   const raw = req.params.id;
@@ -101,6 +102,9 @@ router.post("/publicar-noticia", requireAdmin, async (req, res) => {
     // 🌐 Traducir al hebreo en background (fire-and-forget)
     traducirYGuardarHebreo(noticia.id).catch(() => {});
 
+    // 📣 Aviso de Telegram (fire-and-forget)
+    notificarNotaPublicada(noticia);
+
     res.json({ ok: true, id: noticia.id, titulo: noticia.titulo });
   } catch (err) {
     req.log.error({ err }, "Error publicando noticia");
@@ -128,6 +132,11 @@ router.put("/noticia-pendiente/:id", requireAdminOrThisNoticia, async (req, res)
     res.status(400).json({ error: "Faltan datos" }); return;
   }
   try {
+    // Estado previo: solo avisamos por Telegram si la nota NO estaba publicada
+    // (una edición de nota ya publicada no debe generar otro aviso).
+    const [previa] = await db.select({ publicada: noticiasTable.publicada })
+      .from(noticiasTable).where(eq(noticiasTable.id, id)).limit(1);
+
     const { titulo, contenido, tags } = parsearResultado(textoResultado);
     const updateData: Record<string, unknown> = { titulo, contenido, tags, publicada: true, pendiente: false };
     if (imagenPortada && imagenPortada.startsWith("/objects/")) {
@@ -147,6 +156,11 @@ router.put("/noticia-pendiente/:id", requireAdminOrThisNoticia, async (req, res)
 
     // 🌐 Re-traducir al hebreo en background
     traducirYGuardarHebreo(updated.id).catch(() => {});
+
+    // 📣 Aviso de Telegram solo si pasó de no-publicada a publicada
+    if (previa && !previa.publicada) {
+      notificarNotaPublicada(updated);
+    }
 
     res.json({ ok: true, noticia: updated });
   } catch (err) {

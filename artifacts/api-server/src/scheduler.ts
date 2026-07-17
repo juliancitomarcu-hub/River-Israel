@@ -752,6 +752,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
           parse_mode: "Markdown",
           reply_markup: {
             inline_keyboard: [[
+              { text: "🌐 Ver la nota", url: `https://${dominioTelegram}/noticia/${savedNoticia.id}` },
               { text: "✏️ Editar en Redactor", url: `https://${dominioTelegram}/redactor?editar=${savedNoticia.id}&edit_token=${await createEditToken(savedNoticia.id)}` },
             ]],
           },

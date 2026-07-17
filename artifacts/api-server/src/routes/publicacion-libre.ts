@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { requireAdmin } from "../middleware/requireAdmin";
+import { notificarNotaPublicada } from "../lib/notificar-publicacion";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -53,7 +54,7 @@ router.post("/publicacion-libre", requireAdmin, upload.single("imagen"), async (
     }
 
     // Guardar en DB directamente como publicada
-    await db
+    const [notaGuardada] = await db
       .insert(noticiasTable)
       .values({
         titulo: titulo.trim(),
@@ -65,28 +66,12 @@ router.post("/publicacion-libre", requireAdmin, upload.single("imagen"), async (
         pendiente: false,
         imagenPortada,
         categoria,
-      });
+      })
+      .returning();
 
-    // Notificación a Telegram (sin botones, solo aviso)
-    const token = process.env.TELEGRAM_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
-    if (token && chatId) {
-      const preview = contenido.trim().slice(0, 600) + (contenido.trim().length > 600 ? "..." : "");
-      const mensajeTg =
-        `✅ *PUBLICACIÓN LIBRE${esSel ? " 🇦🇷 SELECCIÓN" : ""} — PUBLICADA*\n\n` +
-        `*${titulo.trim()}*\n\n` +
-        `${preview}` +
-        `${imagenPortada ? "\n\n📷 _Con imagen de portada_" : ""}`;
-      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: mensajeTg,
-          parse_mode: "Markdown",
-        }),
-      }).catch(() => { /* notificación opcional, no bloquea */ });
-    }
+    // 📣 Aviso de Telegram (fire-and-forget) — usa el bot de la categoría
+    // correspondiente (River o Selección) y linkea directo a la nota.
+    notificarNotaPublicada(notaGuardada);
 
     res.json({ ok: true });
   } catch (err) {
