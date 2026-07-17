@@ -876,20 +876,28 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
   const MAX_LISTADO = 15;
   const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
 
+  // Interruptores por sección (panel /redactor; env como fallback default).
+  const settings = leerRedactorSettings();
+  const hebreoActivo = settings.resumenSeccionHebreo;
+  const postulacionesActivas = settings.resumenSeccionPostulaciones;
+  const borradoresEsActivos = settings.resumenSeccionBorradoresEs;
+
   // ── Traducciones al hebreo en borrador ──────────────────────────────────
-  const pendientesHebreo = await db
-    .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
-    .from(noticiasTable)
-    .where(and(
-      eq(noticiasTable.hebreoPublicada, false),
-      sqlRaw`char_length(coalesce(${noticiasTable.contenidoHe}, '')) > 0`,
-    ))
-    .orderBy(desc(noticiasTable.id));
+  // Desactivable desde el panel (o RESUMEN_HEBREO_DIARIO=0 como fallback).
+  const pendientesHebreo = hebreoActivo
+    ? await db
+        .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
+        .from(noticiasTable)
+        .where(and(
+          eq(noticiasTable.hebreoPublicada, false),
+          sqlRaw`char_length(coalesce(${noticiasTable.contenidoHe}, '')) > 0`,
+        ))
+        .orderBy(desc(noticiasTable.id))
+    : [];
 
   // ── Postulaciones de redactores sin revisar ─────────────────────────────
   // Se identifican por `pendiente=true` y `fuente` que arranca con "Postulación".
-  // Desactivable con RESUMEN_POSTULACIONES_DIARIO=0.
-  const postulacionesActivas = process.env.RESUMEN_POSTULACIONES_DIARIO !== "0";
+  // Desactivable desde el panel (o RESUMEN_POSTULACIONES_DIARIO=0 como fallback).
   const pendientesPostulaciones = postulacionesActivas
     ? await db
         .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
@@ -904,8 +912,7 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
   // ── Borradores en español sin publicar (modo manual, esperando aprobación) ─
   // Noticias generadas por la IA con `pendiente=true`, `publicada=false` y
   // `fuente` que NO arranca con "Postulación" (esas ya van en su propia sección).
-  // Desactivable con RESUMEN_BORRADORES_ES_DIARIO=0.
-  const borradoresEsActivos = process.env.RESUMEN_BORRADORES_ES_DIARIO !== "0";
+  // Desactivable desde el panel (o RESUMEN_BORRADORES_ES_DIARIO=0 como fallback).
   const pendientesBorradoresEs = borradoresEsActivos
     ? await db
         .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })

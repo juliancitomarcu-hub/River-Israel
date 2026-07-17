@@ -26,6 +26,13 @@ export interface RedactorSettings {
   // traducción al hebreo). Configurable desde el panel o por env. Reemplaza la
   // constante fija de 24h.
   linkResumenTtlHoras: number;
+  // Interruptores por sección del resumen diario. Cada bandera decide si su
+  // sección se consulta en la DB y aparece en el mensaje de Telegram. El default
+  // se deriva de su env var correspondiente (fallback para no romper despliegues
+  // que la usaban); una vez guardado un valor desde el panel, manda el archivo.
+  resumenSeccionHebreo: boolean;
+  resumenSeccionPostulaciones: boolean;
+  resumenSeccionBorradoresEs: boolean;
 }
 
 function ttlHorasPorEnv(): number {
@@ -41,6 +48,9 @@ function defaults(): RedactorSettings {
     resumenHebreoHora: desactivadoPorEnv ? null : 9,
     resumenHebreoUltimoEnvio: null,
     linkResumenTtlHoras: ttlHorasPorEnv(),
+    resumenSeccionHebreo: process.env.RESUMEN_HEBREO_DIARIO !== "0",
+    resumenSeccionPostulaciones: process.env.RESUMEN_POSTULACIONES_DIARIO !== "0",
+    resumenSeccionBorradoresEs: process.env.RESUMEN_BORRADORES_ES_DIARIO !== "0",
   };
 }
 
@@ -70,6 +80,12 @@ export function leerRedactorSettings(): RedactorSettings {
         typeof raw.resumenHebreoUltimoEnvio === "string" ? raw.resumenHebreoUltimoEnvio : null,
       linkResumenTtlHoras:
         ttlHorasValido(raw.linkResumenTtlHoras) ? raw.linkResumenTtlHoras : def.linkResumenTtlHoras,
+      resumenSeccionHebreo:
+        typeof raw.resumenSeccionHebreo === "boolean" ? raw.resumenSeccionHebreo : def.resumenSeccionHebreo,
+      resumenSeccionPostulaciones:
+        typeof raw.resumenSeccionPostulaciones === "boolean" ? raw.resumenSeccionPostulaciones : def.resumenSeccionPostulaciones,
+      resumenSeccionBorradoresEs:
+        typeof raw.resumenSeccionBorradoresEs === "boolean" ? raw.resumenSeccionBorradoresEs : def.resumenSeccionBorradoresEs,
     };
   } catch {
     // Archivo ausente o ilegible → usar defaults derivados del env.

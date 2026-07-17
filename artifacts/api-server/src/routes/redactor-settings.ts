@@ -20,6 +20,9 @@ router.get("/redactor-settings", (req, res) => {
   res.json({
     resumenHebreoHora: settings.resumenHebreoHora,
     linkResumenTtlHoras: settings.linkResumenTtlHoras,
+    resumenSeccionHebreo: settings.resumenSeccionHebreo,
+    resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
+    resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
   });
 });
 
@@ -27,10 +30,15 @@ router.get("/redactor-settings", (req, res) => {
 // - `resumenHebreoHora`: entero 0-23 (hora Israel) o null para desactivar.
 // - `linkResumenTtlHoras`: entero entre el mínimo y máximo permitidos (horas
 //   que dura el link de los avisos "de resumen").
+// - `resumenSeccion{Hebreo,Postulaciones,BorradoresEs}`: booleanos que activan
+//   o desactivan cada sección del resumen diario.
 router.put("/redactor-settings", (req, res) => {
   const body = req.body as {
     resumenHebreoHora?: unknown;
     linkResumenTtlHoras?: unknown;
+    resumenSeccionHebreo?: unknown;
+    resumenSeccionPostulaciones?: unknown;
+    resumenSeccionBorradoresEs?: unknown;
   };
 
   const patch: Partial<RedactorSettings> = {};
@@ -66,17 +74,39 @@ router.put("/redactor-settings", (req, res) => {
     }
   }
 
+  for (const campo of [
+    "resumenSeccionHebreo",
+    "resumenSeccionPostulaciones",
+    "resumenSeccionBorradoresEs",
+  ] as const) {
+    if (campo in body) {
+      const valor = body[campo];
+      if (typeof valor === "boolean") {
+        patch[campo] = valor;
+      } else {
+        res.status(400).json({ error: `${campo} debe ser true o false` });
+        return;
+      }
+    }
+  }
+
   const settings = guardarRedactorSettings(patch);
   req.log.info(
     {
       resumenHebreoHora: settings.resumenHebreoHora,
       linkResumenTtlHoras: settings.linkResumenTtlHoras,
+      resumenSeccionHebreo: settings.resumenSeccionHebreo,
+      resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
+      resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
     },
     "Redactor settings: configuración actualizada",
   );
   res.json({
     resumenHebreoHora: settings.resumenHebreoHora,
     linkResumenTtlHoras: settings.linkResumenTtlHoras,
+    resumenSeccionHebreo: settings.resumenSeccionHebreo,
+    resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
+    resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
   });
 });
 

@@ -1145,6 +1145,11 @@ export default function Redactor() {
   const [linkResumenTtlHoras, setLinkResumenTtlHoras] = useState<string>("");
   const [guardandoTtlResumen, setGuardandoTtlResumen] = useState(false);
   const [mensajeTtlResumen, setMensajeTtlResumen] = useState("");
+  // Interruptores por sección del resumen diario por Telegram.
+  const [resumenSeccionHebreo, setResumenSeccionHebreo] = useState(true);
+  const [resumenSeccionPostulaciones, setResumenSeccionPostulaciones] = useState(true);
+  const [resumenSeccionBorradoresEs, setResumenSeccionBorradoresEs] = useState(true);
+  const [guardandoSeccionResumen, setGuardandoSeccionResumen] = useState<string | null>(null);
   const [parrafoActivoIdx, setParrafoActivoIdx] = useState<number | null>(null);
   const esParrafosScrollRef = useRef<HTMLDivElement | null>(null);
   const heParrafosScrollRef = useRef<HTMLDivElement | null>(null);
@@ -1278,13 +1283,54 @@ export default function Redactor() {
       const res = await fetch("/api/redactor-settings", { headers: adminHeaders() });
       if (res.status === 401) { pedirAdminToken(); return; }
       if (res.ok) {
-        const data = await res.json() as { resumenHebreoHora?: number | null; linkResumenTtlHoras?: number };
+        const data = await res.json() as {
+          resumenHebreoHora?: number | null;
+          linkResumenTtlHoras?: number;
+          resumenSeccionHebreo?: boolean;
+          resumenSeccionPostulaciones?: boolean;
+          resumenSeccionBorradoresEs?: boolean;
+        };
         setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
         if (typeof data.linkResumenTtlHoras === "number") {
           setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
         }
+        if (typeof data.resumenSeccionHebreo === "boolean") setResumenSeccionHebreo(data.resumenSeccionHebreo);
+        if (typeof data.resumenSeccionPostulaciones === "boolean") setResumenSeccionPostulaciones(data.resumenSeccionPostulaciones);
+        if (typeof data.resumenSeccionBorradoresEs === "boolean") setResumenSeccionBorradoresEs(data.resumenSeccionBorradoresEs);
       }
     } catch { /* ignore */ }
+  };
+
+  const guardarSeccionResumen = async (
+    campo: "resumenSeccionHebreo" | "resumenSeccionPostulaciones" | "resumenSeccionBorradoresEs",
+    valor: boolean,
+  ) => {
+    setGuardandoSeccionResumen(campo);
+    // Optimista: reflejar el cambio enseguida y revertir si falla.
+    const setters = {
+      resumenSeccionHebreo: setResumenSeccionHebreo,
+      resumenSeccionPostulaciones: setResumenSeccionPostulaciones,
+      resumenSeccionBorradoresEs: setResumenSeccionBorradoresEs,
+    } as const;
+    setters[campo](valor);
+    try {
+      const res = await fetch("/api/redactor-settings", {
+        method: "PUT",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ [campo]: valor }),
+      });
+      if (res.status === 401) { pedirAdminToken(); setters[campo](!valor); return; }
+      if (res.ok) {
+        const data = await res.json() as Record<string, unknown>;
+        if (typeof data[campo] === "boolean") setters[campo](data[campo] as boolean);
+      } else {
+        setters[campo](!valor);
+      }
+    } catch {
+      setters[campo](!valor);
+    } finally {
+      setGuardandoSeccionResumen(null);
+    }
   };
 
   const guardarTtlResumen = async () => {
@@ -4323,6 +4369,31 @@ export default function Redactor() {
               {mensajeHoraResumen && (
                 <p className="text-xs text-gray-500 mt-2">{mensajeHoraResumen}</p>
               )}
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <p className="text-sm font-semibold text-river-black">Secciones del resumen diario</p>
+              <p className="text-xs text-gray-400 mb-2">
+                Activá o desactivá cada aviso. Las secciones apagadas no se consultan ni aparecen en el mensaje de Telegram.
+              </p>
+              <div className="space-y-2">
+                {([
+                  { campo: "resumenSeccionHebreo", valor: resumenSeccionHebreo, label: "Traducciones al hebreo pendientes" },
+                  { campo: "resumenSeccionPostulaciones", valor: resumenSeccionPostulaciones, label: "Postulaciones de redactores sin revisar" },
+                  { campo: "resumenSeccionBorradoresEs", valor: resumenSeccionBorradoresEs, label: "Borradores en español sin publicar" },
+                ] as const).map(({ campo, valor, label }) => (
+                  <label key={campo} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={valor}
+                      disabled={guardandoSeccionResumen === campo}
+                      onChange={(e) => guardarSeccionResumen(campo, e.target.checked)}
+                      className="w-4 h-4 accent-river-red disabled:opacity-50"
+                    />
+                    <span className="text-xs font-semibold text-gray-600">{label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
