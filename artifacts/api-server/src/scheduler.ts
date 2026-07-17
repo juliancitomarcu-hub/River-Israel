@@ -70,14 +70,56 @@ function guardarEstado(estado: SchedulerState): void {
 }
 
 // ─── DEDUPLICACIÓN POR URL ────────────────────────────────────────────────────
+// Normaliza la URL antes de comparar/guardar: sin hash, sin parámetros de
+// tracking (utm_*, fbclid, etc.) y sin barra final. Así la misma nota con
+// distintos parámetros no se procesa dos veces.
+function normalizarUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    u.hash = "";
+    const paramsABorrar: string[] = [];
+    u.searchParams.forEach((_v, k) => {
+      const key = k.toLowerCase();
+      if (key.startsWith("utm_") || ["fbclid", "gclid", "ref", "src", "s", "ncid", "cmpid", "outputtype"].includes(key)) {
+        paramsABorrar.push(k);
+      }
+    });
+    for (const k of paramsABorrar) u.searchParams.delete(k);
+    let s = u.toString();
+    if (s.endsWith("/")) s = s.slice(0, -1);
+    return s.toLowerCase();
+  } catch {
+    return url.trim().toLowerCase();
+  }
+}
+
+// Chequeo permanente en DB: ¿ya existe una noticia con esta URL canónica?
+// Sin ventana de tiempo ni tope de memoria — nunca se repite una URL publicada.
+async function urlYaEnDB(url: string): Promise<boolean> {
+  const normalizada = normalizarUrl(url);
+  if (!normalizada) return false;
+  try {
+    const res = await db.execute(
+      sqlRaw`SELECT 1 FROM noticias WHERE url_fuente = ${normalizada} LIMIT 1`
+    );
+    return res.rows.length > 0;
+  } catch (err) {
+    logger.error({ err }, "Scheduler: error consultando url_fuente en DB");
+    return false;
+  }
+}
+
 function urlYaProcesada(url: string, estado: SchedulerState): boolean {
   if (!url) return false;
-  return estado.urlsProcesadas.includes(url);
+  const normalizada = normalizarUrl(url);
+  return estado.urlsProcesadas.some((u) => normalizarUrl(u) === normalizada);
 }
 
 function marcarUrlProcesada(url: string, estado: SchedulerState): void {
-  if (!url || estado.urlsProcesadas.includes(url)) return;
-  estado.urlsProcesadas.push(url);
+  if (!url) return;
+  const normalizada = normalizarUrl(url);
+  if (estado.urlsProcesadas.some((u) => normalizarUrl(u) === normalizada)) return;
+  estado.urlsProcesadas.push(normalizada);
 }
 
 // ─── FILTRO DE ANTIGÜEDAD POR URL ─────────────────────────────────────────────
@@ -96,35 +138,62 @@ function urlDemaisiadoVieja(url: string): boolean {
 }
 
 // ─── DEDUPLICACIÓN POR DB ─────────────────────────────────────────────────────
-// Compara el título candidato con las noticias de los últimos 7 días.
-// Si 4 o más palabras significativas (≥5 chars) coinciden → mismo tema → saltar.
-// Umbral = 4 palabras (antes 3) para evitar falsos positivos en noticias distintas.
+// Compara el título candidato (scrapeado) con las noticias de los últimos 30 días,
+// tanto contra el título publicado (reescrito por la IA) como contra el título
+// original scrapeado (primera línea de texto_original). Esto evita repetidos
+// aunque la IA haya reescrito el título con otras palabras.
+// Umbral estricto: 2 palabras distintivas coincidentes (sin contar genéricas
+// como "river" o "argentina") → se considera el mismo tema y se salta.
+
+// Palabras que aparecen en casi todos los títulos y no distinguen una nota de
+// otra — no cuentan para el umbral de coincidencias.
+const PALABRAS_GENERICAS = new Set([
+  "river", "plate", "millonario", "millonarios", "nunez", "monumental",
+  "seleccion", "argentina", "argentino", "argentinos", "scaloneta", "mundial",
+  "futbol", "partido", "equipo", "jugador", "jugadores", "tecnico", "entrenador",
+]);
+
+function palabrasSignificativas(texto: string): string[] {
+  return texto
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z\s]/g, "")
+    .split(/\s+/)
+    .filter(p => p.length >= 5 && !PALABRAS_GENERICAS.has(p));
+}
 
 async function tituloYaProcesado(titulo: string): Promise<boolean> {
   try {
     const res = await db.execute(sqlRaw`
-      SELECT titulo FROM noticias
-      WHERE created_at > NOW() - INTERVAL '7 days'
+      SELECT titulo, texto_original FROM noticias
+      WHERE created_at > NOW() - INTERVAL '30 days'
     `);
 
-    const palabras = titulo
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z\s]/g, "")
-      .split(/\s+/)
-      .filter(p => p.length >= 5);  // palabras más largas = más significativas
+    const palabras = palabrasSignificativas(titulo);
+    // Con menos de 2 palabras distintivas no se puede comparar con confianza;
+    // en ese caso la deduplicación por URL sigue actuando.
+    if (palabras.length < 2) return false;
+    // Umbral estricto: 2 palabras distintivas coincidentes (las genéricas como
+    // "river" o "argentina" no cuentan) → mismo tema → no repetir.
+    const umbral = 2;
 
-    if (palabras.length === 0) return false;
+    for (const row of res.rows as { titulo: string; texto_original: string | null }[]) {
+      // Título original scrapeado = primera línea de texto_original
+      const tituloOriginal = (row.texto_original ?? "").split("\n")[0] ?? "";
+      const textosExistentes = [row.titulo, tituloOriginal].filter(Boolean);
 
-    for (const row of res.rows as { titulo: string }[]) {
-      const existente = row.titulo
-        .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z\s]/g, "");
-      const coincidencias = palabras.filter(p => existente.includes(p));
-      if (coincidencias.length >= 4) {
-        logger.info({ candidato: titulo, existente: row.titulo, coincidencias }, "Scheduler: tema repetido, saltando");
-        return true;
+      for (const textoExistente of textosExistentes) {
+        const existente = textoExistente
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z\s]/g, "");
+        // Comparación por raíz (primeros 6 caracteres) para atrapar variaciones
+        // de la misma palabra: "convocado" / "convocatoria", "goleada" / "goleó".
+        const coincidencias = palabras.filter(p => existente.includes(p.slice(0, 6)));
+        if (coincidencias.length >= umbral) {
+          logger.info({ candidato: titulo, existente: textoExistente, coincidencias, umbral }, "Scheduler: tema repetido, saltando");
+          return true;
+        }
       }
     }
     return false;
@@ -480,6 +549,11 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         logger.info({ url: candidata.url }, "Scheduler: URL ya procesada, saltando");
         continue;
       }
+      // 1b. Chequeo permanente en DB (sin ventana de tiempo ni tope de memoria)
+      if (candidata.url && (await urlYaEnDB(candidata.url))) {
+        logger.info({ url: candidata.url }, "Scheduler: URL ya publicada en DB, saltando");
+        continue;
+      }
       // 2. Descartar si la URL tiene fecha y es ≥3 días antigua
       if (candidata.url && urlDemaisiadoVieja(candidata.url)) {
         logger.info({ url: candidata.url, titulo: candidata.titulo }, "Scheduler: artículo demasiado viejo, saltando");
@@ -622,8 +696,21 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         publicada: esAutomatico,
         pendiente: !esAutomatico,
         imagenPortada: imagenPortadaFinal,
+        urlFuente: noticiaElegida.url ? normalizarUrl(noticiaElegida.url) : "",
       })
+      // Índice único parcial en url_fuente: si otro proceso ya guardó esta URL,
+      // no insertamos un duplicado.
+      .onConflictDoNothing()
       .returning();
+
+    if (!savedNoticia) {
+      logger.warn({ url: noticiaElegida.url }, "Scheduler: URL ya insertada por otro proceso, saltando duplicado");
+      if (noticiaElegida.url) {
+        marcarUrlProcesada(noticiaElegida.url, estado);
+        guardarEstado(estado);
+      }
+      return { tipo: "todas_procesadas", fuente };
+    }
 
     // Marcar URL como procesada para no volver a enviarla
     if (noticiaElegida.url) {

@@ -130,6 +130,10 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 - Foto de portada garantizada: la imagen scrapeada del artículo se descarga (validación SSRF + content-type) y se sube a object storage (`/objects/portadas/...`); si falla, se usa una foto aleatoria de `/images/galeria/foto-01..12.jpeg`.
 - `resolverPortada()` en `use-river-data.ts` resuelve los 3 formatos de portada: `/objects/` → `/api/storage`, `/images/` → BASE_URL, `http(s)` externas tal cual.
 
+### Dedupe anti-repetidos (scheduler)
+- URL canónica normalizada (`normalizarUrl`: sin hash/utm/fbclid/trailing slash, lowercase) guardada en `noticias.url_fuente` con índice único parcial (`url_fuente <> ''`); insert usa `onConflictDoNothing()`.
+- Chequeos antes de elegir candidata: estado en memoria (`urlsProcesadas`, cap 1000) + `urlYaEnDB()` contra todo el historial + título heurístico (30 días, 2 palabras distintivas coincidentes por raíz, genéricas como "river"/"argentina" excluidas, compara contra título IA y título original scrapeado).
+
 ### API (`artifacts/api-server`)
 Rutas relevantes:
 - `GET /api/galeria` — listar fotos (auto-seed 12 fotos si vacío)
