@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import { db, editTokensTable } from "@workspace/db";
+import { desc, isNull } from "drizzle-orm";
 import { requireAdmin } from "../middleware/requireAdmin";
 import {
   leerRedactorSettings,
@@ -16,9 +18,41 @@ const router: IRouter = Router();
 
 router.use("/redactor-settings", requireAdmin);
 
+// Busca el último link "de resumen" emitido (resumen diario o aviso de
+// traducción; son los tokens sin noticia asociada) para que el panel pueda
+// mostrar hasta cuándo sigue siendo válido. Los tokens caducados se purgan
+// periódicamente, así que si el último ya fue borrado devolvemos null.
+async function ultimoLinkResumen(): Promise<
+  { creadoEn: string; expiraEn: string; usado: boolean } | null
+> {
+  const rows = await db
+    .select({
+      createdAt: editTokensTable.createdAt,
+      expiresAt: editTokensTable.expiresAt,
+      usedAt: editTokensTable.usedAt,
+    })
+    .from(editTokensTable)
+    .where(isNull(editTokensTable.noticiaId))
+    .orderBy(desc(editTokensTable.createdAt))
+    .limit(1);
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    creadoEn: row.createdAt.toISOString(),
+    expiraEn: row.expiresAt.toISOString(),
+    usado: row.usedAt !== null,
+  };
+}
+
 // Devuelve la configuración editable del panel.
-router.get("/redactor-settings", (req, res) => {
+router.get("/redactor-settings", async (req, res) => {
   const settings = leerRedactorSettings();
+  let linkResumen: Awaited<ReturnType<typeof ultimoLinkResumen>> = null;
+  try {
+    linkResumen = await ultimoLinkResumen();
+  } catch (err) {
+    req.log.error({ err }, "No se pudo consultar el último link de resumen");
+  }
   res.set("Cache-Control", "no-store");
   res.json({
     resumenHebreoHora: settings.resumenHebreoHora,
@@ -27,6 +61,7 @@ router.get("/redactor-settings", (req, res) => {
     resumenSeccionHebreo: settings.resumenSeccionHebreo,
     resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
     resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
+    ultimoLinkResumen: linkResumen,
   });
 });
 

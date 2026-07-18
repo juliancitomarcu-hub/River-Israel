@@ -1145,6 +1145,10 @@ export default function Redactor() {
   const [linkResumenTtlHoras, setLinkResumenTtlHoras] = useState<string>("");
   const [guardandoTtlResumen, setGuardandoTtlResumen] = useState(false);
   const [mensajeTtlResumen, setMensajeTtlResumen] = useState("");
+  // Último link "de resumen" emitido por el bot (para mostrar cuándo caduca).
+  const [ultimoLinkResumen, setUltimoLinkResumen] = useState<
+    { creadoEn: string; expiraEn: string; usado: boolean } | null
+  >(null);
   // Duración (en minutos) de los links de edición por nota (avisos al crear).
   const [linkEdicionTtlMinutos, setLinkEdicionTtlMinutos] = useState<string>("");
   const [guardandoTtlEdicion, setGuardandoTtlEdicion] = useState(false);
@@ -1294,8 +1298,10 @@ export default function Redactor() {
           resumenSeccionHebreo?: boolean;
           resumenSeccionPostulaciones?: boolean;
           resumenSeccionBorradoresEs?: boolean;
+          ultimoLinkResumen?: { creadoEn: string; expiraEn: string; usado: boolean } | null;
         };
         setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
+        setUltimoLinkResumen(data.ultimoLinkResumen ?? null);
         if (typeof data.linkResumenTtlHoras === "number") {
           setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
         }
@@ -1362,6 +1368,9 @@ export default function Redactor() {
           setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
           setMensajeTtlResumen(`Los links del bot ahora duran ${data.linkResumenTtlHoras} ${data.linkResumenTtlHoras === 1 ? "hora" : "horas"}`);
         }
+        // Refresca la info del último link emitido (el vencimiento del link ya
+        // enviado no cambia, pero así el panel muestra el dato al día).
+        void cargarHoraResumen();
       } else {
         setMensajeTtlResumen("No se pudo guardar la duración");
       }
@@ -4467,6 +4476,36 @@ export default function Redactor() {
               {mensajeTtlResumen && (
                 <p className="text-xs text-gray-500 mt-2">{mensajeTtlResumen}</p>
               )}
+              <p className="text-xs mt-2 text-gray-500">
+                {ultimoLinkResumen ? (
+                  (() => {
+                    const expira = new Date(ultimoLinkResumen.expiraEn);
+                    const restanteMs = expira.getTime() - Date.now();
+                    const fechaStr = expira.toLocaleString("es-AR", {
+                      day: "2-digit", month: "2-digit", year: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                    });
+                    if (ultimoLinkResumen.usado) {
+                      return <span>El link del último aviso ya fue usado (los links son de un solo uso).</span>;
+                    }
+                    if (restanteMs <= 0) {
+                      return <span className="text-red-600">El link del último aviso caducó el {fechaStr}.</span>;
+                    }
+                    const horas = Math.floor(restanteMs / 3600000);
+                    const minutos = Math.floor((restanteMs % 3600000) / 60000);
+                    const restanteStr = horas > 0
+                      ? `${horas} h ${minutos} min`
+                      : `${minutos} min`;
+                    return (
+                      <span className="text-green-700">
+                        El link del último aviso sigue válido hasta el {fechaStr} (quedan {restanteStr}).
+                      </span>
+                    );
+                  })()
+                ) : (
+                  <span>Todavía no hay ningún aviso de resumen enviado (o el último link ya fue depurado).</span>
+                )}
+              </p>
             </div>
 
             <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
