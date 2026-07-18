@@ -6,6 +6,7 @@ import { logger } from "../lib/logger";
 import { ejecutarCiclo, type EjecucionResultado, type Categoria } from "../scheduler";
 import { createEditToken } from "../lib/edit-tokens";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
+import { enviarNotaAMake } from "../lib/enviar-a-make";
 import { webhookSecretParaToken } from "../lib/telegram-webhook-secret";
 
 const router: IRouter = Router();
@@ -415,6 +416,9 @@ async function procesarCallback(
 
       // 🌐 Traducir al hebreo en background
       traducirYGuardarHebreo(noticiaId).catch(() => {});
+
+      // 📸 Instagram vía Make.com (fire-and-forget)
+      if (noticia) enviarNotaAMake(noticia);
 
       const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
       const fotoTexto = noticia?.imagenPortada ? "\n🖼 _Publicada con foto de portada._" : "";

@@ -12,6 +12,7 @@
 
 import { logger } from "./logger";
 import { credencialesTelegram, type CategoriaTelegram } from "./telegram-cred";
+import { enviarNotaAMake } from "./enviar-a-make";
 
 /** Escapa caracteres especiales de Markdown (v1) de Telegram. */
 function escaparMarkdown(s: string): string {
@@ -24,9 +25,22 @@ export interface NotaPublicada {
   categoria: string;
   fuente?: string | null;
   imagenPortada?: string | null;
+  contenido?: string | null;
+  tags?: string | null;
 }
 
 export function notificarNotaPublicada(nota: NotaPublicada): void {
+  // 📸 Instagram vía Make.com (fire-and-forget, no bloquea)
+  enviarNotaAMake({
+    id: nota.id,
+    titulo: nota.titulo,
+    contenido: nota.contenido ?? "",
+    tags: nota.tags,
+    categoria: nota.categoria,
+    fuente: nota.fuente,
+    imagenPortada: nota.imagenPortada,
+  });
+
   const categoria: CategoriaTelegram = nota.categoria === "seleccion" ? "seleccion" : "river";
   const cred = credencialesTelegram(categoria);
   if (!cred) {

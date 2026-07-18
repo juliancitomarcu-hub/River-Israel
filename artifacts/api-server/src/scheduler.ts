@@ -8,6 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
 import { limpiarNota } from "./lib/limpiar-asteriscos";
+import { enviarNotaAMake } from "./lib/enviar-a-make";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 import { createEditToken, createLongEditToken, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
@@ -735,6 +736,8 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     // 🌐 Si se publicó automáticamente, lanzar traducción al hebreo en background
     if (esAutomatico && savedNoticia) {
       traducirYGuardarHebreo(savedNoticia.id).catch(() => {});
+      // 📸 Instagram vía Make.com (fire-and-forget)
+      enviarNotaAMake(savedNoticia);
     }
 
     if (esAutomatico) {
