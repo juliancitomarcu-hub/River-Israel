@@ -36,7 +36,11 @@ export function enviarNotaAMake(nota: NotaParaMake): void {
 
   const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
   const urlNota = `https://${dominio}/noticia/${nota.id}`;
-  const imagen = imagenAbsoluta(nota.imagenPortada, dominio);
+  // Imagen optimizada para Instagram (recorte 4:5 1080×1350 + compresión JPEG).
+  // Si la nota no tiene portada, se envía la URL original resuelta (vacía si no hay).
+  const imagen = nota.imagenPortada?.trim()
+    ? `https://${dominio}/api/instagram-imagen/${nota.id}`
+    : imagenAbsoluta(nota.imagenPortada, dominio);
 
   // Caption listo para Instagram: título + primer párrafo + tags + link.
   // Límite de IG: 2200 caracteres — dejamos margen.

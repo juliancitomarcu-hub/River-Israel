@@ -23,6 +23,7 @@ import redactorSettingsRouter from "./redactor-settings";
 import adminRouter from "./admin";
 import propuestaEventoRouter from "./propuesta-evento";
 import comentariosRouter from "./comentarios";
+import instagramImagenRouter from "./instagram-imagen";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(redactorSettingsRouter);
 router.use(adminRouter);
 router.use(propuestaEventoRouter);
 router.use(comentariosRouter);
+router.use(instagramImagenRouter);
 
 export default router;

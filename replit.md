@@ -140,6 +140,7 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 ### Instagram vía Make.com
 - `lib/enviar-a-make.ts` → `enviarNotaAMake(nota)`: POST fire-and-forget al webhook de Make (`MAKE_WEBHOOK_URL` env, header `x-make-apikey` desde `MAKE_API_KEY` — el webhook lo exige). Payload: id, titulo, contenido, caption listo para IG (título + primer párrafo + link + tags, cap ~1800), tags, categoria, fuente, urlNota, imagen absoluta (`/objects/` → `/api/storage`, `/images/` → dominio, http externa tal cual).
 - Se dispara en todos los caminos de publicación: dentro de `notificarNotaPublicada` (redactor, edición que publica, publicación libre) + llamada directa en telegram-webhook callback `publicar_` y en la autopublicación del scheduler.
+- Imagen para IG: `GET /api/instagram-imagen/:id` (routes/instagram-imagen.ts) sirve la portada procesada con sharp — recorte 4:5 (1080×1350, `position: attention`), JPEG q80, cache en memoria (50 entradas). Origen: `/objects/` vía object storage, `/images/` vía dominio propio (localhost:80 en dev), http externa con fetch (timeout 15s, valida content-type image/*). `enviarNotaAMake` manda esta URL como `imagen` cuando la nota tiene portada. `sharp` está en `external` del build esbuild.
 
 ### Avisos de Telegram al publicar
 - `lib/notificar-publicacion.ts` → `notificarNotaPublicada(nota)`: aviso fire-and-forget con botón "Ver la nota" (`https://{TELEGRAM_WEBHOOK_DOMAIN}/noticia/{id}`), bot según categoría (river/selección), Markdown escapado.
