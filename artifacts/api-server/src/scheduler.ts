@@ -11,7 +11,7 @@ import { limpiarNota } from "./lib/limpiar-asteriscos";
 import { enviarNotaAMake } from "./lib/enviar-a-make";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
-import { createEditToken, createLongEditToken, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
+import { createEditToken, createLongEditToken, descripcionTtlEdicion, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
 import { credencialesTelegram } from "./lib/telegram-cred";
 import { leerRedactorSettings, guardarRedactorSettings } from "./lib/redactor-settings";
 import {
@@ -751,7 +751,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         ? "\n🖼 _Foto de portada de respaldo (podés cambiarla desde el Redactor)_"
         : "\n🖼 _Foto de portada del artículo incluida_";
       const etiquetaCat = categoria === "seleccion" ? "🇦🇷 _Categoría: Selección Argentina_\n" : "⚪️🔴 _Categoría: River_\n";
-      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n${etiquetaCat}📡 _Fuente: ${fuenteNombre}_${fotoTexto}`;
+      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n${etiquetaCat}📡 _Fuente: ${fuenteNombre}_${fotoTexto}\n⏱ _El link de edición dura ${descripcionTtlEdicion()}_`;
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

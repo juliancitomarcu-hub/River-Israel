@@ -55,6 +55,23 @@ export async function purgeExpiredEditTokens(): Promise<void> {
   }
 }
 
+// Texto humano de la duración vigente de los links de edición por nota,
+// para incluirlo en los avisos de Telegram (p. ej. "30 minutos", "2 horas",
+// "1 hora y 30 minutos"). Usa el mismo valor efectivo que createEditToken.
+export function descripcionTtlEdicion(): string {
+  const minutosConfig = leerRedactorSettings().linkEdicionTtlMinutos;
+  const totalMin =
+    Number.isFinite(minutosConfig) && minutosConfig > 0
+      ? Math.round(minutosConfig)
+      : Math.round(EDIT_TOKEN_TTL_MS / 60000);
+  if (totalMin < 60) return `${totalMin} minuto${totalMin === 1 ? "" : "s"}`;
+  const horas = Math.floor(totalMin / 60);
+  const resto = totalMin % 60;
+  const horasTxt = `${horas} hora${horas === 1 ? "" : "s"}`;
+  if (resto === 0) return horasTxt;
+  return `${horasTxt} y ${resto} minuto${resto === 1 ? "" : "s"}`;
+}
+
 export async function createEditToken(
   noticiaId: number | null,
   ttlMs?: number,
