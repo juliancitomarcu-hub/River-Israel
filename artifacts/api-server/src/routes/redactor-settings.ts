@@ -4,8 +4,11 @@ import {
   leerRedactorSettings,
   guardarRedactorSettings,
   ttlHorasValido,
+  ttlMinutosValido,
   LINK_RESUMEN_TTL_HORAS_MIN,
   LINK_RESUMEN_TTL_HORAS_MAX,
+  LINK_EDICION_TTL_MINUTOS_MIN,
+  LINK_EDICION_TTL_MINUTOS_MAX,
   type RedactorSettings,
 } from "../lib/redactor-settings";
 
@@ -20,6 +23,7 @@ router.get("/redactor-settings", (req, res) => {
   res.json({
     resumenHebreoHora: settings.resumenHebreoHora,
     linkResumenTtlHoras: settings.linkResumenTtlHoras,
+    linkEdicionTtlMinutos: settings.linkEdicionTtlMinutos,
     resumenSeccionHebreo: settings.resumenSeccionHebreo,
     resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
     resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
@@ -30,12 +34,15 @@ router.get("/redactor-settings", (req, res) => {
 // - `resumenHebreoHora`: entero 0-23 (hora Israel) o null para desactivar.
 // - `linkResumenTtlHoras`: entero entre el mínimo y máximo permitidos (horas
 //   que dura el link de los avisos "de resumen").
+// - `linkEdicionTtlMinutos`: entero entre el mínimo y máximo permitidos
+//   (minutos que dura el link de edición de cada nota recién creada).
 // - `resumenSeccion{Hebreo,Postulaciones,BorradoresEs}`: booleanos que activan
 //   o desactivan cada sección del resumen diario.
 router.put("/redactor-settings", (req, res) => {
   const body = req.body as {
     resumenHebreoHora?: unknown;
     linkResumenTtlHoras?: unknown;
+    linkEdicionTtlMinutos?: unknown;
     resumenSeccionHebreo?: unknown;
     resumenSeccionPostulaciones?: unknown;
     resumenSeccionBorradoresEs?: unknown;
@@ -74,6 +81,18 @@ router.put("/redactor-settings", (req, res) => {
     }
   }
 
+  if ("linkEdicionTtlMinutos" in body) {
+    const valor = body.linkEdicionTtlMinutos;
+    if (ttlMinutosValido(valor)) {
+      patch.linkEdicionTtlMinutos = valor;
+    } else {
+      res.status(400).json({
+        error: `linkEdicionTtlMinutos debe ser un entero entre ${LINK_EDICION_TTL_MINUTOS_MIN} y ${LINK_EDICION_TTL_MINUTOS_MAX}`,
+      });
+      return;
+    }
+  }
+
   for (const campo of [
     "resumenSeccionHebreo",
     "resumenSeccionPostulaciones",
@@ -95,6 +114,7 @@ router.put("/redactor-settings", (req, res) => {
     {
       resumenHebreoHora: settings.resumenHebreoHora,
       linkResumenTtlHoras: settings.linkResumenTtlHoras,
+      linkEdicionTtlMinutos: settings.linkEdicionTtlMinutos,
       resumenSeccionHebreo: settings.resumenSeccionHebreo,
       resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
       resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
@@ -104,6 +124,7 @@ router.put("/redactor-settings", (req, res) => {
   res.json({
     resumenHebreoHora: settings.resumenHebreoHora,
     linkResumenTtlHoras: settings.linkResumenTtlHoras,
+    linkEdicionTtlMinutos: settings.linkEdicionTtlMinutos,
     resumenSeccionHebreo: settings.resumenSeccionHebreo,
     resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
     resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,

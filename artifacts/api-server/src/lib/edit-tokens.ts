@@ -4,7 +4,11 @@ import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { logger } from "./logger";
 import { leerRedactorSettings } from "./redactor-settings";
 
-const EDIT_TOKEN_TTL_MS = 30 * 60 * 1000;
+// TTL corto POR DEFECTO para links de edición scoped a una nota recién creada
+// (autopublicación del scheduler, botones del bot de Telegram). La duración
+// real es configurable desde el panel /redactor (o por la env
+// LINK_EDICION_TTL_MINUTOS); este valor es sólo el fallback.
+export const EDIT_TOKEN_TTL_MS = 30 * 60 * 1000;
 // TTL largo POR DEFECTO para links "de resumen" (resumen diario, aviso de
 // traducción al hebreo): el admin puede abrir el Telegram a la noche y entrar a
 // la mañana sin que el link caduque. No están scoped a una nota recién creada.
@@ -53,10 +57,19 @@ export async function purgeExpiredEditTokens(): Promise<void> {
 
 export async function createEditToken(
   noticiaId: number | null,
-  ttlMs: number = EDIT_TOKEN_TTL_MS,
+  ttlMs?: number,
 ): Promise<string> {
+  // Sin TTL explícito, se usa la duración configurada en el panel /redactor
+  // (linkEdicionTtlMinutos); si no hay un valor válido, cae al fallback de 30'.
+  let ttl = ttlMs;
+  if (ttl === undefined) {
+    const minutos = leerRedactorSettings().linkEdicionTtlMinutos;
+    ttl = Number.isFinite(minutos) && minutos > 0
+      ? minutos * 60 * 1000
+      : EDIT_TOKEN_TTL_MS;
+  }
   const token = randomBytes(24).toString("base64url");
-  const expiresAt = new Date(Date.now() + ttlMs);
+  const expiresAt = new Date(Date.now() + ttl);
   await db.insert(editTokensTable).values({ token, noticiaId, expiresAt });
   return token;
 }

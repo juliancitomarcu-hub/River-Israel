@@ -15,6 +15,14 @@ export const LINK_RESUMEN_TTL_HORAS_MIN = 1;
 export const LINK_RESUMEN_TTL_HORAS_MAX = 168;
 export const LINK_RESUMEN_TTL_HORAS_DEFAULT = 24;
 
+// Rango permitido para la duración (en minutos) de los links de edición
+// scoped a una nota recién creada (autopublicación del scheduler, botones del
+// bot). 5 min mínimo (menos no da tiempo a abrirlo) y 1440 = 24h máximo (es un
+// link efímero por nota; para durar más están los links "de resumen").
+export const LINK_EDICION_TTL_MINUTOS_MIN = 5;
+export const LINK_EDICION_TTL_MINUTOS_MAX = 1440;
+export const LINK_EDICION_TTL_MINUTOS_DEFAULT = 30;
+
 export interface RedactorSettings {
   // Hora (0-23) en horario Israel para el resumen diario de hebreo.
   // null = desactivado (equivalente a RESUMEN_HEBREO_DIARIO=0).
@@ -26,6 +34,10 @@ export interface RedactorSettings {
   // traducción al hebreo). Configurable desde el panel o por env. Reemplaza la
   // constante fija de 24h.
   linkResumenTtlHoras: number;
+  // Duración (en minutos) de los links de edición por nota (los que llegan por
+  // Telegram al crearse una nota). Configurable desde el panel o por la env
+  // LINK_EDICION_TTL_MINUTOS. Reemplaza la constante fija de 30 min.
+  linkEdicionTtlMinutos: number;
   // Interruptores por sección del resumen diario. Cada bandera decide si su
   // sección se consulta en la DB y aparece en el mensaje de Telegram. El default
   // se deriva de su env var correspondiente (fallback para no romper despliegues
@@ -42,12 +54,20 @@ function ttlHorasPorEnv(): number {
   return ttlHorasValido(n) ? n : LINK_RESUMEN_TTL_HORAS_DEFAULT;
 }
 
+function ttlMinutosPorEnv(): number {
+  const raw = process.env.LINK_EDICION_TTL_MINUTOS;
+  if (raw === undefined) return LINK_EDICION_TTL_MINUTOS_DEFAULT;
+  const n = Number.parseInt(raw, 10);
+  return ttlMinutosValido(n) ? n : LINK_EDICION_TTL_MINUTOS_DEFAULT;
+}
+
 function defaults(): RedactorSettings {
   const desactivadoPorEnv = process.env.RESUMEN_HEBREO_DIARIO === "0";
   return {
     resumenHebreoHora: desactivadoPorEnv ? null : 9,
     resumenHebreoUltimoEnvio: null,
     linkResumenTtlHoras: ttlHorasPorEnv(),
+    linkEdicionTtlMinutos: ttlMinutosPorEnv(),
     resumenSeccionHebreo: process.env.RESUMEN_HEBREO_DIARIO !== "0",
     resumenSeccionPostulaciones: process.env.RESUMEN_POSTULACIONES_DIARIO !== "0",
     resumenSeccionBorradoresEs: process.env.RESUMEN_BORRADORES_ES_DIARIO !== "0",
@@ -67,6 +87,15 @@ export function ttlHorasValido(h: unknown): h is number {
   );
 }
 
+export function ttlMinutosValido(m: unknown): m is number {
+  return (
+    typeof m === "number" &&
+    Number.isInteger(m) &&
+    m >= LINK_EDICION_TTL_MINUTOS_MIN &&
+    m <= LINK_EDICION_TTL_MINUTOS_MAX
+  );
+}
+
 export function leerRedactorSettings(): RedactorSettings {
   const def = defaults();
   try {
@@ -80,6 +109,8 @@ export function leerRedactorSettings(): RedactorSettings {
         typeof raw.resumenHebreoUltimoEnvio === "string" ? raw.resumenHebreoUltimoEnvio : null,
       linkResumenTtlHoras:
         ttlHorasValido(raw.linkResumenTtlHoras) ? raw.linkResumenTtlHoras : def.linkResumenTtlHoras,
+      linkEdicionTtlMinutos:
+        ttlMinutosValido(raw.linkEdicionTtlMinutos) ? raw.linkEdicionTtlMinutos : def.linkEdicionTtlMinutos,
       resumenSeccionHebreo:
         typeof raw.resumenSeccionHebreo === "boolean" ? raw.resumenSeccionHebreo : def.resumenSeccionHebreo,
       resumenSeccionPostulaciones:

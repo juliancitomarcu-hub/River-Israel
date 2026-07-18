@@ -1145,6 +1145,10 @@ export default function Redactor() {
   const [linkResumenTtlHoras, setLinkResumenTtlHoras] = useState<string>("");
   const [guardandoTtlResumen, setGuardandoTtlResumen] = useState(false);
   const [mensajeTtlResumen, setMensajeTtlResumen] = useState("");
+  // Duración (en minutos) de los links de edición por nota (avisos al crear).
+  const [linkEdicionTtlMinutos, setLinkEdicionTtlMinutos] = useState<string>("");
+  const [guardandoTtlEdicion, setGuardandoTtlEdicion] = useState(false);
+  const [mensajeTtlEdicion, setMensajeTtlEdicion] = useState("");
   // Interruptores por sección del resumen diario por Telegram.
   const [resumenSeccionHebreo, setResumenSeccionHebreo] = useState(true);
   const [resumenSeccionPostulaciones, setResumenSeccionPostulaciones] = useState(true);
@@ -1286,6 +1290,7 @@ export default function Redactor() {
         const data = await res.json() as {
           resumenHebreoHora?: number | null;
           linkResumenTtlHoras?: number;
+          linkEdicionTtlMinutos?: number;
           resumenSeccionHebreo?: boolean;
           resumenSeccionPostulaciones?: boolean;
           resumenSeccionBorradoresEs?: boolean;
@@ -1293,6 +1298,9 @@ export default function Redactor() {
         setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
         if (typeof data.linkResumenTtlHoras === "number") {
           setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
+        }
+        if (typeof data.linkEdicionTtlMinutos === "number") {
+          setLinkEdicionTtlMinutos(String(data.linkEdicionTtlMinutos));
         }
         if (typeof data.resumenSeccionHebreo === "boolean") setResumenSeccionHebreo(data.resumenSeccionHebreo);
         if (typeof data.resumenSeccionPostulaciones === "boolean") setResumenSeccionPostulaciones(data.resumenSeccionPostulaciones);
@@ -1361,6 +1369,37 @@ export default function Redactor() {
       setMensajeTtlResumen("Error al guardar la duración");
     } finally {
       setGuardandoTtlResumen(false);
+    }
+  };
+
+  const guardarTtlEdicion = async () => {
+    setGuardandoTtlEdicion(true);
+    setMensajeTtlEdicion("");
+    try {
+      const valor = parseInt(linkEdicionTtlMinutos.trim(), 10);
+      if (isNaN(valor) || valor < 5 || valor > 1440) {
+        setMensajeTtlEdicion("Ingresá una cantidad de minutos entre 5 y 1440 (24 horas)");
+        return;
+      }
+      const res = await fetch("/api/redactor-settings", {
+        method: "PUT",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ linkEdicionTtlMinutos: valor }),
+      });
+      if (res.status === 401) { pedirAdminToken(); return; }
+      if (res.ok) {
+        const data = await res.json() as { linkEdicionTtlMinutos?: number };
+        if (typeof data.linkEdicionTtlMinutos === "number") {
+          setLinkEdicionTtlMinutos(String(data.linkEdicionTtlMinutos));
+          setMensajeTtlEdicion(`Los links de edición ahora duran ${data.linkEdicionTtlMinutos} ${data.linkEdicionTtlMinutos === 1 ? "minuto" : "minutos"}`);
+        }
+      } else {
+        setMensajeTtlEdicion("No se pudo guardar la duración");
+      }
+    } catch {
+      setMensajeTtlEdicion("Error al guardar la duración");
+    } finally {
+      setGuardandoTtlEdicion(false);
     }
   };
 
@@ -4427,6 +4466,40 @@ export default function Redactor() {
               </div>
               {mensajeTtlResumen && (
                 <p className="text-xs text-gray-500 mt-2">{mensajeTtlResumen}</p>
+              )}
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <div className="flex items-start sm:items-center gap-3 flex-wrap">
+                <Clock className="w-4 h-4 text-gray-400 shrink-0 mt-0.5 sm:mt-0" />
+                <div className="flex-1 min-w-[180px]">
+                  <p className="text-sm font-semibold text-river-black">Duración de los links de edición por nota</p>
+                  <p className="text-xs text-gray-400">
+                    Minutos que sigue funcionando el link "Editar en Redactor" que llega al crearse cada nota. Entre 5 y 1440 (24 horas).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={5}
+                    max={1440}
+                    value={linkEdicionTtlMinutos}
+                    onChange={(e) => setLinkEdicionTtlMinutos(e.target.value)}
+                    placeholder="30"
+                    className="w-20 px-3 py-2 rounded-lg border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-river-red/30"
+                  />
+                  <span className="text-xs text-gray-400">min</span>
+                  <button
+                    onClick={guardarTtlEdicion}
+                    disabled={guardandoTtlEdicion}
+                    className="px-3 py-2 rounded-lg bg-river-red text-white text-xs font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {guardandoTtlEdicion ? "Guardando…" : "Guardar"}
+                  </button>
+                </div>
+              </div>
+              {mensajeTtlEdicion && (
+                <p className="text-xs text-gray-500 mt-2">{mensajeTtlEdicion}</p>
               )}
             </div>
 

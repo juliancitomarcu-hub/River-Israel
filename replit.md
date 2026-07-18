@@ -148,6 +148,7 @@ Rutas relevantes:
 - `POST /api/postular-redactor` — enviar postulación (texto + archivo)
 - `POST /api/publicar/:id` — publicar postulación
 - Rutas de scraping, redacción IA, Telegram webhook, etc.
+- `GET/PUT /api/redactor-settings` — configuración del panel (hora resumen, TTL links de resumen en horas, TTL links de edición por nota en minutos `linkEdicionTtlMinutos` 5–1440, secciones del resumen)
 
 ### DB Schema
 - `noticiasTable` — noticias + postulaciones (fuente.startsWith("Postulación"))
