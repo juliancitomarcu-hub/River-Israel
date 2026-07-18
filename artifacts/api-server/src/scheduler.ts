@@ -7,6 +7,7 @@ import { logger } from "./lib/logger";
 import * as fs from "fs";
 import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
+import { limpiarNota } from "./lib/limpiar-asteriscos";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 import { createEditToken, createLongEditToken, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
@@ -271,12 +272,12 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
 
   let contenido = bodyLines.join("\n").trim();
 
-  // Si la bajada es valiosa, la prepend como cursiva
+  // Si la bajada es valiosa, la prepend como primer párrafo
   if (bajada) {
-    contenido = `*${bajada}*\n\n${contenido}`;
+    contenido = `${bajada}\n\n${contenido}`;
   }
 
-  return { titulo, contenido, tags };
+  return limpiarNota({ titulo, contenido, tags });
 }
 
 // ─── LIMPIEZA DE TEXTO ────────────────────────────────────────────────────────

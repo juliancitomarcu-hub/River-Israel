@@ -5,6 +5,7 @@ import { noticiasTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { requireAdmin } from "../middleware/requireAdmin";
 import { notificarNotaPublicada } from "../lib/notificar-publicacion";
+import { limpiarAsteriscos } from "../lib/limpiar-asteriscos";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -57,8 +58,8 @@ router.post("/publicacion-libre", requireAdmin, upload.single("imagen"), async (
     const [notaGuardada] = await db
       .insert(noticiasTable)
       .values({
-        titulo: titulo.trim(),
-        contenido: contenido.trim(),
+        titulo: limpiarAsteriscos(titulo).trim(),
+        contenido: limpiarAsteriscos(contenido).trim(),
         tags: esSel ? "#SeleccionArgentina #PublicacionLibre" : "#RiverEnIsrael #PublicacionLibre",
         textoOriginal: contenido.trim(),
         fuente: esSel ? "Publicación Libre Selección" : "Publicación Libre",

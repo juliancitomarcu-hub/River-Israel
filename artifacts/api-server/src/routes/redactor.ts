@@ -9,6 +9,7 @@ import { requireAdmin } from "../middleware/requireAdmin";
 import { type CategoriaImagen } from "../lib/generar-imagen-ig";
 import { credencialesTelegram, estadoTelegram } from "../lib/telegram-cred";
 import { estadoWebhookPanel, registrarWebhook } from "../lib/telegram-webhook-registro";
+import { limpiarNota } from "../lib/limpiar-asteriscos";
 
 function elegirPrompt(categoria: CategoriaImagen): string {
   return categoria === "seleccion" ? PROMPT_MAESTRO_SELECCION : PROMPT_MAESTRO;
@@ -153,10 +154,10 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
     .trim();
 
   if (bajada) {
-    contenido = `*${bajada}*\n\n${contenido}`;
+    contenido = `${bajada}\n\n${contenido}`;
   }
 
-  return { titulo, contenido, tags };
+  return limpiarNota({ titulo, contenido, tags });
 }
 
 router.post("/procesar-noticia", async (req, res) => {

@@ -85,6 +85,11 @@ export function resolverPortada(url: string): string {
   return `/api/storage${url}`;
 }
 
+// Las notas nunca deben mostrar asteriscos (Markdown residual en notas viejas)
+export function limpiarAsteriscos(texto: string): string {
+  return texto.replace(/\*/g, "");
+}
+
 function noticiaANewsItem(n: NoticiaPublicada): NewsItem {
   const primerParrafo = n.contenido
     .split("\n")
@@ -110,8 +115,8 @@ function noticiaANewsItem(n: NoticiaPublicada): NewsItem {
 
   return {
     id: String(n.id),
-    title: n.titulo,
-    excerpt: primerParrafo.slice(0, 160),
+    title: limpiarAsteriscos(n.titulo),
+    excerpt: limpiarAsteriscos(primerParrafo).slice(0, 160),
     date: formatearFecha(n.createdAt),
     imageUrl,
     category: categoria,

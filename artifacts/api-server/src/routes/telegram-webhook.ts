@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { ejecutarCiclo, type EjecucionResultado, type Categoria } from "../scheduler";
 import { createEditToken } from "../lib/edit-tokens";
@@ -347,7 +347,7 @@ async function procesarTextoEditado(
     const [nota] = await db
       .update(noticiasTable)
       .set({
-        contenido: contenidoFinal.trim(),
+        contenido: contenidoFinal.replace(/\*/g, "").trim(),
         ...(tituloDetectado ? { titulo: tituloDetectado } : {}),
         pendiente: true,
         publicada: false,
@@ -403,7 +403,13 @@ async function procesarCallback(
 
       const [noticia] = await db
         .update(noticiasTable)
-        .set({ publicada: true, pendiente: false })
+        .set({
+          publicada: true,
+          pendiente: false,
+          // Guardarraíl: al publicar, la nota nunca debe quedar con asteriscos
+          titulo: sql`replace(${noticiasTable.titulo}, '*', '')`,
+          contenido: sql`replace(${noticiasTable.contenido}, '*', '')`,
+        })
         .where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.categoria, categoria)))
         .returning();
 

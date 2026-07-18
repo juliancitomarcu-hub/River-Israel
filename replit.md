@@ -119,6 +119,9 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 - IST (invierno israelí): noviembre → marzo → UTC+2
 - Promiedos devuelve `start_time` en UTC-4; se suma +4h para obtener UTC, luego offset Israel
 
+### Sin asteriscos en las notas
+- Las notas publicadas nunca contienen `*`: `lib/limpiar-asteriscos.ts` (`limpiarNota`) se aplica en todos los `parsearResultado` (scheduler, publicar, redactor), en publicación libre, en la edición vía Telegram y como guardarraíl SQL al publicar desde el botón del bot; el traductor hebreo también los elimina. El frontend además los quita al renderizar (cubre notas viejas de producción).
+
 ### Prompt IA Redactor
 - Módulo compartido: `artifacts/api-server/src/lib/prompt-maestro.ts`
 - Usado tanto por `scheduler.ts` como por `routes/redactor.ts`

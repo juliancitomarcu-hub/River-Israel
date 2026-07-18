@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Calendar, ArrowLeft, Tag, MessageCircle, Send, User } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
-import { useNews, resolverPortada, type NewsItem } from "@/hooks/use-river-data";
+import { useNews, resolverPortada, limpiarAsteriscos, type NewsItem } from "@/hooks/use-river-data";
 import { setPageMeta, resetPageMeta, extraerDescripcion } from "@/lib/seo";
 
 interface Comentario {
@@ -155,7 +155,7 @@ function formatearFechaCorta(dateStr: string): string {
 }
 
 function renderContenido(texto: string) {
-  return texto.split("\n").map((line, i) => {
+  return limpiarAsteriscos(texto).split("\n").map((line, i) => {
     const trimmed = line.trim();
     if (!trimmed) return <div key={i} className="h-4" />;
 
@@ -251,8 +251,8 @@ export default function Noticia() {
         : `${window.location.origin}${resuelta}`
       : "https://riverplateisrael.com/opengraph.jpg";
     setPageMeta({
-      title: `${data.titulo} | River Plate en Israel`,
-      description: extraerDescripcion(data.contenido),
+      title: `${limpiarAsteriscos(data.titulo)} | River Plate en Israel`,
+      description: extraerDescripcion(limpiarAsteriscos(data.contenido)),
       image,
       url: window.location.href,
       type: "article",
@@ -304,7 +304,7 @@ export default function Noticia() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10" />
             <img
               src={imagenUrl}
-              alt={data.titulo}
+              alt={limpiarAsteriscos(data.titulo)}
               className="w-full h-full object-cover"
             />
             <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-12 max-w-4xl mx-auto w-full">
@@ -314,7 +314,7 @@ export default function Noticia() {
                 </span>
               </Link>
               <h1 className="text-3xl md:text-5xl font-display font-bold text-white leading-tight">
-                {data.titulo}
+                {limpiarAsteriscos(data.titulo)}
               </h1>
               <div className="flex items-center gap-4 mt-4 text-white/60 text-sm flex-wrap">
                 <span className="flex items-center gap-1.5">
@@ -324,7 +324,7 @@ export default function Noticia() {
                 <span className="text-white/40">·</span>
                 <span>River en Israel — Filial Ramat Gan</span>
                 <ShareButton
-                  titulo={data.titulo}
+                  titulo={limpiarAsteriscos(data.titulo)}
                   id={data.id}
                   className="ml-auto"
                 />

@@ -6,6 +6,7 @@ import { sql as sqlRaw } from "drizzle-orm";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
 import { requireAdmin, requireAdminOrNoticiaSession } from "../middleware/requireAdmin";
 import { notificarNotaPublicada } from "../lib/notificar-publicacion";
+import { limpiarNota } from "../lib/limpiar-asteriscos";
 
 const requireAdminOrThisNoticia = requireAdminOrNoticiaSession((req) => {
   const raw = req.params.id;
@@ -65,9 +66,9 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
   });
 
   let contenido = bodyLines.join("\n").trim();
-  if (bajada) contenido = `*${bajada}*\n\n${contenido}`;
+  if (bajada) contenido = `${bajada}\n\n${contenido}`;
 
-  return { titulo, contenido, tags };
+  return limpiarNota({ titulo, contenido, tags });
 }
 
 router.post("/publicar-noticia", requireAdmin, async (req, res) => {
