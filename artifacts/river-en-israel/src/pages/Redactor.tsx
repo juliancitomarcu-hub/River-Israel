@@ -1184,6 +1184,7 @@ export default function Redactor() {
   const [resumenSeccionHebreo, setResumenSeccionHebreo] = useState(true);
   const [resumenSeccionPostulaciones, setResumenSeccionPostulaciones] = useState(true);
   const [resumenSeccionBorradoresEs, setResumenSeccionBorradoresEs] = useState(true);
+  const [conteosResumen, setConteosResumen] = useState<{ hebreo: number; postulaciones: number; borradoresEs: number } | null>(null);
   const [guardandoSeccionResumen, setGuardandoSeccionResumen] = useState<string | null>(null);
   const [parrafoActivoIdx, setParrafoActivoIdx] = useState<number | null>(null);
   const esParrafosScrollRef = useRef<HTMLDivElement | null>(null);
@@ -1326,6 +1327,7 @@ export default function Redactor() {
           resumenSeccionPostulaciones?: boolean;
           resumenSeccionBorradoresEs?: boolean;
           ultimoLinkResumen?: { creadoEn: string; expiraEn: string; usado: boolean } | null;
+          conteosResumen?: { hebreo: number; postulaciones: number; borradoresEs: number } | null;
         };
         setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
         setUltimoLinkResumen(data.ultimoLinkResumen ?? null);
@@ -1338,6 +1340,7 @@ export default function Redactor() {
         if (typeof data.resumenSeccionHebreo === "boolean") setResumenSeccionHebreo(data.resumenSeccionHebreo);
         if (typeof data.resumenSeccionPostulaciones === "boolean") setResumenSeccionPostulaciones(data.resumenSeccionPostulaciones);
         if (typeof data.resumenSeccionBorradoresEs === "boolean") setResumenSeccionBorradoresEs(data.resumenSeccionBorradoresEs);
+        setConteosResumen(data.conteosResumen ?? null);
       }
     } catch { /* ignore */ }
   };
@@ -4503,10 +4506,10 @@ export default function Redactor() {
               </p>
               <div className="space-y-2">
                 {([
-                  { campo: "resumenSeccionHebreo", valor: resumenSeccionHebreo, label: "Traducciones al hebreo pendientes" },
-                  { campo: "resumenSeccionPostulaciones", valor: resumenSeccionPostulaciones, label: "Postulaciones de redactores sin revisar" },
-                  { campo: "resumenSeccionBorradoresEs", valor: resumenSeccionBorradoresEs, label: "Borradores en español sin publicar" },
-                ] as const).map(({ campo, valor, label }) => (
+                  { campo: "resumenSeccionHebreo", valor: resumenSeccionHebreo, label: "Traducciones al hebreo pendientes", conteo: conteosResumen?.hebreo },
+                  { campo: "resumenSeccionPostulaciones", valor: resumenSeccionPostulaciones, label: "Postulaciones de redactores sin revisar", conteo: conteosResumen?.postulaciones },
+                  { campo: "resumenSeccionBorradoresEs", valor: resumenSeccionBorradoresEs, label: "Borradores en español sin publicar", conteo: conteosResumen?.borradoresEs },
+                ] as const).map(({ campo, valor, label, conteo }) => (
                   <label key={campo} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -4516,6 +4519,16 @@ export default function Redactor() {
                       className="w-4 h-4 accent-river-red disabled:opacity-50"
                     />
                     <span className="text-xs font-semibold text-gray-600">{label}</span>
+                    {typeof conteo === "number" && (
+                      <span
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          conteo > 0 ? "bg-river-red/10 text-river-red" : "bg-gray-200 text-gray-500"
+                        }`}
+                        title={`Pendientes ahora: ${conteo}`}
+                      >
+                        {conteo}
+                      </span>
+                    )}
                   </label>
                 ))}
               </div>

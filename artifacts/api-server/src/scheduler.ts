@@ -14,6 +14,11 @@ import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 import { createEditToken, createLongEditToken, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
 import { credencialesTelegram } from "./lib/telegram-cred";
 import { leerRedactorSettings, guardarRedactorSettings } from "./lib/redactor-settings";
+import {
+  listarPendientesHebreo,
+  listarPendientesPostulaciones,
+  listarPendientesBorradoresEs,
+} from "./lib/resumen-pendientes";
 import { ObjectStorageService } from "./lib/objectStorage";
 
 export type Categoria = "river" | "seleccion";
@@ -888,45 +893,19 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
 
   // ── Traducciones al hebreo en borrador ──────────────────────────────────
   // Desactivable desde el panel (o RESUMEN_HEBREO_DIARIO=0 como fallback).
-  const pendientesHebreo = hebreoActivo
-    ? await db
-        .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
-        .from(noticiasTable)
-        .where(and(
-          eq(noticiasTable.hebreoPublicada, false),
-          sqlRaw`char_length(coalesce(${noticiasTable.contenidoHe}, '')) > 0`,
-        ))
-        .orderBy(desc(noticiasTable.id))
-    : [];
+  // Queries compartidas con el panel /redactor en lib/resumen-pendientes.ts.
+  const pendientesHebreo = hebreoActivo ? await listarPendientesHebreo() : [];
 
   // ── Postulaciones de redactores sin revisar ─────────────────────────────
-  // Se identifican por `pendiente=true` y `fuente` que arranca con "Postulación".
   // Desactivable desde el panel (o RESUMEN_POSTULACIONES_DIARIO=0 como fallback).
   const pendientesPostulaciones = postulacionesActivas
-    ? await db
-        .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
-        .from(noticiasTable)
-        .where(and(
-          eq(noticiasTable.pendiente, true),
-          sqlRaw`${noticiasTable.fuente} LIKE 'Postulación%'`,
-        ))
-        .orderBy(desc(noticiasTable.id))
+    ? await listarPendientesPostulaciones()
     : [];
 
   // ── Borradores en español sin publicar (modo manual, esperando aprobación) ─
-  // Noticias generadas por la IA con `pendiente=true`, `publicada=false` y
-  // `fuente` que NO arranca con "Postulación" (esas ya van en su propia sección).
   // Desactivable desde el panel (o RESUMEN_BORRADORES_ES_DIARIO=0 como fallback).
   const pendientesBorradoresEs = borradoresEsActivos
-    ? await db
-        .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
-        .from(noticiasTable)
-        .where(and(
-          eq(noticiasTable.pendiente, true),
-          eq(noticiasTable.publicada, false),
-          sqlRaw`${noticiasTable.fuente} NOT LIKE 'Postulación%'`,
-        ))
-        .orderBy(desc(noticiasTable.id))
+    ? await listarPendientesBorradoresEs()
     : [];
 
   if (

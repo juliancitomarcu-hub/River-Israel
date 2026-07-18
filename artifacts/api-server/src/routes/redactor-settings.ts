@@ -13,6 +13,7 @@ import {
   LINK_EDICION_TTL_MINUTOS_MAX,
   type RedactorSettings,
 } from "../lib/redactor-settings";
+import { contarPendientesResumen } from "../lib/resumen-pendientes";
 
 const router: IRouter = Router();
 
@@ -53,6 +54,15 @@ router.get("/redactor-settings", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "No se pudo consultar el último link de resumen");
   }
+  // Conteos en vivo de pendientes por sección del resumen diario (mismas
+  // queries que usa el scheduler al armar el mensaje de Telegram). Si la
+  // consulta falla devolvemos null y el panel simplemente no muestra números.
+  let conteos: Awaited<ReturnType<typeof contarPendientesResumen>> | null = null;
+  try {
+    conteos = await contarPendientesResumen();
+  } catch (err) {
+    req.log.error({ err }, "No se pudieron contar los pendientes del resumen");
+  }
   res.set("Cache-Control", "no-store");
   res.json({
     resumenHebreoHora: settings.resumenHebreoHora,
@@ -62,6 +72,7 @@ router.get("/redactor-settings", async (req, res) => {
     resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
     resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
     ultimoLinkResumen: linkResumen,
+    conteosResumen: conteos,
   });
 });
 
