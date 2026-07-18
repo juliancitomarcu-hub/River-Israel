@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { iniciarScheduler } from "./scheduler";
 import { registrarWebhook } from "./lib/telegram-webhook-registro";
+import { avisarSiWebhookSinProteger } from "./lib/avisar-webhook-sin-proteger";
 
 const rawPort = process.env["PORT"];
 
@@ -29,8 +30,10 @@ async function registrarWebhookTelegram() {
 
   // Registra cada bot con su secret_token. El módulo recuerda el resultado del
   // intento en memoria para que el panel pueda avisar si quedó sin proteger.
-  await registrarWebhook("river");
-  await registrarWebhook("seleccion");
+  const estadoRiver = await registrarWebhook("river");
+  avisarSiWebhookSinProteger("river", estadoRiver);
+  const estadoSeleccion = await registrarWebhook("seleccion");
+  avisarSiWebhookSinProteger("seleccion", estadoSeleccion);
 }
 
 app.listen(port, (err) => {
