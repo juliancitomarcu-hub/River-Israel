@@ -3312,6 +3312,20 @@ export default function Redactor() {
                       )}
                     </div>
                     <span className="text-[11px] text-gray-500 pl-1">{detalle}</span>
+                    {w.consultaOk && (w.pendingUpdateCount ?? 0) > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 pl-1">
+                        ⏳ {w.pendingUpdateCount} {w.pendingUpdateCount === 1 ? "update pendiente" : "updates pendientes"} en Telegram sin entregar.
+                      </span>
+                    )}
+                    {w.consultaOk && w.ultimoError && (
+                      <span className="inline-flex items-start gap-1 text-[11px] font-semibold text-red-600 pl-1">
+                        <span className="shrink-0">⚠️</span>
+                        <span>Último error de entrega: {w.ultimoError}</span>
+                      </span>
+                    )}
+                    {w.consultaOk && w.registrado && (w.pendingUpdateCount ?? 0) === 0 && !w.ultimoError && (
+                      <span className="text-[11px] text-gray-400 pl-1">Sin updates encolados ni errores de entrega.</span>
+                    )}
                   </div>
                 );
               };
