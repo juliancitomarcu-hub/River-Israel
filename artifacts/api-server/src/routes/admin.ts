@@ -9,6 +9,7 @@ import {
   extendNoticiaSession,
   getAdminSession,
   getNoticiaSession,
+  countActiveAdminSessions,
   revokeAdminSession,
   revokeAllAdminSessions,
 } from "../lib/edit-tokens";
@@ -145,6 +146,30 @@ router.post("/admin/logout-all", async (req, res) => {
   const revocadas = await revokeAllAdminSessions();
   clearSessionCookie(res);
   res.json({ ok: true, revocadas });
+});
+
+// Cantidad de sesiones admin vivas (no caducadas) en la DB. El panel lo
+// muestra al lado del botón "salir de todos" para dar contexto antes de
+// cerrarlas todas. Requiere credencial admin válida; las sesiones scoped a
+// una noticia no alcanzan.
+router.get("/admin/sessions/count", async (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const provided = extractToken(req);
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const autorizado = provided === expected || (await getAdminSession(provided)) !== null;
+  if (!autorizado) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const count = await countActiveAdminSessions();
+  res.json({ ok: true, count });
 });
 
 // Renueva la sesión actual sin pedir la contraseña: empuja el expiresAt

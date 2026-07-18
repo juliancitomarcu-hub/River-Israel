@@ -172,6 +172,22 @@ export async function getAdminSession(token: string): Promise<{ expiresAt: numbe
   return { expiresAt: row.expiresAt.getTime() };
 }
 
+// Cuenta cuántas sesiones admin siguen vivas (no caducadas). Sirve para que
+// el panel muestre "N sesiones activas" al lado del botón "salir de todos".
+export async function countActiveAdminSessions(): Promise<number> {
+  const now = new Date();
+  const rows = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(panelSessionsTable)
+    .where(
+      and(
+        eq(panelSessionsTable.scope, "admin"),
+        sql`${panelSessionsTable.expiresAt} > ${now}`,
+      ),
+    );
+  return rows[0]?.count ?? 0;
+}
+
 export async function revokeAdminSession(token: string): Promise<void> {
   await db.delete(panelSessionsTable).where(eq(panelSessionsTable.token, token));
 }

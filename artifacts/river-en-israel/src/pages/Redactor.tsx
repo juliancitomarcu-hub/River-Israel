@@ -985,11 +985,37 @@ export default function Redactor() {
     }).catch(() => { /* ignore */ });
   };
 
+  // Cantidad de sesiones admin abiertas (en cualquier dispositivo). Se muestra
+  // al lado del botón "salir de todos" para dar contexto antes de cerrarlas.
+  const [sesionesActivas, setSesionesActivas] = useState<number | null>(null);
+  const cargarSesionesActivas = async () => {
+    try {
+      const res = await fetch("/api/admin/sessions/count", {
+        credentials: "same-origin",
+      });
+      if (!res.ok) return;
+      const data = await res.json() as { count?: number };
+      if (typeof data.count === "number") setSesionesActivas(data.count);
+    } catch { /* ignore — dato informativo */ }
+  };
+
+  useEffect(() => {
+    if (authStatus !== "ok") {
+      setSesionesActivas(null);
+      return;
+    }
+    cargarSesionesActivas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus]);
+
   const [cerrandoTodo, setCerrandoTodo] = useState(false);
   const handleLogoutAll = async () => {
     if (cerrandoTodo) return;
+    const detalle = sesionesActivas !== null && sesionesActivas > 0
+      ? ` Ahora hay ${sesionesActivas === 1 ? "1 sesión abierta" : `${sesionesActivas} sesiones abiertas`}.`
+      : "";
     const ok = window.confirm(
-      "Esto cerrará la sesión del panel en TODOS los dispositivos (incluido este). Vas a tener que volver a ingresar la contraseña. ¿Continuar?",
+      `Esto cerrará la sesión del panel en TODOS los dispositivos (incluido este).${detalle} Vas a tener que volver a ingresar la contraseña. ¿Continuar?`,
     );
     if (!ok) return;
     setCerrandoTodo(true);
@@ -2258,6 +2284,14 @@ export default function Redactor() {
             >
               {cerrandoTodo ? "cerrando..." : "salir de todos"}
             </button>
+            {sesionesActivas !== null && (
+              <span
+                className="text-[10px] font-bold bg-river-red/15 px-1.5 py-0.5 rounded-full"
+                title="Sesiones admin abiertas en este momento (todos los dispositivos)"
+              >
+                {sesionesActivas === 1 ? "1 sesión activa" : `${sesionesActivas} sesiones activas`}
+              </span>
+            )}
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">
             Redactor <span className="text-river-red">IA</span>
