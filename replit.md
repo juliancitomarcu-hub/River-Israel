@@ -137,6 +137,10 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 - URL canónica normalizada (`normalizarUrl`: sin hash/utm/fbclid/trailing slash, lowercase) guardada en `noticias.url_fuente` con índice único parcial (`url_fuente <> ''`); insert usa `onConflictDoNothing()`.
 - Chequeos antes de elegir candidata: estado en memoria (`urlsProcesadas`, cap 1000) + `urlYaEnDB()` contra todo el historial + título heurístico (30 días, 2 palabras distintivas coincidentes por raíz, genéricas como "river"/"argentina" excluidas, compara contra título IA y título original scrapeado).
 
+### Instagram vía Make.com
+- `lib/enviar-a-make.ts` → `enviarNotaAMake(nota)`: POST fire-and-forget al webhook de Make (`MAKE_WEBHOOK_URL` env, header `x-make-apikey` desde `MAKE_API_KEY` — el webhook lo exige). Payload: id, titulo, contenido, caption listo para IG (título + primer párrafo + link + tags, cap ~1800), tags, categoria, fuente, urlNota, imagen absoluta (`/objects/` → `/api/storage`, `/images/` → dominio, http externa tal cual).
+- Se dispara en todos los caminos de publicación: dentro de `notificarNotaPublicada` (redactor, edición que publica, publicación libre) + llamada directa en telegram-webhook callback `publicar_` y en la autopublicación del scheduler.
+
 ### Avisos de Telegram al publicar
 - `lib/notificar-publicacion.ts` → `notificarNotaPublicada(nota)`: aviso fire-and-forget con botón "Ver la nota" (`https://{TELEGRAM_WEBHOOK_DOMAIN}/noticia/{id}`), bot según categoría (river/selección), Markdown escapado.
 - Todos los caminos de publicación avisan: redactor (publicar-noticia), edición que publica (noticia-pendiente, solo si pasa a publicada), publicación libre, botón Publicar del bot (edita mensaje o envía fallback) y autopublicación del scheduler (FYI propio con botones Ver/Editar).

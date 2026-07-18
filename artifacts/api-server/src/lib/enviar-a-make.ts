@@ -51,9 +51,12 @@ export function enviarNotaAMake(nota: NotaParaMake): void {
   caption += `\n\nNota completa: ${urlNota}`;
   if (tags) caption += `\n\n${tags}`;
 
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (process.env.MAKE_API_KEY) headers["x-make-apikey"] = process.env.MAKE_API_KEY;
+
   void fetch(webhookUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({
       id: nota.id,
       titulo: nota.titulo,
