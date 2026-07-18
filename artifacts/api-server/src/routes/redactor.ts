@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { ai } from "@workspace/integrations-gemini-ai";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
@@ -88,7 +90,7 @@ router.post("/registrar-webhook", async (req, res) => {
  * bots expulsados del grupo. Reporta éxito o el motivo real del fallo.
  */
 router.post("/probar-bot", async (req, res) => {
-  const { categoria } = req.body as { categoria?: CategoriaImagen };
+  const { categoria, conFoto } = req.body as { categoria?: CategoriaImagen; conFoto?: boolean };
   const categoriaFinal: CategoriaImagen = categoria === "seleccion" ? "seleccion" : "river";
 
   const cred = credencialesTelegram(categoriaFinal);
@@ -128,6 +130,83 @@ router.post("/probar-bot", async (req, res) => {
           : "Telegram rechazó el envío.",
       });
       return;
+    }
+
+    // El texto llegó. Si se pidió, probamos también sendPhoto (el flujo real de
+    // notas manda la foto de portada así; un chat puede aceptar texto pero
+    // rechazar imágenes). Reportamos el resultado de la foto por separado.
+    if (conFoto) {
+      const caption = `🖼 _Foto de prueba — ${marca}_\n\nSi ves esta imagen, el bot también puede enviar fotos de portada.`;
+      try {
+        // Subimos los bytes de una foto real de la galería vía multipart (más
+        // confiable que pasarle una URL a Telegram, que a veces no puede
+        // descargarla). Si el archivo local no está (p. ej. en producción
+        // bundleada), caemos a la URL pública del sitio.
+        const numFoto = String(Math.floor(Math.random() * 12) + 1).padStart(2, "0");
+        const nombreFoto = `foto-${numFoto}.jpeg`;
+        let fotoBytes: Buffer | null = null;
+        for (const candidato of [
+          path.join(process.cwd(), "..", "river-en-israel", "public", "images", "galeria", nombreFoto),
+          path.join(process.cwd(), "artifacts", "river-en-israel", "public", "images", "galeria", nombreFoto),
+        ]) {
+          try {
+            fotoBytes = await fs.readFile(candidato);
+            break;
+          } catch {
+            // probar el siguiente candidato
+          }
+        }
+
+        let fotoRes: globalThis.Response;
+        if (fotoBytes) {
+          const form = new FormData();
+          form.append("chat_id", chatId);
+          form.append("caption", caption);
+          form.append("parse_mode", "Markdown");
+          form.append("photo", new Blob([new Uint8Array(fotoBytes)], { type: "image/jpeg" }), nombreFoto);
+          fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+            method: "POST",
+            body: form,
+          });
+        } else {
+          const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+          fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              photo: `https://${dominio}/images/galeria/${nombreFoto}`,
+              caption,
+              parse_mode: "Markdown",
+            }),
+          });
+        }
+        const fotoData = await fotoRes.json() as { ok: boolean; description?: string };
+        if (!fotoRes.ok || !fotoData.ok) {
+          req.log.warn({ categoria: categoriaFinal, description: fotoData.description, nombreFoto, viaBytes: !!fotoBytes }, "Prueba de foto de Telegram falló (el texto sí llegó)");
+          res.json({
+            ok: true,
+            mensaje: `Mensaje de prueba enviado a ${marca}.`,
+            foto: {
+              ok: false,
+              error: fotoData.description
+                ? `Telegram rechazó la foto: ${fotoData.description}`
+                : "Telegram rechazó la foto.",
+            },
+          });
+          return;
+        }
+        res.json({ ok: true, mensaje: `Mensaje y foto de prueba enviados a ${marca}.`, foto: { ok: true } });
+        return;
+      } catch (err) {
+        req.log.error({ err, categoria: categoriaFinal }, "Error de conexión probando sendPhoto de Telegram");
+        res.json({
+          ok: true,
+          mensaje: `Mensaje de prueba enviado a ${marca}.`,
+          foto: { ok: false, error: "No se pudo conectar con Telegram para enviar la foto." },
+        });
+        return;
+      }
     }
 
     res.json({ ok: true, mensaje: `Mensaje de prueba enviado a ${marca}.` });

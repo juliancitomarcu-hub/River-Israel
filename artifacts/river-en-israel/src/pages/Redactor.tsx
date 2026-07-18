@@ -1046,6 +1046,7 @@ export default function Redactor() {
   const [categoria, setCategoria] = useState<"river" | "seleccion">("river");
   const [estadoBots, setEstadoBots] = useState<EstadoBots | null>(null);
   const [probandoBot, setProbandoBot] = useState<"river" | "seleccion" | null>(null);
+  const [probandoBotFoto, setProbandoBotFoto] = useState(false);
   const [resultadoPrueba, setResultadoPrueba] = useState<Record<"river" | "seleccion", { ok: boolean; msg: string } | undefined>>({ river: undefined, seleccion: undefined });
   const [webhookEstados, setWebhookEstados] = useState<WebhookEstados | null>(null);
   const [webhookCargando, setWebhookCargando] = useState(false);
@@ -1893,18 +1894,32 @@ export default function Redactor() {
   }, [authStatus]);
 
   // Prueba de envío real de un bot: pega contra Telegram y reporta éxito/fallo.
-  const probarBot = async (cat: "river" | "seleccion") => {
+  const probarBot = async (cat: "river" | "seleccion", conFoto = false) => {
     setProbandoBot(cat);
+    setProbandoBotFoto(conFoto);
     setResultadoPrueba((prev) => ({ ...prev, [cat]: undefined }));
     try {
       const res = await fetch("/api/probar-bot", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...adminHeaders() },
-        body: JSON.stringify({ categoria: cat }),
+        body: JSON.stringify({ categoria: cat, conFoto }),
       });
-      const data = await res.json() as { ok?: boolean; mensaje?: string; error?: string };
+      const data = await res.json() as {
+        ok?: boolean;
+        mensaje?: string;
+        error?: string;
+        foto?: { ok: boolean; error?: string };
+      };
       if (res.ok && data.ok) {
-        setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: true, msg: data.mensaje ?? "Mensaje de prueba enviado." } }));
+        if (data.foto && !data.foto.ok) {
+          // El texto llegó pero la foto falló: mostramos el motivo real diferenciado.
+          setResultadoPrueba((prev) => ({
+            ...prev,
+            [cat]: { ok: false, msg: `El texto llegó, pero la foto falló: ${data.foto?.error ?? "motivo desconocido"}` },
+          }));
+        } else {
+          setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: true, msg: data.mensaje ?? "Mensaje de prueba enviado." } }));
+        }
       } else {
         setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: false, msg: data.error ?? "No se pudo enviar la prueba." } }));
       }
@@ -1912,6 +1927,7 @@ export default function Redactor() {
       setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al probar el bot." } }));
     } finally {
       setProbandoBot(null);
+      setProbandoBotFoto(false);
     }
   };
 
@@ -3177,10 +3193,23 @@ export default function Redactor() {
                       title={b.configurado ? "Enviar un mensaje de prueba a este bot" : "Configurá el bot antes de probarlo"}
                       className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-gray-300 bg-white text-gray-600 hover:border-river-red hover:text-river-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      {probando ? (
+                      {probando && !probandoBotFoto ? (
                         <><Loader2 className="w-3 h-3 animate-spin" /> Enviando…</>
                       ) : (
                         <><Send className="w-3 h-3" /> Enviar prueba</>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => probarBot(b.categoria, true)}
+                      disabled={probando || !b.configurado}
+                      title={b.configurado ? "Enviar mensaje + foto de prueba (verifica que el bot pueda adjuntar imágenes de portada)" : "Configurá el bot antes de probarlo"}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-gray-300 bg-white text-gray-600 hover:border-river-red hover:text-river-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {probando && probandoBotFoto ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Enviando…</>
+                      ) : (
+                        <><ImageIcon className="w-3 h-3" /> Prueba con foto</>
                       )}
                     </button>
                     {prueba && (
