@@ -45,6 +45,33 @@ export function avisarSiWebhookSinProteger(
   });
 }
 
+/**
+ * Avisa por Telegram que el registro del webhook se recuperó tras haber
+ * fallado en intentos anteriores del arranque. Fire-and-forget.
+ */
+export function avisarWebhookRecuperado(
+  categoria: CategoriaTelegram,
+  intento: number,
+): void {
+  logger.info({ bot: categoria, intento }, "Webhook registrado tras reintentos; enviando aviso de recuperación");
+
+  const texto =
+    `✅ *Webhook de Telegram recuperado*\n\n` +
+    `🤖 Bot: *${escaparMarkdown(NOMBRES[categoria])}*\n` +
+    `🔁 El registro falló al arrancar pero se recuperó solo en el intento ${intento}.\n` +
+    `👍 _No hace falta hacer nada._`;
+
+  const cred = credencialesTelegram(categoria) ?? credencialesTelegram("river");
+  if (!cred) {
+    logger.warn({ bot: categoria }, "avisarWebhookRecuperado: sin credenciales para enviar el aviso");
+    return;
+  }
+
+  void enviarMensaje(cred, texto, { bot: categoria, via: "aviso de recuperación" }).catch((err) => {
+    logger.warn({ err, bot: categoria }, "avisarWebhookRecuperado: fallo inesperado enviando aviso");
+  });
+}
+
 /** Arma el texto del aviso. */
 function textoAviso(categoria: CategoriaTelegram, motivo: string, viaControl: boolean): string {
   return (
