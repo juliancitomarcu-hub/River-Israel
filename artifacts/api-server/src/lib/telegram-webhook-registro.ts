@@ -82,6 +82,7 @@ export function dominioWebhook(): string | undefined {
  */
 export async function registrarWebhook(
   categoria: CategoriaTelegram,
+  opciones?: { descartarPendientes?: boolean },
 ): Promise<RegistroWebhookEstado> {
   const token = tokenDe(categoria);
   const cuando = new Date().toISOString();
@@ -123,6 +124,7 @@ export async function registrarWebhook(
       body: JSON.stringify({
         url: webhookUrl,
         allowed_updates: ["message", "callback_query"],
+        ...(opciones?.descartarPendientes ? { drop_pending_updates: true } : {}),
         ...(secretToken ? { secret_token: secretToken } : {}),
       }),
     });

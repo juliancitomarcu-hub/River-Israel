@@ -66,10 +66,15 @@ router.get("/webhook-info", async (req, res) => {
  * arrancar). Devuelve el estado actualizado tras re-registrar.
  */
 router.post("/registrar-webhook", async (req, res) => {
-  const { categoria } = req.body as { categoria?: CategoriaImagen };
+  const { categoria, descartarPendientes } = req.body as {
+    categoria?: CategoriaImagen;
+    descartarPendientes?: boolean;
+  };
   const categoriaFinal = categoria === "seleccion" ? "seleccion" : "river";
 
-  const registro = await registrarWebhook(categoriaFinal);
+  const registro = await registrarWebhook(categoriaFinal, {
+    descartarPendientes: descartarPendientes === true,
+  });
   avisarSiWebhookSinProteger(categoriaFinal, registro);
   if (!registro.ok) {
     req.log.warn({ categoria: categoriaFinal, error: registro.error }, "No se pudo re-registrar el webhook");

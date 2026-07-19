@@ -1108,6 +1108,7 @@ export default function Redactor() {
   const [webhookEstados, setWebhookEstados] = useState<WebhookEstados | null>(null);
   const [webhookCargando, setWebhookCargando] = useState(false);
   const [reRegistrando, setReRegistrando] = useState<"river" | "seleccion" | null>(null);
+  const [descartandoPendientes, setDescartandoPendientes] = useState<"river" | "seleccion" | null>(null);
   const [reRegistroMsg, setReRegistroMsg] = useState<Record<"river" | "seleccion", { ok: boolean; msg: string } | undefined>>({ river: undefined, seleccion: undefined });
   const resultadoRef = useRef<HTMLDivElement>(null);
   const [editando, setEditando] = useState(false);
@@ -2044,6 +2045,34 @@ export default function Redactor() {
       setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al re-registrar." } }));
     } finally {
       setReRegistrando(null);
+    }
+  };
+
+  // Descarta los updates encolados de un bot re-registrando el webhook con drop_pending_updates.
+  const descartarPendientesWebhook = async (cat: "river" | "seleccion", cuantos: number) => {
+    const confirmado = window.confirm(
+      `Vas a descartar ${cuantos} ${cuantos === 1 ? "update pendiente" : "updates pendientes"} del bot. Esos mensajes se pierden para siempre y no se van a procesar. ¿Continuar?`,
+    );
+    if (!confirmado) return;
+    setDescartandoPendientes(cat);
+    setReRegistroMsg((prev) => ({ ...prev, [cat]: undefined }));
+    try {
+      const res = await fetch("/api/registrar-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
+        body: JSON.stringify({ categoria: cat, descartarPendientes: true }),
+      });
+      const data = await res.json() as { ok?: boolean; estado?: WebhookEstado; error?: string };
+      if (res.ok && data.ok && data.estado) {
+        setWebhookEstados((prev) => (prev ? { ...prev, [cat]: data.estado! } : prev));
+        setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: true, msg: "Updates pendientes descartados." } }));
+      } else {
+        setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: data.error ?? "No se pudieron descartar los pendientes." } }));
+      }
+    } catch {
+      setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al descartar pendientes." } }));
+    } finally {
+      setDescartandoPendientes(null);
     }
   };
 
@@ -3432,8 +3461,23 @@ export default function Redactor() {
                     </div>
                     <span className="text-[11px] text-gray-500 pl-1">{detalle}</span>
                     {w.consultaOk && (w.pendingUpdateCount ?? 0) > 0 && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 pl-1">
-                        ⏳ {w.pendingUpdateCount} {w.pendingUpdateCount === 1 ? "update pendiente" : "updates pendientes"} en Telegram sin entregar.
+                      <span className="inline-flex flex-wrap items-center gap-2 pl-1">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                          ⏳ {w.pendingUpdateCount} {w.pendingUpdateCount === 1 ? "update pendiente" : "updates pendientes"} en Telegram sin entregar.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => descartarPendientesWebhook(w.categoria, w.pendingUpdateCount ?? 0)}
+                          disabled={descartandoPendientes === w.categoria || reReg}
+                          title="Re-registra el webhook descartando los updates encolados (se pierden esos mensajes)"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-amber-300 bg-white text-amber-700 hover:border-red-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {descartandoPendientes === w.categoria ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Descartando…</>
+                          ) : (
+                            <><Trash2 className="w-3 h-3" /> Descartar pendientes</>
+                          )}
+                        </button>
                       </span>
                     )}
                     {w.consultaOk && w.ultimoError && (
