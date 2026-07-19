@@ -1176,6 +1176,10 @@ export default function Redactor() {
   const [ultimoLinkResumen, setUltimoLinkResumen] = useState<
     { creadoEn: string; expiraEn: string; usado: boolean } | null
   >(null);
+  // Últimos links de edición por nota emitidos (para ver cuáles siguen vigentes).
+  const [ultimosLinksEdicion, setUltimosLinksEdicion] = useState<
+    Array<{ noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>
+  >([]);
   // Duración (en minutos) de los links de edición por nota (avisos al crear).
   const [linkEdicionTtlMinutos, setLinkEdicionTtlMinutos] = useState<string>("");
   const [guardandoTtlEdicion, setGuardandoTtlEdicion] = useState(false);
@@ -1327,10 +1331,12 @@ export default function Redactor() {
           resumenSeccionPostulaciones?: boolean;
           resumenSeccionBorradoresEs?: boolean;
           ultimoLinkResumen?: { creadoEn: string; expiraEn: string; usado: boolean } | null;
+          ultimosLinksEdicion?: Array<{ noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>;
           conteosResumen?: { hebreo: number; postulaciones: number; borradoresEs: number } | null;
         };
         setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
         setUltimoLinkResumen(data.ultimoLinkResumen ?? null);
+        setUltimosLinksEdicion(data.ultimosLinksEdicion ?? []);
         if (typeof data.linkResumenTtlHoras === "number") {
           setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
         }
@@ -4630,6 +4636,61 @@ export default function Redactor() {
               {mensajeTtlEdicion && (
                 <p className="text-xs text-gray-500 mt-2">{mensajeTtlEdicion}</p>
               )}
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-river-black mb-1.5">Últimos links de edición emitidos</p>
+                {ultimosLinksEdicion.length === 0 ? (
+                  <p className="text-xs text-gray-500">
+                    Todavía no hay links de edición emitidos (o los últimos ya fueron depurados).
+                  </p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {ultimosLinksEdicion.map((link, idx) => {
+                      const expira = new Date(link.expiraEn);
+                      const emitido = new Date(link.creadoEn);
+                      const restanteMs = expira.getTime() - Date.now();
+                      const fmt = (d: Date) => d.toLocaleString("es-AR", {
+                        day: "2-digit", month: "2-digit",
+                        hour: "2-digit", minute: "2-digit",
+                      });
+                      let estado: React.ReactNode;
+                      if (link.usado) {
+                        estado = (
+                          <span className="text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 shrink-0">
+                            Usado
+                          </span>
+                        );
+                      } else if (restanteMs <= 0) {
+                        estado = (
+                          <span className="text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 shrink-0">
+                            Caducó {fmt(expira)}
+                          </span>
+                        );
+                      } else {
+                        const horas = Math.floor(restanteMs / 3600000);
+                        const minutos = Math.floor((restanteMs % 3600000) / 60000);
+                        const restanteStr = horas > 0 ? `${horas} h ${minutos} min` : `${minutos} min`;
+                        estado = (
+                          <span className="text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5 shrink-0">
+                            Válido — quedan {restanteStr}
+                          </span>
+                        );
+                      }
+                      return (
+                        <li
+                          key={`${link.noticiaId}-${link.creadoEn}-${idx}`}
+                          className="flex items-center gap-2 flex-wrap text-xs bg-white border border-gray-200 rounded-lg px-3 py-1.5"
+                        >
+                          <span className="flex-1 min-w-[140px] text-river-black truncate">
+                            {link.titulo || `Nota #${link.noticiaId}`}
+                          </span>
+                          <span className="text-gray-400 shrink-0">emitido {fmt(emitido)}</span>
+                          {estado}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
 
             {mensajeMasivo && (

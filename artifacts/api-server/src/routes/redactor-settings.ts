@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, editTokensTable } from "@workspace/db";
-import { desc, isNull } from "drizzle-orm";
+import { db, editTokensTable, noticiasTable } from "@workspace/db";
+import { desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { requireAdmin } from "../middleware/requireAdmin";
 import {
   leerRedactorSettings,
@@ -45,6 +45,41 @@ async function ultimoLinkResumen(): Promise<
   };
 }
 
+// Lista los últimos links de edición por nota (tokens con noticiaId) con el
+// título de la nota, para que el panel muestre cuáles siguen vigentes, cuáles
+// fueron usados y cuáles caducaron. Los caducados se purgan periódicamente,
+// así que la lista solo refleja los que todavía existen en la tabla.
+async function ultimosLinksEdicion(): Promise<
+  Array<{
+    noticiaId: number;
+    titulo: string | null;
+    creadoEn: string;
+    expiraEn: string;
+    usado: boolean;
+  }>
+> {
+  const rows = await db
+    .select({
+      noticiaId: editTokensTable.noticiaId,
+      createdAt: editTokensTable.createdAt,
+      expiresAt: editTokensTable.expiresAt,
+      usedAt: editTokensTable.usedAt,
+      titulo: noticiasTable.titulo,
+    })
+    .from(editTokensTable)
+    .leftJoin(noticiasTable, eq(editTokensTable.noticiaId, noticiasTable.id))
+    .where(isNotNull(editTokensTable.noticiaId))
+    .orderBy(desc(editTokensTable.createdAt))
+    .limit(10);
+  return rows.map((row) => ({
+    noticiaId: row.noticiaId as number,
+    titulo: row.titulo,
+    creadoEn: row.createdAt.toISOString(),
+    expiraEn: row.expiresAt.toISOString(),
+    usado: row.usedAt !== null,
+  }));
+}
+
 // Devuelve la configuración editable del panel.
 router.get("/redactor-settings", async (req, res) => {
   const settings = leerRedactorSettings();
@@ -53,6 +88,12 @@ router.get("/redactor-settings", async (req, res) => {
     linkResumen = await ultimoLinkResumen();
   } catch (err) {
     req.log.error({ err }, "No se pudo consultar el último link de resumen");
+  }
+  let linksEdicion: Awaited<ReturnType<typeof ultimosLinksEdicion>> = [];
+  try {
+    linksEdicion = await ultimosLinksEdicion();
+  } catch (err) {
+    req.log.error({ err }, "No se pudieron consultar los links de edición por nota");
   }
   // Conteos en vivo de pendientes por sección del resumen diario (mismas
   // queries que usa el scheduler al armar el mensaje de Telegram). Si la
@@ -72,6 +113,7 @@ router.get("/redactor-settings", async (req, res) => {
     resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
     resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
     ultimoLinkResumen: linkResumen,
+    ultimosLinksEdicion: linksEdicion,
     conteosResumen: conteos,
   });
 });
