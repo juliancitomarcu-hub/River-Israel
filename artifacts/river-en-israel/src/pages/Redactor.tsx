@@ -1176,6 +1176,12 @@ export default function Redactor() {
   const [ultimoLinkResumen, setUltimoLinkResumen] = useState<
     { creadoEn: string; expiraEn: string; usado: boolean } | null
   >(null);
+  // Tick por minuto para que la cuenta regresiva del link se refresque sola.
+  const [ahoraTick, setAhoraTick] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAhoraTick(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
   // Últimos links de edición por nota emitidos (para ver cuáles siguen vigentes).
   const [ultimosLinksEdicion, setUltimosLinksEdicion] = useState<
     Array<{ noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>
@@ -4576,7 +4582,7 @@ export default function Redactor() {
                 {ultimoLinkResumen ? (
                   (() => {
                     const expira = new Date(ultimoLinkResumen.expiraEn);
-                    const restanteMs = expira.getTime() - Date.now();
+                    const restanteMs = expira.getTime() - ahoraTick;
                     const fechaStr = expira.toLocaleString("es-AR", {
                       day: "2-digit", month: "2-digit", year: "numeric",
                       hour: "2-digit", minute: "2-digit",
@@ -4647,7 +4653,7 @@ export default function Redactor() {
                     {ultimosLinksEdicion.map((link, idx) => {
                       const expira = new Date(link.expiraEn);
                       const emitido = new Date(link.creadoEn);
-                      const restanteMs = expira.getTime() - Date.now();
+                      const restanteMs = expira.getTime() - ahoraTick;
                       const fmt = (d: Date) => d.toLocaleString("es-AR", {
                         day: "2-digit", month: "2-digit",
                         hour: "2-digit", minute: "2-digit",
