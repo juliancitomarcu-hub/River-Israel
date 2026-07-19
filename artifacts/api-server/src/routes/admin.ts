@@ -10,6 +10,7 @@ import {
   getAdminSession,
   getNoticiaSession,
   countActiveAdminSessions,
+  listActiveAdminSessions,
   revokeAdminSession,
   revokeAllAdminSessions,
 } from "../lib/edit-tokens";
@@ -170,6 +171,30 @@ router.get("/admin/sessions/count", async (req, res) => {
   }
   const count = await countActiveAdminSessions();
   res.json({ ok: true, count });
+});
+
+// Lista las sesiones admin vivas: creada, expira y un flag "actual" (la del
+// que pregunta). Nunca expone tokens. Sirve para el popover del contador
+// "N sesiones activas" del Redactor, para decidir si vale la pena apretar
+// "salir de todos". Requiere credencial admin válida.
+router.get("/admin/sessions", async (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const provided = extractToken(req);
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const autorizado = provided === expected || (await getAdminSession(provided)) !== null;
+  if (!autorizado) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const sesiones = await listActiveAdminSessions(provided);
+  res.json({ ok: true, sesiones });
 });
 
 // Renueva la sesión actual sin pedir la contraseña: empuja el expiresAt

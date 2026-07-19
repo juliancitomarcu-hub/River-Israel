@@ -205,6 +205,34 @@ export async function countActiveAdminSessions(): Promise<number> {
   return rows[0]?.count ?? 0;
 }
 
+// Lista las sesiones admin vivas (no caducadas) sin exponer el token completo:
+// devuelve creada/expira y un flag "actual" comparando contra el token del que
+// pide. Ordenadas de más nueva a más vieja.
+export async function listActiveAdminSessions(
+  currentToken: string,
+): Promise<Array<{ createdAt: number; expiresAt: number; actual: boolean }>> {
+  const now = new Date();
+  const rows = await db
+    .select({
+      token: panelSessionsTable.token,
+      createdAt: panelSessionsTable.createdAt,
+      expiresAt: panelSessionsTable.expiresAt,
+    })
+    .from(panelSessionsTable)
+    .where(
+      and(
+        eq(panelSessionsTable.scope, "admin"),
+        sql`${panelSessionsTable.expiresAt} > ${now}`,
+      ),
+    )
+    .orderBy(sql`${panelSessionsTable.createdAt} desc`);
+  return rows.map((r) => ({
+    createdAt: r.createdAt.getTime(),
+    expiresAt: r.expiresAt.getTime(),
+    actual: r.token === currentToken,
+  }));
+}
+
 export async function revokeAdminSession(token: string): Promise<void> {
   await db.delete(panelSessionsTable).where(eq(panelSessionsTable.token, token));
 }

@@ -1008,6 +1008,57 @@ export default function Redactor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authStatus]);
 
+  // Detalle de cada sesión admin viva (popover al tocar el contador): creada
+  // hace X, caduca en Y, y si es "esta" sesión. El endpoint nunca expone tokens.
+  type SesionAdmin = { createdAt: number; expiresAt: number; actual: boolean };
+  const [detalleSesiones, setDetalleSesiones] = useState<SesionAdmin[] | null>(null);
+  const [mostrarSesiones, setMostrarSesiones] = useState(false);
+  const [cargandoSesiones, setCargandoSesiones] = useState(false);
+  const [errorSesiones, setErrorSesiones] = useState("");
+
+  const cargarDetalleSesiones = async () => {
+    setCargandoSesiones(true);
+    setErrorSesiones("");
+    try {
+      const res = await fetch("/api/admin/sessions", {
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        setErrorSesiones("No se pudo cargar el detalle");
+        return;
+      }
+      const data = await res.json() as { sesiones?: SesionAdmin[] };
+      if (Array.isArray(data.sesiones)) {
+        setDetalleSesiones(data.sesiones);
+        setSesionesActivas(data.sesiones.length);
+      }
+    } catch {
+      setErrorSesiones("Error de conexión");
+    } finally {
+      setCargandoSesiones(false);
+    }
+  };
+
+  const toggleSesiones = () => {
+    const abrir = !mostrarSesiones;
+    setMostrarSesiones(abrir);
+    if (abrir) cargarDetalleSesiones();
+  };
+
+  // "hace 5 min", "hace 2 h", "hace 1 día" — para el popover de sesiones.
+  const tiempoRelativo = (ms: number): string => {
+    const min = Math.max(0, Math.round(ms / 60000));
+    if (min < 1) return "menos de 1 min";
+    if (min < 60) return `${min} min`;
+    const horas = Math.floor(min / 60);
+    if (horas < 24) {
+      const resto = min % 60;
+      return resto > 0 ? `${horas} h ${resto} min` : `${horas} h`;
+    }
+    const dias = Math.floor(horas / 24);
+    return `${dias} día${dias === 1 ? "" : "s"}`;
+  };
+
   const [cerrandoTodo, setCerrandoTodo] = useState(false);
   const handleLogoutAll = async () => {
     if (cerrandoTodo) return;
@@ -2316,11 +2367,58 @@ export default function Redactor() {
               {cerrandoTodo ? "cerrando..." : "salir de todos"}
             </button>
             {sesionesActivas !== null && (
-              <span
-                className="text-[10px] font-bold bg-river-red/15 px-1.5 py-0.5 rounded-full"
-                title="Sesiones admin abiertas en este momento (todos los dispositivos)"
-              >
-                {sesionesActivas === 1 ? "1 sesión activa" : `${sesionesActivas} sesiones activas`}
+              <span className="relative">
+                <button
+                  type="button"
+                  onClick={toggleSesiones}
+                  className="text-[10px] font-bold bg-river-red/15 hover:bg-river-red/25 px-1.5 py-0.5 rounded-full"
+                  title="Ver detalle de las sesiones admin abiertas (todos los dispositivos)"
+                >
+                  {sesionesActivas === 1 ? "1 sesión activa" : `${sesionesActivas} sesiones activas`}
+                </button>
+                {mostrarSesiones && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-left normal-case tracking-normal">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold text-gray-700">Sesiones abiertas</span>
+                      <button
+                        type="button"
+                        onClick={() => setMostrarSesiones(false)}
+                        className="text-[10px] font-bold text-gray-400 hover:text-gray-600"
+                      >
+                        cerrar
+                      </button>
+                    </div>
+                    {cargandoSesiones && (
+                      <p className="text-[11px] text-gray-400">Cargando...</p>
+                    )}
+                    {!cargandoSesiones && errorSesiones && (
+                      <p className="text-[11px] text-red-500">{errorSesiones}</p>
+                    )}
+                    {!cargandoSesiones && !errorSesiones && detalleSesiones !== null && (
+                      detalleSesiones.length === 0 ? (
+                        <p className="text-[11px] text-gray-400">No hay sesiones abiertas.</p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {detalleSesiones.map((s, i) => (
+                            <li
+                              key={`${s.createdAt}-${i}`}
+                              className={`text-[11px] rounded-lg px-2 py-1.5 ${s.actual ? "bg-river-red/10 text-river-red" : "bg-gray-50 text-gray-600"}`}
+                            >
+                              <span className="font-bold">
+                                {s.actual ? "Esta sesión" : `Sesión ${i + 1}`}
+                              </span>
+                              {" · "}abierta hace {tiempoRelativo(Date.now() - s.createdAt)}
+                              {" · "}caduca en {tiempoRelativo(s.expiresAt - Date.now())}
+                            </li>
+                          ))}
+                        </ul>
+                      )
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-2">
+                      Si ves sesiones que no reconocés, usá "salir de todos".
+                    </p>
+                  </div>
+                )}
               </span>
             )}
           </div>
