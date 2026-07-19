@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { iniciarScheduler } from "./scheduler";
 import { registrarWebhook } from "./lib/telegram-webhook-registro";
 import { avisarSiWebhookSinProteger } from "./lib/avisar-webhook-sin-proteger";
+import { initRedactorSettings } from "./lib/redactor-settings";
 
 const rawPort = process.env["PORT"];
 
@@ -48,9 +49,17 @@ app.listen(port, (err) => {
     logger.error({ err }, "Error en registro de webhook");
   });
 
-  if (esProduccion) {
-    iniciarScheduler();
-  } else {
-    logger.info("Modo desarrollo: scheduler automático desactivado (solo corre en producción)");
-  }
+  // Hidratar settings desde la DB antes de arrancar el scheduler para que el
+  // primer ciclo no use defaults por una carrera de arranque.
+  initRedactorSettings()
+    .catch((err) => {
+      logger.error({ err }, "Error hidratando redactor settings desde la DB");
+    })
+    .finally(() => {
+      if (esProduccion) {
+        iniciarScheduler();
+      } else {
+        logger.info("Modo desarrollo: scheduler automático desactivado (solo corre en producción)");
+      }
+    });
 });

@@ -1,12 +1,15 @@
 import * as fs from "fs";
 import * as path from "path";
 import { logger } from "./logger";
+import { leerEstadoApp, guardarEstadoApp } from "./app-estado";
 
 // ─── SETTINGS PERSISTENTES DEL PANEL /redactor ───────────────────────────────
 // Configuración editable desde el panel sin tocar código ni reiniciar el server.
-// Se guarda en un JSON en disco; el scheduler lo relee en cada tick.
+// Se guarda en la DB (tabla app_estado) para sobrevivir reinicios en producción;
+// antes vivía en un JSON en disco que se perdía en cada reinicio.
 
 const SETTINGS_FILE = path.resolve("./redactor_settings.json");
+const SETTINGS_CLAVE = "redactor_settings";
 
 // Rango permitido para la duración (en horas) de los links "de resumen".
 // 1h mínimo (que sea útil) y 168h = 7 días máximo (más allá no tiene sentido
@@ -96,11 +99,13 @@ export function ttlMinutosValido(m: unknown): m is number {
   );
 }
 
-export function leerRedactorSettings(): RedactorSettings {
+// Cache en memoria: los llamadores son sincrónicos, así que mantenemos el
+// último valor conocido acá y lo hidratamos desde la DB al arrancar el server.
+let cache: RedactorSettings | null = null;
+
+function normalizar(raw: Partial<RedactorSettings>): RedactorSettings {
   const def = defaults();
-  try {
-    const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8")) as Partial<RedactorSettings>;
-    return {
+  return {
       resumenHebreoHora:
         raw.resumenHebreoHora === null ? null
           : horaValida(raw.resumenHebreoHora) ? raw.resumenHebreoHora
@@ -117,20 +122,46 @@ export function leerRedactorSettings(): RedactorSettings {
         typeof raw.resumenSeccionPostulaciones === "boolean" ? raw.resumenSeccionPostulaciones : def.resumenSeccionPostulaciones,
       resumenSeccionBorradoresEs:
         typeof raw.resumenSeccionBorradoresEs === "boolean" ? raw.resumenSeccionBorradoresEs : def.resumenSeccionBorradoresEs,
-    };
+  };
+}
+
+function leerArchivoLegacy(): Partial<RedactorSettings> | null {
+  try {
+    return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8")) as Partial<RedactorSettings>;
   } catch {
-    // Archivo ausente o ilegible → usar defaults derivados del env.
-    return def;
+    return null;
   }
+}
+
+// Hidrata el cache desde la DB al arrancar el server (con migración desde el
+// archivo local viejo si la DB todavía no tiene nada).
+export async function initRedactorSettings(): Promise<void> {
+  const desdeDb = await leerEstadoApp<Partial<RedactorSettings>>(SETTINGS_CLAVE);
+  if (desdeDb) {
+    cache = normalizar(desdeDb);
+    return;
+  }
+  const legacy = leerArchivoLegacy();
+  cache = normalizar(legacy ?? {});
+  if (legacy) {
+    await guardarEstadoApp(SETTINGS_CLAVE, cache);
+  }
+}
+
+export function leerRedactorSettings(): RedactorSettings {
+  if (cache) return cache;
+  // Aún no hidratado desde la DB: usar archivo legacy o defaults, sin cachear
+  // para que la hidratación posterior no quede pisada.
+  return normalizar(leerArchivoLegacy() ?? {});
 }
 
 export function guardarRedactorSettings(patch: Partial<RedactorSettings>): RedactorSettings {
   const actual = leerRedactorSettings();
   const nuevo: RedactorSettings = { ...actual, ...patch };
-  try {
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(nuevo), "utf-8");
-  } catch (err) {
-    logger.warn({ err }, "No se pudo guardar redactor_settings");
-  }
+  cache = nuevo;
+  // Persistencia asíncrona en la DB (fire-and-forget con log de error).
+  void guardarEstadoApp(SETTINGS_CLAVE, nuevo).catch((err) =>
+    logger.warn({ err }, "No se pudo guardar redactor_settings en la DB"),
+  );
   return nuevo;
 }

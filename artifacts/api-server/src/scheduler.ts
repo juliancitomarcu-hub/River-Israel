@@ -10,6 +10,7 @@ import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
 import { limpiarNota } from "./lib/limpiar-asteriscos";
 import { enviarNotaAMake } from "./lib/enviar-a-make";
 import { urlImagenSegura } from "./lib/url-imagen-segura";
+import { leerEstadoApp, guardarEstadoApp } from "./lib/app-estado";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 import { createEditToken, createLongEditToken, descripcionTtlEdicion, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
@@ -51,30 +52,39 @@ interface SchedulerState {
   urlsProcesadas: string[];  // URLs ya enviadas a Telegram (cap 1000)
 }
 
-function leerEstado(): SchedulerState {
+const ESTADO_CLAVE = "scheduler_state";
+
+function normalizarEstado(raw: Partial<SchedulerState> | null): SchedulerState {
+  return {
+    fuenteIndex:    typeof raw?.fuenteIndex === "number" ? raw.fuenteIndex : 0,
+    fuenteIndexSel: typeof raw?.fuenteIndexSel === "number" ? raw.fuenteIndexSel : 0,
+    categoriaFlip:  typeof raw?.categoriaFlip === "number" ? raw.categoriaFlip : 0,
+    urlsProcesadas: Array.isArray(raw?.urlsProcesadas) ? raw.urlsProcesadas : [],
+  };
+}
+
+// El estado vive en la DB (tabla app_estado) para sobrevivir reinicios del
+// server en producción. Antes se guardaba en scheduler_state.json, que se
+// perdía en cada reinicio: la rotación de fuentes arrancaba siempre en la
+// primera fuente y el dedupe descartaba todo → nunca se publicaba nada.
+async function leerEstado(): Promise<SchedulerState> {
+  const desdeDb = await leerEstadoApp<Partial<SchedulerState>>(ESTADO_CLAVE);
+  if (desdeDb) return normalizarEstado(desdeDb);
+  // Migración: si existe el archivo local viejo, usarlo una vez
   try {
     const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf-8")) as Partial<SchedulerState>;
-    return {
-      fuenteIndex:    typeof raw.fuenteIndex === "number" ? raw.fuenteIndex : 0,
-      fuenteIndexSel: typeof raw.fuenteIndexSel === "number" ? raw.fuenteIndexSel : 0,
-      categoriaFlip:  typeof raw.categoriaFlip === "number" ? raw.categoriaFlip : 0,
-      urlsProcesadas: Array.isArray(raw.urlsProcesadas) ? raw.urlsProcesadas : [],
-    };
+    return normalizarEstado(raw);
   } catch {
-    return { fuenteIndex: 0, fuenteIndexSel: 0, categoriaFlip: 0, urlsProcesadas: [] };
+    return normalizarEstado(null);
   }
 }
 
-function guardarEstado(estado: SchedulerState): void {
-  try {
-    // Cap en 1000 URLs para no crecer indefinidamente
-    if (estado.urlsProcesadas.length > 1000) {
-      estado.urlsProcesadas = estado.urlsProcesadas.slice(-1000);
-    }
-    fs.writeFileSync(STATE_FILE, JSON.stringify(estado), "utf-8");
-  } catch (err) {
-    logger.warn({ err }, "Scheduler: no se pudo guardar el estado");
+async function guardarEstado(estado: SchedulerState): Promise<void> {
+  // Cap en 1000 URLs para no crecer indefinidamente
+  if (estado.urlsProcesadas.length > 1000) {
+    estado.urlsProcesadas = estado.urlsProcesadas.slice(-1000);
   }
+  await guardarEstadoApp(ESTADO_CLAVE, estado);
 }
 
 // ─── DEDUPLICACIÓN POR URL ────────────────────────────────────────────────────
@@ -479,7 +489,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
   enEjecucion = true;
 
   try {
-    const estado = leerEstado();
+    const estado = await leerEstado();
 
     // Elegir categoría: override > alternancia automática
     let categoria: Categoria;
@@ -494,67 +504,93 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
 
     const fuentesList = categoria === "seleccion" ? FUENTES_SELECCION : FUENTES;
     const indexKey = categoria === "seleccion" ? "fuenteIndexSel" : "fuenteIndex";
-    const fuente = fuenteOverride ?? fuentesList[estado[indexKey] % fuentesList.length];
-
-    if (!fuenteOverride) {
-      estado[indexKey] += 1;
-      guardarEstado(estado);
-    } else if (categoriaOverride && esAutomatico === false) {
-      // Si vino override con categoria, persistimos el flip igual
-      guardarEstado(estado);
-    }
-
-    logger.info({ categoria, fuente, siguiente: fuentesList[estado[indexKey] % fuentesList.length] }, "Scheduler: iniciando ciclo");
+    const indiceInicial = estado[indexKey] % fuentesList.length;
 
     const port = process.env.PORT;
     const endpoint = categoria === "seleccion" ? "noticias-seleccion" : "noticias-river";
-    const noticiasRes = await fetch(`http://localhost:${port}/api/${endpoint}?fuente=${fuente}`, {
-      signal: AbortSignal.timeout(35000),
-    });
 
-    if (!noticiasRes.ok) {
-      logger.warn({ fuente, status: noticiasRes.status }, "Scheduler: scraping falló");
-      return { tipo: "scraping_fallido", fuente };
-    }
+    // Con override probamos solo esa fuente; sin override recorremos la lista
+    // completa empezando por la que toca según la rotación. Antes, si la
+    // fuente del turno no tenía nada nuevo, el ciclo entero se perdía.
+    const maxIntentos = fuenteOverride ? 1 : fuentesList.length;
 
-    const data = await noticiasRes.json() as { noticias?: { titulo: string; url: string; fuente: string }[] };
-    const noticias = data.noticias ?? [];
+    let fuente: string = fuenteOverride ?? fuentesList[indiceInicial];
+    let noticiaElegida: { titulo: string; url: string; fuente: string } | null = null;
+    let huboScrapingOk = false;
 
-    if (!noticias.length) {
-      logger.warn({ fuente }, "Scheduler: no se encontraron noticias");
-      return { tipo: "sin_noticias", fuente };
-    }
+    for (let intento = 0; intento < maxIntentos; intento++) {
+      fuente = fuenteOverride ?? fuentesList[(indiceInicial + intento) % fuentesList.length];
 
-    // ── DEDUPLICACIÓN TRIPLE: URL procesada + antigüedad + título ────────
-    let noticiaElegida: typeof noticias[0] | null = null;
+      if (!fuenteOverride) {
+        estado[indexKey] = indiceInicial + intento + 1;
+        await guardarEstado(estado);
+      } else if (categoriaOverride && esAutomatico === false) {
+        // Si vino override con categoria, persistimos el flip igual
+        await guardarEstado(estado);
+      }
 
-    for (const candidata of noticias) {
-      // 1. Descartar si la URL ya fue procesada (igual artículo, distinto ciclo)
-      if (candidata.url && urlYaProcesada(candidata.url, estado)) {
-        logger.info({ url: candidata.url }, "Scheduler: URL ya procesada, saltando");
+      logger.info({ categoria, fuente, intento: intento + 1, siguiente: fuentesList[estado[indexKey] % fuentesList.length] }, "Scheduler: iniciando ciclo");
+
+      let noticias: { titulo: string; url: string; fuente: string }[] = [];
+      try {
+        const noticiasRes = await fetch(`http://localhost:${port}/api/${endpoint}?fuente=${fuente}`, {
+          signal: AbortSignal.timeout(35000),
+        });
+
+        if (!noticiasRes.ok) {
+          logger.warn({ fuente, status: noticiasRes.status }, "Scheduler: scraping falló");
+          if (fuenteOverride) return { tipo: "scraping_fallido", fuente };
+          continue;
+        }
+
+        const data = await noticiasRes.json() as { noticias?: { titulo: string; url: string; fuente: string }[] };
+        noticias = data.noticias ?? [];
+      } catch (err) {
+        logger.warn({ err, fuente }, "Scheduler: error/timeout scrapeando la fuente");
+        if (fuenteOverride) return { tipo: "scraping_fallido", fuente };
         continue;
       }
-      // 1b. Chequeo permanente en DB (sin ventana de tiempo ni tope de memoria)
-      if (candidata.url && (await urlYaEnDB(candidata.url))) {
-        logger.info({ url: candidata.url }, "Scheduler: URL ya publicada en DB, saltando");
-        continue;
-      }
-      // 2. Descartar si la URL tiene fecha y es ≥3 días antigua
-      if (candidata.url && urlDemaisiadoVieja(candidata.url)) {
-        logger.info({ url: candidata.url, titulo: candidata.titulo }, "Scheduler: artículo demasiado viejo, saltando");
-        continue;
-      }
-      // 3. Descartar si el tema (por título) ya fue cubierto esta semana
-      const yaExistePorTitulo = await tituloYaProcesado(candidata.titulo);
-      if (yaExistePorTitulo) continue;
+      huboScrapingOk = true;
 
-      noticiaElegida = candidata;
-      break;
+      if (!noticias.length) {
+        logger.warn({ fuente }, "Scheduler: no se encontraron noticias");
+        if (fuenteOverride) return { tipo: "sin_noticias", fuente };
+        continue;
+      }
+
+      // ── DEDUPLICACIÓN TRIPLE: URL procesada + antigüedad + título ────────
+      for (const candidata of noticias) {
+        // 1. Descartar si la URL ya fue procesada (igual artículo, distinto ciclo)
+        if (candidata.url && urlYaProcesada(candidata.url, estado)) {
+          logger.info({ url: candidata.url }, "Scheduler: URL ya procesada, saltando");
+          continue;
+        }
+        // 1b. Chequeo permanente en DB (sin ventana de tiempo ni tope de memoria)
+        if (candidata.url && (await urlYaEnDB(candidata.url))) {
+          logger.info({ url: candidata.url }, "Scheduler: URL ya publicada en DB, saltando");
+          continue;
+        }
+        // 2. Descartar si la URL tiene fecha y es ≥3 días antigua
+        if (candidata.url && urlDemaisiadoVieja(candidata.url)) {
+          logger.info({ url: candidata.url, titulo: candidata.titulo }, "Scheduler: artículo demasiado viejo, saltando");
+          continue;
+        }
+        // 3. Descartar si el tema (por título) ya fue cubierto esta semana
+        const yaExistePorTitulo = await tituloYaProcesado(candidata.titulo);
+        if (yaExistePorTitulo) continue;
+
+        noticiaElegida = candidata;
+        break;
+      }
+
+      if (noticiaElegida) break;
+
+      logger.warn({ fuente }, "Scheduler: todas las noticias de esta fuente ya fueron procesadas o son antiguas, probando la siguiente");
     }
 
     if (!noticiaElegida) {
-      logger.warn({ fuente }, "Scheduler: todas las noticias disponibles ya fueron procesadas o son antiguas");
-      return { tipo: "todas_procesadas", fuente };
+      logger.warn({ fuente }, "Scheduler: ninguna fuente tuvo noticias nuevas en este ciclo");
+      return huboScrapingOk ? { tipo: "todas_procesadas", fuente } : { tipo: "scraping_fallido", fuente };
     }
 
     logger.info({ titulo: noticiaElegida.titulo, url: noticiaElegida.url }, "Scheduler: noticia seleccionada");
@@ -576,7 +612,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
           );
           // Marcar como procesada para no volver a intentarlo
           marcarUrlProcesada(noticiaElegida.url, estado);
-          guardarEstado(estado);
+          await guardarEstado(estado);
           return { tipo: "todas_procesadas", fuente };
         }
         logger.info({ fechaPublicacion: fechaPublicacion.toISOString(), diasAtras: diasAtras.toFixed(1) }, "Scheduler: artículo dentro del rango de fechas");
@@ -692,7 +728,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       logger.warn({ url: noticiaElegida.url }, "Scheduler: URL ya insertada por otro proceso, saltando duplicado");
       if (noticiaElegida.url) {
         marcarUrlProcesada(noticiaElegida.url, estado);
-        guardarEstado(estado);
+        await guardarEstado(estado);
       }
       return { tipo: "todas_procesadas", fuente };
     }
@@ -700,7 +736,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     // Marcar URL como procesada para no volver a enviarla
     if (noticiaElegida.url) {
       marcarUrlProcesada(noticiaElegida.url, estado);
-      guardarEstado(estado);
+      await guardarEstado(estado);
     }
 
     // ── ENVIAR A TELEGRAM ─────────────────────────────────────────────────
@@ -1011,21 +1047,22 @@ const PRIMER_CICLO_MS =  2 * 60 * 1000; // 2 minutos tras arrancar
 
 // Alterna River ↔ Selección en cada ciclo periódico para que el bot envíe
 // constantemente noticias de ambas categorías. El flip se persiste en el estado.
-function siguienteCategoriaPeriodica(): Categoria {
-  const estado = leerEstado();
+async function siguienteCategoriaPeriodica(): Promise<Categoria> {
+  const estado = await leerEstado();
   const categoria: Categoria = estado.categoriaFlip % 2 === 0 ? "river" : "seleccion";
   estado.categoriaFlip += 1;
-  guardarEstado(estado);
+  await guardarEstado(estado);
   return categoria;
 }
 
 function ejecutarCicloPeriodico(): void {
-  const categoria = siguienteCategoriaPeriodica();
   // Modo automático: la nota se publica directamente en el sitio (con foto de
   // portada garantizada) y el bot de Telegram avisa con un link de edición.
-  ejecutarCiclo(undefined, true, categoria).catch((err) =>
-    logger.error({ err, categoria }, "Scheduler: error no capturado en ciclo periódico"),
-  );
+  siguienteCategoriaPeriodica()
+    .then((categoria) => ejecutarCiclo(undefined, true, categoria))
+    .catch((err) =>
+      logger.error({ err }, "Scheduler: error no capturado en ciclo periódico"),
+    );
 }
 
 export function iniciarScheduler(): void {

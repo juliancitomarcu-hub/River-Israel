@@ -128,6 +128,12 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 - 6 secciones obligatorias: EL IMPACTO, ANÁLISIS TÁCTICO, LA MÍSTICA, CITAS Y CONTEXTO, PREGUNTAS, LA SENTENCIA
 - DT actual: Eduardo Coudet. Gallardo solo como referencia histórica.
 
+### Estado persistente en DB (`app_estado`)
+- Tabla `app_estado` (clave PK, valor jsonb): guarda `scheduler_state` (rotación de fuentes, categoriaFlip, urlsProcesadas) y `redactor_settings`. Antes vivían en JSON locales que producción borraba en cada reinicio → la rotación siempre arrancaba en "bolavip" y no se publicaba nada.
+- Helper: `artifacts/api-server/src/lib/app-estado.ts` (`leerEstadoApp`/`guardarEstadoApp`). Redactor settings usa cache en memoria hidratado con `initRedactorSettings()` al boot (antes de arrancar el scheduler).
+- Healthcheck del deployment: `GET /api` responde 200 (handler raíz en `routes/index.ts`); sin él, el server se reiniciaba cada ~40 min.
+- El ciclo del scheduler ahora recorre todas las fuentes (empezando por la del turno) hasta encontrar una noticia nueva; timeouts de scraping no matan el ciclo. Con `fuenteOverride` sigue siendo un solo intento.
+
 ### Autopublicación (scheduler)
 - El ciclo periódico (cada 2h, solo en producción) corre en modo automático: publica la nota directamente (`publicada:true`) y el bot de Telegram envía solo un FYI con botón "Editar en Redactor".
 - Foto de portada garantizada: la imagen scrapeada del artículo se descarga (validación SSRF + content-type) y se sube a object storage (`/objects/portadas/...`); si falla, se usa una foto aleatoria de `/images/galeria/foto-01..12.jpeg`.
