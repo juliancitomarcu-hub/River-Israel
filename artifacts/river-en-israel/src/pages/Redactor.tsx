@@ -968,6 +968,8 @@ export default function Redactor() {
       const nuevoExp = typeof data.expiresAt === "number" ? data.expiresAt : null;
       guardarExpiracion(nuevoExp);
       setNow(Date.now());
+      // La renovación puede cambiar la foto de sesiones vivas → refrescar.
+      cargarSesionesActivas();
     } catch {
       setErrorRenovar("Error de conexión");
     } finally {
@@ -1005,6 +1007,10 @@ export default function Redactor() {
       return;
     }
     cargarSesionesActivas();
+    // Refresco periódico mientras el panel está abierto: si alguien abre o
+    // cierra sesión en otro dispositivo, el contador se mantiene al día.
+    const id = window.setInterval(() => cargarSesionesActivas(), 30_000);
+    return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authStatus]);
 
