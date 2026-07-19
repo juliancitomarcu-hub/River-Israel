@@ -1045,24 +1045,15 @@ function iniciarResumenHebreoDiario(): void {
 const INTERVALO_MS   = 2 * 60 * 60 * 1000; // 2 horas
 const PRIMER_CICLO_MS =  2 * 60 * 1000; // 2 minutos tras arrancar
 
-// Alterna River ↔ Selección en cada ciclo periódico para que el bot envíe
-// constantemente noticias de ambas categorías. El flip se persiste en el estado.
-async function siguienteCategoriaPeriodica(): Promise<Categoria> {
-  const estado = await leerEstado();
-  const categoria: Categoria = estado.categoriaFlip % 2 === 0 ? "river" : "seleccion";
-  estado.categoriaFlip += 1;
-  await guardarEstado(estado);
-  return categoria;
-}
-
+// La Scaloneta está oculta: el ciclo periódico publica SOLO noticias de River
+// (web, Telegram e Instagram). La categoría "seleccion" queda disponible solo
+// para disparos manuales desde el panel/trigger.
 function ejecutarCicloPeriodico(): void {
   // Modo automático: la nota se publica directamente en el sitio (con foto de
   // portada garantizada) y el bot de Telegram avisa con un link de edición.
-  siguienteCategoriaPeriodica()
-    .then((categoria) => ejecutarCiclo(undefined, true, categoria))
-    .catch((err) =>
-      logger.error({ err }, "Scheduler: error no capturado en ciclo periódico"),
-    );
+  ejecutarCiclo(undefined, true, "river").catch((err) =>
+    logger.error({ err }, "Scheduler: error no capturado en ciclo periódico"),
+  );
 }
 
 export function iniciarScheduler(): void {
