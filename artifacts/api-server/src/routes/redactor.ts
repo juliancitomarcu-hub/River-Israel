@@ -11,6 +11,7 @@ import { requireAdmin } from "../middleware/requireAdmin";
 import { type CategoriaImagen } from "../lib/generar-imagen-ig";
 import { credencialesTelegram, estadoTelegram } from "../lib/telegram-cred";
 import { estadoWebhookPanel, registrarWebhook } from "../lib/telegram-webhook-registro";
+import { avisarSiWebhookSinProteger } from "../lib/avisar-webhook-sin-proteger";
 import { limpiarNota } from "../lib/limpiar-asteriscos";
 
 function elegirPrompt(categoria: CategoriaImagen): string {
@@ -69,6 +70,7 @@ router.post("/registrar-webhook", async (req, res) => {
   const categoriaFinal = categoria === "seleccion" ? "seleccion" : "river";
 
   const registro = await registrarWebhook(categoriaFinal);
+  avisarSiWebhookSinProteger(categoriaFinal, registro);
   if (!registro.ok) {
     req.log.warn({ categoria: categoriaFinal, error: registro.error }, "No se pudo re-registrar el webhook");
     res.status(502).json({
