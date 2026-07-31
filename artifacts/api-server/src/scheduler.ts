@@ -424,6 +424,7 @@ export type EjecucionResultado =
   | { tipo: "sin_noticias"; fuente: string }
   | { tipo: "todas_procesadas"; fuente: string }
   | { tipo: "ia_sin_contenido" }
+ | { tipo: "sin_portada"; fuente: string }
   | { tipo: "telegram_error"; fuente: string }
   | { tipo: "ok"; titulo: string; id: number; fuente: string }
   | { tipo: "error"; mensaje: string };
@@ -696,6 +697,18 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     if (imagenAutoUrl) {
       imagenPortadaFinal = await guardarPortadaEnStorage(imagenAutoUrl);
     }
+    // Regla: la autopublicación NUNCA sale sin foto real del artículo.
+    // Si no hay imagen (o falló la descarga), la nota NO se publica sola:
+    // se guarda como pendiente y llega a Telegram con botones Publicar/Editar
+    // para que un humano decida (puede cambiarle la foto desde el Redactor).
+    const autopublicar = esAutomatico && !!imagenPortadaFinal;
+    const degradadaSinFoto = esAutomatico && !imagenPortadaFinal;
+    if (degradadaSinFoto) {
+      logger.warn(
+        { titulo, url: noticiaElegida.url, imagenAutoUrl },
+        "Scheduler: sin foto de portada real, la nota queda pendiente de aprobación (no se autopublica)",
+      );
+    }
     const usoFallback = !imagenPortadaFinal;
     if (!imagenPortadaFinal) {
       imagenPortadaFinal = portadaFallback();
@@ -714,8 +727,8 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         textoOriginal: textoParaIA.slice(0, 3000),
         fuente: fuenteNombre,
         categoria,
-        publicada: esAutomatico,
-        pendiente: !esAutomatico,
+        publicada: autopublicar,
+        pendiente: !autopublicar,
         imagenPortada: imagenPortadaFinal,
         urlFuente: noticiaElegida.url ? normalizarUrl(noticiaElegida.url) : "",
       })
@@ -753,13 +766,13 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     const TELEGRAM_MAX = 4096;
 
     // 🌐 Si se publicó automáticamente, lanzar traducción al hebreo en background
-    if (esAutomatico && savedNoticia) {
+    if (autopublicar && savedNoticia) {
       traducirYGuardarHebreo(savedNoticia.id).catch(() => {});
       // 📸 Instagram vía Make.com (fire-and-forget)
       enviarNotaAMake(savedNoticia);
     }
 
-    if (esAutomatico) {
+    if (autopublicar) {
       // ── MODO AUTOMÁTICO: FYI solo, ya está publicada ──────────────────
       const fotoTexto = usoFallback
         ? "\n🖼 _Foto de portada de respaldo (podés cambiarla desde el Redactor)_"
@@ -807,7 +820,10 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       };
 
       const etiquetaCatMan = categoria === "seleccion" ? "🇦🇷 _Selección Argentina_\n\n" : "";
-      const encabezado = `${etiquetaCatMan}📰 *${titulo}*\n\n`;
+      const avisoSinFoto = degradadaSinFoto
+        ? "🖼 _El artículo no tenía foto de portada: la nota NO se publicó sola. Revisala, cargale una foto desde el Redactor y publicala._\n\n"
+        : "";
+      const encabezado = `${avisoSinFoto}${etiquetaCatMan}📰 *${titulo}*\n\n`;
       const pie        = `\n\n${tags}\n\n📡 _Fuente: ${fuenteNombre}_`;
       const textoCompleto = encabezado + contenido + pie;
       // Salvaguarda: si supera 4096 cortamos en oración completa

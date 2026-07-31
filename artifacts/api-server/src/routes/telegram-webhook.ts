@@ -126,6 +126,8 @@ function mensajeDeResultado(r: EjecucionResultado): string {
       return `⚠️ _Fuente ${r.fuente}: el sitio no respondió correctamente._`;
     case "concurrente":
       return `⏳ _Ya hay una búsqueda en curso. Esperá unos segundos y volvé a intentar._`;
+    case "sin_portada":
+      return `🖼 _Fuente ${r.fuente}: la nota se descartó porque el artículo no tenía foto de portada._`;
     case "ia_sin_contenido":
       return `🤖 _La IA no pudo generar contenido. Intentá de nuevo en un momento._`;
     case "telegram_error":

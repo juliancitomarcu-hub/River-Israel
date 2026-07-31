@@ -1,154 +1,23 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Play, Calendar, Trophy, ChevronRight, CheckCircle2, ChevronDown, Send, AlertCircle, X, ChevronLeft, Download, ZoomIn, Bell, Mail, Phone, MapPin } from "lucide-react";
-import { useNews, useMatches, useHistoryTimeline } from "@/hooks/use-river-data";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Calendar, Trophy, ChevronRight, MapPin, ArrowRight, User } from "lucide-react";
+import { useNews, useMatches } from "@/hooks/use-river-data";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import ProximoPartidoWidget from "@/components/ProximoPartidoWidget";
 import ShareButton from "@/components/ShareButton";
-import CredencialGenerador from "@/components/CredencialGenerador";
-
-interface GaleriaFoto {
-  id: number;
-  url: string;
-  caption: string;
-  orden: number;
-}
-
-interface VideoGaleria {
-  id: number;
-  url: string;
-  titulo: string;
-  thumbnail: string | null;
-  orden: number;
-}
-
-const suscripSchema = z.object({
-  nombre: z.string().min(2, "Ingresá tu nombre"),
-  email: z.string().email("Email inválido"),
-  telefono: z.string().optional(),
-  ciudad: z.string().optional(),
-});
-type SuscripValues = z.infer<typeof suscripSchema>;
 
 export default function Home() {
-  const [mostrarCredencial, setMostrarCredencial] = useState(false);
-  const [suscripEstado, setSuscripEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
-  const [suscripError, setSuscripError] = useState("");
-  const [canales, setCanales] = useState<string[]>(["email", "whatsapp"]);
-
-  // Propuesta de evento
-  const [propNombre, setPropNombre] = useState("");
-  const [propTexto, setPropTexto] = useState("");
-  const [propEstado, setPropEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
-
-  async function enviarPropuestaEvento(e: React.FormEvent) {
-    e.preventDefault();
-    if (!propTexto.trim() || propEstado === "enviando") return;
-    setPropEstado("enviando");
-    try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/propuesta-evento`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: propNombre.trim(), propuesta: propTexto.trim() }),
-      });
-      if (!res.ok) throw new Error("error");
-      setPropEstado("ok");
-      setPropNombre("");
-      setPropTexto("");
-    } catch {
-      setPropEstado("error");
-    }
-  }
-
-  // Videos
-  const [videos, setVideos] = useState<VideoGaleria[]>([]);
-  const [videoAbierto, setVideoAbierto] = useState<VideoGaleria | null>(null);
-  useEffect(() => {
-    fetch("/api/videos?categoria=river", { cache: "no-store" })
-      .then(r => r.json())
-      .then((d: { videos?: VideoGaleria[] }) => setVideos(d.videos ?? []))
-      .catch(() => {/* silencioso */});
-  }, []);
-
-  // Galería
-  const [galeriaFotos, setGaleriaFotos] = useState<GaleriaFoto[]>([]);
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-  const [paginaGaleria, setPaginaGaleria] = useState(0);
-  const COLS = 4;
-  const ROWS = 3;
-  const PAGE_SIZE = COLS * ROWS;
-  const totalPaginas = Math.max(1, Math.ceil(galeriaFotos.length / PAGE_SIZE));
-  const dragStartX = useRef<number | null>(null);
-
-  useEffect(() => {
-    fetch("/api/galeria?categoria=river", { cache: "no-store" })
-      .then(r => r.json())
-      .then((d: { fotos?: GaleriaFoto[] }) => setGaleriaFotos(d.fotos ?? []))
-      .catch(() => {/* silencioso */});
-  }, []);
-
-  const abrirLightbox = (idx: number) => setLightboxIdx(idx);
-  const cerrarLightbox = () => setLightboxIdx(null);
-  const irAnterior = useCallback(() => setLightboxIdx(i => i !== null ? (i - 1 + galeriaFotos.length) % galeriaFotos.length : null), [galeriaFotos.length]);
-  const irSiguiente = useCallback(() => setLightboxIdx(i => i !== null ? (i + 1) % galeriaFotos.length : null), [galeriaFotos.length]);
-
-  useEffect(() => {
-    if (lightboxIdx === null) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") irAnterior();
-      if (e.key === "ArrowRight") irSiguiente();
-      if (e.key === "Escape") cerrarLightbox();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [lightboxIdx, irAnterior, irSiguiente]);
-
-  function resolverUrl(url: string) {
-    if (url.startsWith("/objects/")) return `/api/storage/objects${url.slice(8)}`;
-    if (url.startsWith("/images/")) return `${import.meta.env.BASE_URL}${url.slice(1)}`;
-    return url;
-  }
-
   const [paginaActualidad, setPaginaActualidad] = useState(0);
   const { data: newsData } = useNews(paginaActualidad, "river");
-  const news = newsData?.items;
+  const news = newsData?.items ?? [];
   const totalPaginasNoticias = newsData?.totalPages ?? 1;
   const { data: matches } = useMatches();
-  const { data: timeline } = useHistoryTimeline();
 
-  const { register: regS, handleSubmit: handleS, formState: { errors: errS } } = useForm<SuscripValues>({
-    resolver: zodResolver(suscripSchema),
-  });
-
-  function toggleCanal(c: string) {
-    setCanales(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
-  }
-
-  async function onSubmitSuscrip(data: SuscripValues) {
-    if (canales.length === 0) {
-      setSuscripError("Elegí al menos un canal para recibir noticias");
-      setSuscripEstado("error");
-      return;
-    }
-    setSuscripEstado("enviando");
-    setSuscripError("");
-    try {
-      const res = await fetch("/api/suscribir", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, canales }),
-      });
-      const json = await res.json() as { ok?: boolean; error?: string };
-      if (!res.ok || !json.ok) { setSuscripError(json.error ?? "Error al enviar"); setSuscripEstado("error"); }
-      else setSuscripEstado("ok");
-    } catch { setSuscripError("Error de conexión"); setSuscripEstado("error"); }
-  }
+  // Separar nota destacada + secundarias
+  const notaDestacada = news[0];
+  const secundarias = news.slice(1, 5); // Siguientes 4
+  const resto = news.slice(5); // El resto para grid inferior
 
   const fadeIn = {
     hidden: { opacity: 0, y: 30 },
@@ -156,180 +25,246 @@ export default function Home() {
   };
 
   return (
-    <>
-    <div className="w-full bg-background">
-
-      {/* ================= ACTUALIDAD SECTION ================= */}
-      <section id="actualidad" className="bg-[#111] relative">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-river-red to-transparent z-10"></div>
-
-        {/* Header con foto de fondo */}
-        <div className="relative overflow-hidden">
-          <img
-            src={`${import.meta.env.BASE_URL}images/estadio-river.jpeg`}
-            alt="Estadio Monumental"
-            className="absolute inset-0 w-full h-full object-cover object-center"
-            draggable={false}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/15 to-[#111]" />
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-              <div>
-                <h2 className="text-4xl md:text-5xl font-display font-bold text-white">Actualidad <span className="text-river-red">Millonaria</span></h2>
-                <p className="text-gray-300 mt-2 text-lg">Lo último del mundo River y nuestra filial.</p>
-                <div className="flex flex-wrap gap-3 mt-4">
-                  <a
-                    href="https://www.instagram.com/riverplateisrael?igsh=N2RlM2Y3Y25vdjMy&utm_source=qr"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border border-river-red text-river-red hover:bg-river-red hover:text-white px-5 py-2 text-sm font-bold uppercase tracking-wide transition-all"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                    Nuestro Instagram
-                  </a>
-                  <a
-                    href="https://www.facebook.com/share/1ANhvcjefr/?mibextid=wwXIfr"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border border-river-red text-river-red hover:bg-river-red hover:text-white px-5 py-2 text-sm font-bold uppercase tracking-wide transition-all"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                    Nuestro Facebook
-                  </a>
-                </div>
+    <div className="w-full bg-[#FAFAF8] newspaper-texture min-h-screen">
+      
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* CABECERA EDITORIAL — Masthead del diario                        */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <section className="border-b-2 border-tinta bg-white pt-24 pb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center border-b border-gris-borde pb-4 mb-4">
+            <h1 className="font-display text-5xl md:text-7xl tracking-tighter text-tinta leading-none mb-2">
+              RIVER EN ISRAEL
+            </h1>
+            <p className="font-mono text-xs text-gris-meta uppercase tracking-widest">
+              Filial Ramat Gan "El Tucu Sajnin" · Edición digital {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}
+            </p>
+          </div>
+          
+          {/* Escudos + ubicación */}
+          <div className="flex items-center justify-center gap-8">
+            <img
+              src={`${import.meta.env.BASE_URL}filial-logo.jpeg`}
+              alt="Escudo Filial"
+              className="w-16 h-16 object-contain rounded-full border-2 border-gris-borde"
+              draggable={false}
+            />
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 text-gris-meta mb-1">
+                <MapPin className="w-4 h-4 text-river-red" />
+                <span className="font-mono text-xs uppercase tracking-wider">Ramat Gan, Israel</span>
               </div>
-              <div className="flex-shrink-0 flex flex-col items-end gap-5">
-                {/* Escudos — arriba a la derecha (filial + CARP) */}
-                <div className="relative flex items-center gap-2 sm:gap-3">
-                  <div className="absolute inset-0 bg-river-red/20 blur-3xl rounded-full scale-110" />
-                  <img
-                    src={`${import.meta.env.BASE_URL}filial-logo.jpeg`}
-                    alt="Escudo Filial River Plate Israel - Gaby El Tucu Sajnin"
-                    className="relative z-10 w-16 h-16 sm:w-24 sm:h-24 object-contain rounded-full"
-                    style={{ filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.7))" }}
-                    draggable={false}
-                  />
-                  <img
-                    src={`${import.meta.env.BASE_URL}images/escudo-carp.png?v=4`}
-                    alt="Escudo Club Atlético River Plate"
-                    className="relative z-10 w-20 h-20 sm:w-28 sm:h-28 object-contain"
-                    style={{ filter: "drop-shadow(0 4px 28px rgba(204,0,0,0.9))" }}
-                    draggable={false}
-                  />
-                </div>
-                <ProximoPartidoWidget />
-              </div>
+              <p className="text-sm text-tinta max-w-md">
+                La banda millonaria latiendo fuerte desde Tierra Santa — 12.000 km del Monumental, la misma pasión.
+              </p>
             </div>
+            <img
+              src={`${import.meta.env.BASE_URL}images/escudo-carp.png?v=4`}
+              alt="Escudo River Plate"
+              className="w-20 h-20 object-contain"
+              draggable={false}
+            />
           </div>
         </div>
+      </section>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            {/* News List — compact horizontal cards */}
-            <div className="lg:col-span-2 flex flex-col gap-3">
-              {news?.map((item, i) => (
-                <motion.div
-                  key={item.id}
-                  initial="hidden"
-                  whileInView="show"
-                  viewport={{ once: true, margin: "-60px" }}
-                  variants={fadeIn}
-                >
-                  <div className="group bg-white rounded-xl overflow-hidden shadow border border-gray-100 hover:shadow-md transition-all duration-300">
-                    <Link href={`/noticia/${item.id}`} className="flex gap-0 h-32 md:h-36">
-                      <div className="relative overflow-hidden w-32 md:w-44 flex-shrink-0">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* PORTADA EDITORIAL — Nota destacada + sidebar fixture            */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* ── Contenido principal (2 columnas) ── */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* NOTA DESTACADA */}
+            {notaDestacada && (
+              <motion.article
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-60px" }}
+                variants={fadeIn}
+                className="group bg-white border-t-4 border-river-red shadow-lg hover:shadow-xl transition-shadow duration-300"
+              >
+                <Link href={`/noticia/${notaDestacada.id}`}>
+                  <div className="relative h-[400px] overflow-hidden">
+                    <img
+                      src={notaDestacada.imageUrl}
+                      alt={notaDestacada.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <span className="inline-block bg-river-red text-white px-3 py-1 text-xs font-bold uppercase tracking-wider mb-3">
+                        Nota destacada
+                      </span>
+                      <h2 className="font-display text-4xl md:text-5xl text-white leading-tight mb-3 group-hover:text-river-red transition-colors">
+                        {notaDestacada.title}
+                      </h2>
+                      <p className="text-white/90 text-lg mb-4 line-clamp-2">{notaDestacada.excerpt}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-white/70 text-sm font-mono">
+                          <Calendar className="w-4 h-4" />
+                          <span>{notaDestacada.date}</span>
+                        </div>
+                        <ShareButton titulo={notaDestacada.title} id={notaDestacada.id} compact />
                       </div>
-                      <div className="p-3 flex-1 flex flex-col justify-between min-w-0">
-                        <div>
-                          <span className="text-xs text-gray-400 flex items-center gap-1 mb-1">
-                            <Calendar className="w-3 h-3" /> {item.date}
-                          </span>
-                          <h3 className="font-display font-bold text-river-black group-hover:text-river-red transition-colors text-sm md:text-base leading-snug line-clamp-2">
+                    </div>
+                  </div>
+                </Link>
+              </motion.article>
+            )}
+
+            {/* SECUNDARIAS — Grid 2x2 */}
+            {secundarias.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {secundarias.map((item, i) => (
+                  <motion.div
+                    key={item.id}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={{ once: true, margin: "-60px" }}
+                    variants={fadeIn}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <Link href={`/noticia/${item.id}`}>
+                      <article className="group bg-white border border-gris-borde hover:border-river-red transition-all duration-300 overflow-hidden h-full flex flex-col">
+                        <div className="relative h-48 overflow-hidden">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        </div>
+                        <div className="p-4 flex-1 flex flex-col">
+                          <h3 className="font-display text-xl text-tinta group-hover:text-river-red transition-colors leading-tight mb-2 line-clamp-3">
                             {item.title}
                           </h3>
-                          <p className="text-gray-500 text-xs line-clamp-2 mt-1 hidden md:block">{item.excerpt}</p>
+                          <p className="text-gris-meta text-sm line-clamp-2 mb-3 flex-1">{item.excerpt}</p>
+                          <div className="flex items-center justify-between pt-3 border-t border-gris-borde">
+                            <span className="font-mono text-xs text-gris-meta">{item.date}</span>
+                            <span className="inline-flex items-center gap-1 text-river-red text-xs font-bold group-hover:gap-2 transition-all">
+                              Leer <ChevronRight className="w-3 h-3" />
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="inline-flex items-center gap-1 text-river-red text-xs font-bold group-hover:gap-2 transition-all">
-                            Leer más <ChevronRight className="w-3 h-3" />
-                          </span>
-                          <ShareButton titulo={item.title} id={item.id} />
-                        </div>
-                      </div>
+                      </article>
                     </Link>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
+              </div>
+            )}
 
-              {/* ── Paginación Actualidad (ventana de 6) ── */}
-              {totalPaginasNoticias > 1 && (() => {
-                const VENTANA = 6;
-                const inicio = Math.floor(paginaActualidad / VENTANA) * VENTANA;
-                const fin = Math.min(inicio + VENTANA, totalPaginasNoticias);
-                const paginas = Array.from({ length: fin - inicio }, (_, k) => inicio + k);
-                const hayPrevios = inicio > 0;
-                const hayMas = fin < totalPaginasNoticias;
-                const ir = (i: number) => { setPaginaActualidad(i); window.location.hash = "actualidad"; };
-                return (
-                  <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    {hayPrevios && (
-                      <button
-                        onClick={() => ir(inicio - 1)}
-                        className="px-3 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:border-river-red hover:text-river-red transition-all text-xs font-bold uppercase tracking-wide"
-                        aria-label="Páginas anteriores"
-                      >
-                        ‹ Anteriores
-                      </button>
-                    )}
+            {/* RESTO DE NOTICIAS — Lista compacta */}
+            {resto.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-display text-2xl text-tinta border-b-2 border-tinta pb-2 mb-4">
+                  Más noticias
+                </h3>
+                {resto.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={{ once: true, margin: "-60px" }}
+                    variants={fadeIn}
+                  >
+                    <Link href={`/noticia/${item.id}`}>
+                      <article className="group flex gap-4 bg-white border-b border-gris-borde pb-3 hover:border-river-red transition-colors">
+                        <div className="relative overflow-hidden w-24 h-24 flex-shrink-0">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-display text-lg text-tinta group-hover:text-river-red transition-colors leading-tight mb-1 line-clamp-2">
+                            {item.title}
+                          </h4>
+                          <p className="text-gris-meta text-xs line-clamp-1 mb-2">{item.excerpt}</p>
+                          <span className="font-mono text-xs text-gris-meta">{item.date}</span>
+                        </div>
+                      </article>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            )}
 
-                    {paginas.map(i => (
-                      <button
-                        key={i}
-                        onClick={() => ir(i)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-all border ${
-                          i === paginaActualidad
-                            ? "bg-river-red text-white border-river-red shadow"
-                            : "border-gray-200 text-gray-500 hover:border-river-red hover:text-river-red"
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
+            {/* Paginación */}
+            {totalPaginasNoticias > 1 && (() => {
+              const VENTANA = 6;
+              const inicio = Math.floor(paginaActualidad / VENTANA) * VENTANA;
+              const fin = Math.min(inicio + VENTANA, totalPaginasNoticias);
+              const paginas = Array.from({ length: fin - inicio }, (_, k) => inicio + k);
+              const hayPrevios = inicio > 0;
+              const hayMas = fin < totalPaginasNoticias;
+              const ir = (i: number) => { setPaginaActualidad(i); window.scrollTo({ top: 0, behavior: "smooth" }); };
+              return (
+                <div className="flex items-center justify-center gap-2 mt-8 pt-6 border-t-2 border-gris-borde flex-wrap">
+                  {hayPrevios && (
+                    <button
+                      onClick={() => ir(inicio - 1)}
+                      className="px-4 h-10 flex items-center justify-center border-2 border-tinta text-tinta hover:bg-tinta hover:text-white transition-all font-bold uppercase tracking-wide text-xs"
+                      aria-label="Páginas anteriores"
+                    >
+                      ‹ Anterior
+                    </button>
+                  )}
 
-                    {hayMas && (
-                      <button
-                        onClick={() => ir(fin)}
-                        className="px-3 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:border-river-red hover:text-river-red transition-all text-xs font-bold uppercase tracking-wide"
-                        aria-label="Páginas siguientes"
-                      >
-                        Siguiente ›
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
+                  {paginas.map(i => (
+                    <button
+                      key={i}
+                      onClick={() => ir(i)}
+                      className={`w-10 h-10 flex items-center justify-center text-sm font-bold transition-all border-2 ${
+                        i === paginaActualidad
+                          ? "bg-river-red text-white border-river-red"
+                          : "border-gris-borde text-tinta hover:border-tinta"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  {hayMas && (
+                    <button
+                      onClick={() => ir(fin)}
+                      className="px-4 h-10 flex items-center justify-center border-2 border-tinta text-tinta hover:bg-tinta hover:text-white transition-all font-bold uppercase tracking-wide text-xs"
+                      aria-label="Páginas siguientes"
+                    >
+                      Siguiente ›
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* ── Sidebar: Fixture + ProximoPartido ── */}
+          <aside className="lg:sticky lg:top-24 self-start space-y-6">
+            
+            {/* Próximo partido destacado */}
+            <div className="bg-white border-2 border-tinta p-4">
+              <h3 className="font-display text-xl text-tinta mb-3 border-b-2 border-river-red pb-2">
+                Próximo partido
+              </h3>
+              <ProximoPartidoWidget />
             </div>
 
-            {/* Matches Sidebar */}
+            {/* Fixture resumido */}
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={{ once: true }}
               variants={fadeIn}
-              className="bg-river-black rounded-2xl p-4 shadow-2xl text-white relative overflow-hidden lg:sticky lg:top-24 self-start"
+              className="bg-tinta text-white p-4 border-2 border-tinta"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-river-red blur-[60px] rounded-full opacity-40"></div>
-
-              <h3 className="font-display text-lg font-bold mb-3 flex items-center gap-2 relative z-10">
-                <Trophy className="w-4 h-4 text-river-red" /> Fixture y Resultados
+              <h3 className="font-display text-xl mb-3 flex items-center gap-2 border-b border-white/20 pb-2">
+                <Trophy className="w-5 h-5 text-river-red" /> Fixture y Resultados
               </h3>
 
-              <div className="space-y-2 relative z-10">
+              <div className="space-y-3">
                 {!matches && (
                   <div className="flex justify-center py-6">
                     <div className="w-6 h-6 border-2 border-river-red border-t-transparent rounded-full animate-spin" />
@@ -345,53 +280,49 @@ export default function Home() {
                     : [match.awayScore, match.homeScore];
                   const ganamos = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver > golesRival;
                   const perdimos = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver < golesRival;
-                  const empate = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver === golesRival;
 
                   return (
-                    <div key={match.id} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 hover:bg-white/10 transition-colors">
-                      <div className="flex justify-between items-center text-[10px] text-gray-400 mb-1">
-                        <span className="font-semibold text-gray-300 truncate max-w-[120px]">{match.competition}</span>
+                    <div key={match.id} className="bg-white/5 border border-white/20 p-3 hover:bg-white/10 transition-colors">
+                      <div className="flex justify-between items-center text-[10px] text-white/50 mb-2 font-mono">
+                        <span className="font-semibold text-white/70 truncate max-w-[120px]">{match.competition}</span>
                         <div className="flex items-center gap-1 shrink-0">
                           {match.status === 'LIVE' && (
-                            <span className="flex items-center gap-0.5 bg-green-500 text-white px-1 py-0.5 rounded text-[9px] font-bold animate-pulse">
-                              🔴 EN VIVO
+                            <span className="flex items-center gap-1 bg-green-500 text-white px-1.5 py-0.5 text-[9px] font-bold animate-pulse">
+                              EN VIVO
                             </span>
                           )}
                           {match.status === 'FINISHED' && (
                             <span className={cn(
-                              "px-1 py-0.5 rounded text-[9px] font-bold",
+                              "px-1.5 py-0.5 text-[9px] font-bold",
                               ganamos ? "bg-green-600 text-white" : perdimos ? "bg-red-700 text-white" : "bg-gray-600 text-white"
                             )}>
-                              {ganamos ? "✓ Ganamos" : perdimos ? "✗ Perdimos" : "= Empate"}
+                              {ganamos ? "Victoria" : perdimos ? "Derrota" : "Empate"}
                             </span>
                           )}
                           <span>{match.date}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
-                        {/* Local */}
+                      <div className="flex items-center gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className={cn("font-bold text-xs truncate leading-tight", match.isRiverHome ? "text-white" : "text-gray-400")}>
+                          <div className={cn("font-bold text-sm truncate", match.isRiverHome ? "text-white" : "text-white/50")}>
                             {match.homeTeam}
                           </div>
                           {(match.status === 'FINISHED' || match.status === 'LIVE') && (
-                            <div className={cn("font-display text-xl font-bold tabular-nums leading-none mt-0.5", match.isRiverHome ? "text-white" : "text-gray-400")}>
+                            <div className={cn("font-display text-2xl font-bold tabular-nums", match.isRiverHome ? "text-white" : "text-white/50")}>
                               {match.homeScore ?? 0}
                             </div>
                           )}
                         </div>
-                        {/* Separador */}
-                        <div className="flex-shrink-0 text-gray-500 text-xs font-bold">
+                        <div className="flex-shrink-0 text-white/30 text-xs font-bold">
                           {match.status === 'FINISHED' || match.status === 'LIVE' ? '—' : 'vs'}
                         </div>
-                        {/* Visitante */}
                         <div className="flex-1 min-w-0 text-right">
-                          <div className={cn("font-bold text-xs truncate leading-tight", !match.isRiverHome ? "text-white" : "text-gray-400")}>
+                          <div className={cn("font-bold text-sm truncate", !match.isRiverHome ? "text-white" : "text-white/50")}>
                             {match.awayTeam}
                           </div>
                           {(match.status === 'FINISHED' || match.status === 'LIVE') && (
-                            <div className={cn("font-display text-xl font-bold tabular-nums leading-none mt-0.5", !match.isRiverHome ? "text-white" : "text-gray-400")}>
+                            <div className={cn("font-display text-2xl font-bold tabular-nums", !match.isRiverHome ? "text-white" : "text-white/50")}>
                               {match.awayScore ?? 0}
                             </div>
                           )}
@@ -399,13 +330,8 @@ export default function Home() {
                       </div>
 
                       {match.status === 'UPCOMING' && match.horaIsrael && (
-                        <p className="text-[10px] text-river-red font-semibold mt-1 text-center">
-                          ⏰ {match.horaIsrael}
-                        </p>
-                      )}
-                      {match.estadio && (
-                        <p className="text-[9px] text-gray-500 mt-0.5 text-center">
-                          🏟 {match.estadio}
+                        <p className="text-[10px] text-river-red font-semibold mt-2 text-center font-mono">
+                          {match.horaIsrael}
                         </p>
                       )}
                     </div>
@@ -413,773 +339,114 @@ export default function Home() {
                 })}
               </div>
 
-              <Link href="/fixture" className="w-full mt-3 flex items-center justify-center bg-white text-river-black hover:bg-gray-100 font-bold py-2 rounded-lg transition-colors relative z-10 text-xs">
-                Fixture Completo
+              <Link href="/fixture">
+                <button className="w-full mt-4 bg-white text-tinta hover:bg-river-red hover:text-white font-bold py-2 transition-colors text-sm uppercase tracking-wide">
+                  Fixture completo
+                </button>
               </Link>
             </motion.div>
-          </div>
-        </div>
-      </section>
 
-      {/* ================= PRÓXIMOS EVENTOS SECTION ================= */}
-      <section id="eventos" className="py-16 bg-gradient-to-b from-river-black to-[#0a0a0a] text-white relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-river-red/10 blur-[120px] rounded-full pointer-events-none"></div>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-10">
-            <span className="bg-river-red/20 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 inline-block mb-4">
-              Agenda de la Filial Ramat Gan
-            </span>
-            <h2 className="text-3xl md:text-5xl font-display font-bold mb-3">
-              Próximos <span className="text-river-red">Eventos</span>
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Pronto vamos a publicar los próximos eventos de la filial. Mientras tanto, ¿tenés una idea? Dejanos tu propuesta y la sumamos a la agenda.
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-river-red/30 rounded-3xl overflow-hidden backdrop-blur shadow-2xl">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-river-red via-river-red to-[#a30000] p-6 md:p-7">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">Próximamente</span>
-                <span className="text-white/80 text-xs font-semibold">Agenda en preparación</span>
-              </div>
-              <h3 className="text-2xl md:text-3xl font-display font-bold text-white leading-tight">
-                Dejá tu propuesta de evento
-              </h3>
-              <p className="text-white/90 text-sm mt-1">Partidos para ver juntos, asados millonarios, encuentros sociales... contanos qué te gustaría ⚪️🔴</p>
-            </div>
-
-            {/* Formulario de propuesta */}
-            <div className="p-6 md:p-8">
-              {propEstado === "ok" ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-green-500/10 border border-green-500/30 text-green-300 p-6 rounded-2xl text-center"
-                >
-                  <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                  <h4 className="text-xl font-bold mb-1 text-white">¡Gracias por tu propuesta!</h4>
-                  <p className="text-sm text-gray-300">La recibimos y la vamos a tener en cuenta para los próximos eventos.</p>
-                  <button
-                    type="button"
-                    onClick={() => setPropEstado("idle")}
-                    className="mt-4 text-river-red hover:text-white text-sm font-semibold transition-colors"
-                  >
-                    Enviar otra propuesta
-                  </button>
-                </motion.div>
-              ) : (
-                <form onSubmit={enviarPropuestaEvento} className="space-y-4">
-                  <div>
-                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold block mb-1.5">Tu nombre (opcional)</label>
-                    <input
-                      type="text"
-                      value={propNombre}
-                      onChange={(e) => setPropNombre(e.target.value)}
-                      maxLength={60}
-                      placeholder="Cómo te llamás"
-                      className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-river-red transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold block mb-1.5">Tu propuesta</label>
-                    <textarea
-                      value={propTexto}
-                      onChange={(e) => setPropTexto(e.target.value)}
-                      maxLength={1000}
-                      rows={4}
-                      required
-                      placeholder="Contanos qué evento te gustaría que organicemos..."
-                      className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-river-red transition-colors resize-y"
-                    />
-                  </div>
-                  {propEstado === "error" && (
-                    <p className="text-red-400 text-sm flex items-center gap-1.5">
-                      <AlertCircle className="w-4 h-4" /> No se pudo enviar. Probá de nuevo en un momento.
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={propEstado === "enviando" || !propTexto.trim()}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold py-3 px-5 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                  >
-                    <Send className="w-4 h-4" /> {propEstado === "enviando" ? "Enviando..." : "Enviar propuesta"}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= HERO / IDENTIDAD ================= */}
-      <section className="relative w-full bg-river-black overflow-hidden" style={{ aspectRatio: "1200/420", maxHeight: "520px", minHeight: "260px" }}>
-        {/* Banner de portada */}
-        <img
-          src={`${import.meta.env.BASE_URL}images/hero-monumental.png?v=2`}
-          alt="Portada River en Israel"
-          className="absolute inset-0 w-full h-full object-cover"
-          draggable={false}
-        />
-
-        {/* Layout: texto izquierda, escudo derecha */}
-        <div className="absolute inset-0 z-10 flex items-end justify-between px-6 sm:px-10 md:px-16 pb-5 sm:pb-7 bg-gradient-to-t from-black/75 via-black/20 to-transparent">
-
-          {/* Texto — izquierda */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-col max-w-[58%]"
-          >
-            <p className="text-[11px] sm:text-sm md:text-base text-gray-100 mb-4 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] font-medium leading-snug">
-              La Banda del Millonario,<br />
-              latiendo fuerte desde Tierra Santa.<br />
-              La misma pasión a miles de kilómetros.
-            </p>
-            <div className="flex flex-row flex-wrap gap-2">
+            {/* CTA WhatsApp */}
+            <div className="bg-river-red text-white p-4 border-2 border-river-red">
+              <h3 className="font-display text-lg mb-2">Unite a la Filial</h3>
+              <p className="text-sm mb-3 text-white/90">Seguí las noticias y eventos de River en Israel.</p>
               <a
-                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all hover:scale-105"
+                className="inline-flex items-center gap-2 bg-white text-river-red hover:bg-gris-suave font-bold px-4 py-2 transition-colors text-sm w-full justify-center"
               >
-                Súmate a la Filial
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Canal de WhatsApp
               </a>
-              <div className="flex gap-2">
-                <a href="#actualidad" className="whitespace-nowrap px-4 py-2 bg-river-red text-white font-bold rounded-full text-xs uppercase tracking-wide hover:bg-river-red-hover transition-all shadow-[0_0_12px_rgba(204,0,0,0.5)]">
-                  Últimas Noticias
-                </a>
-                <a href="#suscribite" className="whitespace-nowrap px-4 py-2 bg-white text-river-red font-bold rounded-full text-xs uppercase tracking-wide hover:bg-gray-100 transition-all">
-                  Recibí Noticias
-                </a>
-              </div>
             </div>
-          </motion.div>
+          </aside>
         </div>
-
-        {/* Línea roja inferior */}
-        <div className="absolute bottom-0 inset-x-0 h-1 bg-river-red z-20" />
       </section>
 
-      {/* ================= FILIAL RAMAT GAN SECTION ================= */}
-      <section id="filial" className="py-24 bg-gray-50 relative overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-[0.03]">
-          <img
-            src={`${import.meta.env.BASE_URL}images/ramat-gan-bg.png`}
-            alt="Ramat Gan Background"
-            className="w-full h-full object-cover"
-          />
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* SECCIONES COMPLEMENTARIAS — Historia, Filial, etc.             */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      
+      {/* Llamado a la filial */}
+      <section id="filial" className="bg-tinta text-white py-16 border-t-4 border-river-red">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="font-display text-4xl md:text-5xl mb-4">
+            Sumate a la Filial Ramat Gan
+          </h2>
+          <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
+            Somos hinchas de River que vivimos la pasión millonaria desde Israel. 
+            Eventos, partidos en vivo, asados, y mucho más. ¡Unite!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <button className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold px-8 py-3 transition-colors uppercase tracking-wide">
+                Conocé la filial <ArrowRight className="w-4 h-4" />
+              </button>
+            </a>
+            <Link href="/postula">
+              <button className="inline-flex items-center gap-2 bg-white text-tinta hover:bg-gris-suave font-bold px-8 py-3 transition-colors uppercase tracking-wide">
+                <User className="w-4 h-4" /> Postulate como socio
+              </button>
+            </Link>
+          </div>
         </div>
+      </section>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col lg:flex-row">
-
-            {/* Info Side */}
-            <div className="lg:w-5/12 bg-river-black text-white p-10 lg:p-16 flex flex-col justify-center relative overflow-hidden">
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-river-red rounded-full blur-[100px] opacity-40"></div>
-
-              <div className="mb-8">
-                <span className="bg-white/10 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 whitespace-nowrap inline-block">
-                  Objetivo de ser sede oficial en Israel
-                </span>
-              </div>
-
-              <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
-                Unite a la <br /> <span className="text-river-red">Familia Riverplatense</span>
-              </h2>
-
-              <p className="text-gray-300 text-lg mb-8">
-                No importa que tan lejos estemos del Monumental, la pasión nos une. Súmate a nuestra filial para participar de futuros eventos, recibir noticias de River y más.
-              </p>
-
-              <ul className="space-y-4 mb-10">
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Encuentros para partidos especiales.</span>
+      {/* Footer ligero con links rápidos */}
+      <section className="bg-white border-t-2 border-gris-borde py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
+            <div>
+              <h4 className="font-display text-lg text-tinta mb-2">Navegación</h4>
+              <ul className="space-y-1 text-sm">
+                <li><Link href="/historia"><span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer">Historia</span></Link></li>
+                <li><Link href="/equipo"><span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer">Plantel</span></Link></li>
+                <li><Link href="/fixture"><span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer">Fixture</span></Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-display text-lg text-tinta mb-2">La Filial</h4>
+              <ul className="space-y-1 text-sm">
+                <li><Link href="/historia" className="text-gris-meta hover:text-river-red transition-colors">Nuestra historia</Link></li>
+                <li><Link href="/equipo" className="text-gris-meta hover:text-river-red transition-colors">Plantel</Link></li>
+                <li><Link href="/fixture" className="text-gris-meta hover:text-river-red transition-colors">Fixture</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-display text-lg text-tinta mb-2">Redes</h4>
+              <ul className="space-y-1 text-sm">
+                <li>
+                  <a href="https://www.instagram.com/riverplateisrael" target="_blank" rel="noopener noreferrer" className="text-gris-meta hover:text-river-red transition-colors">
+                    Instagram
+                  </a>
                 </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Eventos Sociales</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="text-river-red w-6 h-6 shrink-0" />
-                  <span>Próximos eventos y encuentros de la filial</span>
+                <li>
+                  <a href="https://www.facebook.com/share/1ANhvcjefr" target="_blank" rel="noopener noreferrer" className="text-gris-meta hover:text-river-red transition-colors">
+                    Facebook
+                  </a>
                 </li>
               </ul>
-
-              <a
-                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
-                target="_blank"
-                rel="noreferrer"
-                className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold py-4 px-6 rounded-xl text-center transition-all flex items-center justify-center gap-3 shadow-lg hover:-translate-y-1"
-              >
-                Unite al grupo de WhatsApp
-              </a>
             </div>
-
-            {/* Form Side — Suscripción */}
-            <div id="suscribite" className="lg:w-7/12 p-10 lg:p-16">
-              <div className="flex items-center gap-2 mb-2">
-                <Bell className="w-6 h-6 text-river-red" />
-                <span className="text-river-red text-xs font-bold uppercase tracking-wider">Newsletter River en Israel</span>
-              </div>
-              <h3 className="font-display text-3xl font-bold text-river-black mb-1">Recibí las noticias de River al instante</h3>
-              <p className="text-gray-500 mb-6 text-sm">Dejá tus datos y te avisamos primero — partidos, fichajes, eventos de la filial y novedades de la Banda.</p>
-
-              {suscripEstado === "ok" ? (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                  className="bg-green-50 border border-green-200 text-green-800 p-8 rounded-2xl text-center"
-                >
-                  <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h4 className="text-2xl font-bold mb-2">¡Estás suscripto!</h4>
-                  <p>Te vamos a avisar cada vez que haya novedades de River. ¡Gracias por sumarte a la Banda!</p>
-                </motion.div>
-              ) : (
-                <form onSubmit={handleS(onSubmitSuscrip)} className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Nombre completo</label>
-                    <Input {...regS("nombre")} placeholder="Tu nombre y apellido" className={errS.nombre ? "border-red-500" : ""} />
-                    {errS.nombre && <span className="text-xs text-red-500">{errS.nombre.message}</span>}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5" /> Correo electrónico
-                    </label>
-                    <Input {...regS("email")} type="email" placeholder="tu@email.com" className={errS.email ? "border-red-500" : ""} />
-                    {errS.email && <span className="text-xs text-red-500">{errS.email.message}</span>}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5" /> Celular <span className="text-gray-400 font-normal text-xs">(WhatsApp)</span>
-                      </label>
-                      <Input {...regS("telefono")} placeholder="+972 50 123 4567" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5" /> Ciudad <span className="text-gray-400 font-normal text-xs">(opcional)</span>
-                      </label>
-                      <Input {...regS("ciudad")} placeholder="Tu ciudad" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">¿Cómo querés recibir las noticias?</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: "email", label: "Email", icon: Mail },
-                        { id: "whatsapp", label: "WhatsApp", icon: Phone },
-                        { id: "telegram", label: "Telegram", icon: Send },
-                      ].map(({ id, label, icon: Icon }) => {
-                        const active = canales.includes(id);
-                        return (
-                          <button key={id} type="button" onClick={() => toggleCanal(id)}
-                            className={cn(
-                              "flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border text-xs font-bold transition-all",
-                              active
-                                ? "bg-river-red/10 border-river-red text-river-red"
-                                : "border-gray-200 text-gray-500 hover:border-gray-300"
-                            )}
-                          >
-                            <Icon className="w-4 h-4" />
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {suscripEstado === "error" && (
-                    <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      {suscripError}
-                    </div>
-                  )}
-
-                  <Button type="submit" className="w-full h-12 text-base bg-river-red hover:bg-river-red-hover flex items-center gap-2" disabled={suscripEstado === "enviando"}>
-                    {suscripEstado === "enviando" ? (
-                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Suscribiéndote...</>
-                    ) : (
-                      <><Bell className="w-4 h-4" /> Suscribirme a las noticias</>
-                    )}
-                  </Button>
-
-                  <p className="text-xs text-gray-400 text-center">
-                    ¿Querés escribir notas en River Israel? <Link href="/postula" className="text-river-red font-semibold hover:underline">Postulate acá</Link>
-                  </p>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= FIXTURE SECTION ================= */}
-      <section id="fixture" className="py-16 bg-river-black text-white relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[200px] bg-river-red/15 blur-[120px] rounded-full pointer-events-none"></div>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-8">
-            <span className="bg-river-red/20 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide uppercase text-river-red border border-river-red/30 inline-block mb-3">
-              <Trophy className="w-3 h-3 inline mr-1 -mt-0.5" /> Calendario River
-            </span>
-            <h2 className="text-3xl md:text-5xl font-display font-bold mb-2">
-              <span className="text-river-red">Fixture</span> y Resultados
-            </h2>
-            <p className="text-gray-400 max-w-xl mx-auto text-sm">Los próximos partidos y los últimos resultados del Millonario.</p>
-          </div>
-
-          {!matches && (
-            <div className="flex justify-center py-10">
-              <div className="w-7 h-7 border-2 border-river-red border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-
-          {matches && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {(() => {
-                const proximos = matches.filter(m => m.status === 'UPCOMING').slice(0, 3);
-                const jugados = matches.filter(m => m.status === 'FINISHED' || m.status === 'LIVE').slice(0, 3);
-                return [...jugados, ...proximos];
-              })().map((match) => {
-                const [golesRiver, golesRival] = match.isRiverHome
-                  ? [match.homeScore, match.awayScore]
-                  : [match.awayScore, match.homeScore];
-                const ganamos = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver > golesRival;
-                const perdimos = match.status === 'FINISHED' && golesRiver !== null && golesRival !== null && golesRiver < golesRival;
-                return (
-                  <div key={match.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] hover:border-river-red/30 transition-all">
-                    <div className="flex justify-between items-center text-[10px] text-gray-400 mb-2">
-                      <span className="font-semibold text-gray-300 truncate max-w-[140px]">{match.competition}</span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {match.status === 'LIVE' && (
-                          <span className="flex items-center gap-0.5 bg-green-500 text-white px-1.5 py-0.5 rounded text-[9px] font-bold animate-pulse">
-                            🔴 EN VIVO
-                          </span>
-                        )}
-                        {match.status === 'FINISHED' && (
-                          <span className={cn(
-                            "px-1.5 py-0.5 rounded text-[9px] font-bold",
-                            ganamos ? "bg-green-600 text-white" : perdimos ? "bg-red-700 text-white" : "bg-gray-600 text-white"
-                          )}>
-                            {ganamos ? "✓ Ganamos" : perdimos ? "✗ Perdimos" : "= Empate"}
-                          </span>
-                        )}
-                        <span>{match.date}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className={cn("font-bold text-sm truncate leading-tight", match.isRiverHome ? "text-white" : "text-gray-400")}>
-                          {match.homeTeam}
-                        </div>
-                        {(match.status === 'FINISHED' || match.status === 'LIVE') && (
-                          <div className={cn("font-display text-2xl font-bold tabular-nums leading-none mt-1", match.isRiverHome ? "text-white" : "text-gray-400")}>
-                            {match.homeScore ?? 0}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-shrink-0 text-gray-500 text-xs font-bold">
-                        {match.status === 'FINISHED' || match.status === 'LIVE' ? '—' : 'vs'}
-                      </div>
-                      <div className="flex-1 min-w-0 text-right">
-                        <div className={cn("font-bold text-sm truncate leading-tight", !match.isRiverHome ? "text-white" : "text-gray-400")}>
-                          {match.awayTeam}
-                        </div>
-                        {(match.status === 'FINISHED' || match.status === 'LIVE') && (
-                          <div className={cn("font-display text-2xl font-bold tabular-nums leading-none mt-1", !match.isRiverHome ? "text-white" : "text-gray-400")}>
-                            {match.awayScore ?? 0}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {match.status === 'UPCOMING' && match.horaIsrael && (
-                      <p className="text-[11px] text-river-red font-semibold mt-2 text-center">
-                        ⏰ {match.horaIsrael}
-                      </p>
-                    )}
-                    {match.estadio && (
-                      <p className="text-[10px] text-gray-500 mt-1 text-center">
-                        🏟 {match.estadio}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="text-center mt-8">
-            <Link
-              href="/fixture"
-              className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold py-3 px-8 rounded-xl transition-all hover:-translate-y-0.5 shadow-lg"
-            >
-              Fixture completo <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= HISTORIA SECTION ================= */}
-      <section id="historia" className="py-16 bg-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-[500px] bg-diagonal-red opacity-5 -skew-y-3 origin-top-left -z-10"></div>
-
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">El Más <span className="text-river-red">Grande</span></h2>
-            <p className="text-gray-600">Un repaso por los momentos que forjaron nuestra gloriosa historia.</p>
-          </div>
-
-          {/* Carousel deslizable — 3 tarjetas visibles */}
-          <div className="overflow-x-auto snap-x snap-mandatory -mx-2 px-2" style={{ scrollbarWidth: "none" }}>
-            <div className="flex gap-4" style={{ width: "max-content" }}>
-              {timeline?.map((item, index) => (
-                <motion.div
-                  key={item.year}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: index * 0.06 }}
-                  className="snap-start w-[300px] sm:w-[320px] flex-none"
-                >
-                  <div className="h-full bg-gray-50 p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-river-red/20 transition-all flex flex-col">
-                    <span className="font-display text-4xl font-bold text-river-red/20 block mb-1">{item.year}</span>
-                    <h3 className="text-base font-bold text-river-black mb-2 leading-snug">{item.title}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 flex-1">{item.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          <div className="text-center mt-10">
-            <Link
-              href="/historia"
-              className="inline-flex items-center gap-2 border-2 border-river-red text-river-red hover:bg-river-red hover:text-white font-bold py-3 px-8 rounded-xl transition-all"
-            >
-              Historia completa <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-      {/* ================= GALERIA SECTION ================= */}
-      <section id="galeria" className="py-24 bg-[#0a0a0a]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <span className="inline-block text-river-red font-bold text-xs uppercase tracking-[0.3em] mb-3">Filial Ramat Gan · Israel</span>
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">La Pasión <span className="text-river-red">en Imágenes</span></h2>
-            <p className="text-gray-400 max-w-lg mx-auto">Hacé clic en cualquier foto para verla completa y descargarla.</p>
-          </div>
-
-          {/* ── Carrusel 3×4 ── */}
-          <div className="relative">
-
-            {/* Flecha izquierda */}
-            {totalPaginas > 1 && (
-              <button
-                onClick={() => setPaginaGaleria(p => Math.max(0, p - 1))}
-                disabled={paginaGaleria === 0}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 z-10 bg-white/10 hover:bg-river-red disabled:opacity-20 disabled:cursor-not-allowed text-white rounded-full p-2 transition-all shadow-lg"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Grid animado */}
-            <div
-              className="overflow-hidden"
-              onMouseDown={e => { dragStartX.current = e.clientX; }}
-              onMouseUp={e => {
-                if (dragStartX.current === null) return;
-                const diff = dragStartX.current - e.clientX;
-                if (diff > 50) setPaginaGaleria(p => Math.min(totalPaginas - 1, p + 1));
-                else if (diff < -50) setPaginaGaleria(p => Math.max(0, p - 1));
-                dragStartX.current = null;
-              }}
-              onTouchStart={e => { dragStartX.current = e.touches[0].clientX; }}
-              onTouchEnd={e => {
-                if (dragStartX.current === null) return;
-                const diff = dragStartX.current - e.changedTouches[0].clientX;
-                if (diff > 50) setPaginaGaleria(p => Math.min(totalPaginas - 1, p + 1));
-                else if (diff < -50) setPaginaGaleria(p => Math.max(0, p - 1));
-                dragStartX.current = null;
-              }}
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={paginaGaleria}
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -40 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="grid grid-cols-4 gap-3"
-                >
-                  {galeriaFotos.length === 0
-                    ? Array.from({ length: PAGE_SIZE }).map((_, i) => (
-                        <div key={i} className="aspect-[4/3] bg-white/5 rounded-xl animate-pulse" />
-                      ))
-                    : (() => {
-                        const pageFotos = galeriaFotos.slice(paginaGaleria * PAGE_SIZE, (paginaGaleria + 1) * PAGE_SIZE);
-                        const celdas = [...pageFotos, ...Array.from({ length: PAGE_SIZE - pageFotos.length })];
-                        return celdas.map((foto, idx) => {
-                          const globalIdx = paginaGaleria * PAGE_SIZE + idx;
-                          if (!foto) return <div key={idx} className="aspect-[4/3] rounded-xl bg-white/3" />;
-                          const f = foto as GaleriaFoto;
-                          return (
-                            <div
-                              key={f.id}
-                              className="aspect-[4/3] overflow-hidden rounded-xl cursor-pointer relative group"
-                              onClick={() => abrirLightbox(globalIdx)}
-                            >
-                              <img
-                                src={resolverUrl(f.url)}
-                                alt={f.caption || `Foto ${globalIdx + 1}`}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                loading="lazy"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center">
-                                <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 drop-shadow-lg" />
-                              </div>
-                              {f.caption && (
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                                  <p className="text-white text-xs font-medium truncate">{f.caption}</p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        });
-                      })()
-                  }
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Flecha derecha */}
-            {totalPaginas > 1 && (
-              <button
-                onClick={() => setPaginaGaleria(p => Math.min(totalPaginas - 1, p + 1))}
-                disabled={paginaGaleria === totalPaginas - 1}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 z-10 bg-white/10 hover:bg-river-red disabled:opacity-20 disabled:cursor-not-allowed text-white rounded-full p-2 transition-all shadow-lg"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Indicadores de página */}
-            {totalPaginas > 1 && (
-              <div className="flex justify-center gap-2 mt-6">
-                {Array.from({ length: totalPaginas }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setPaginaGaleria(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${i === paginaGaleria ? "bg-river-red w-6" : "bg-white/30 hover:bg-white/50"}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ================= VIDEOS SECTION ================= */}
-      <section id="videos" className="py-10 bg-river-black text-white relative">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold">Videos <span className="text-river-red">& Goles</span></h2>
-              <p className="text-gray-400 mt-1 text-sm">Tocá un video para reproducirlo.</p>
+              <h4 className="font-display text-lg text-tinta mb-2">Contacto</h4>
+              <p className="text-sm text-gris-meta">
+                <MapPin className="w-3 h-3 inline mr-1" />
+                Ramat Gan, Israel
+              </p>
             </div>
           </div>
-
-          {/* Columna scrollable de videos */}
-          {videos.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-              <Play className="w-10 h-10 mb-3 opacity-30" />
-              <p className="text-sm">Los videos se cargan desde el Redactor.</p>
-            </div>
-          )}
-          <div className="flex flex-col gap-3 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20">
-            {videos.map((vid, i) => {
-              const src = vid.url.startsWith("/objects/")
-                ? `/api/storage${vid.url}`
-                : `${import.meta.env.BASE_URL}${vid.url.replace(/^\//, "")}`;
-              return (
-                <button
-                  key={vid.id}
-                  onClick={() => setVideoAbierto(vid)}
-                  className="w-full flex items-center gap-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-river-red/50 rounded-2xl p-3 transition-all text-left group"
-                >
-                  {/* Miniatura */}
-                  <div className="relative w-36 shrink-0 aspect-video rounded-xl overflow-hidden bg-black">
-                    {vid.thumbnail ? (
-                      <img
-                        src={vid.thumbnail.startsWith("/objects/") ? `/api/storage${vid.thumbnail}` : `${import.meta.env.BASE_URL}${vid.thumbnail.replace(/^\//, "")}`}
-                        alt={vid.titulo}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <video
-                        src={src}
-                        preload="metadata"
-                        className="w-full h-full object-cover"
-                        muted
-                      />
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
-                      <div className="w-10 h-10 rounded-full bg-river-red flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <Play className="w-5 h-5 text-white" fill="currentColor" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-white group-hover:text-river-red transition-colors truncate">
-                      {vid.titulo || `Video ${i + 1}`}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">Tap para reproducir</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-river-red shrink-0 transition-colors" />
-                </button>
-              );
-            })}
+          <div className="mt-8 pt-6 border-t border-gris-borde text-center">
+            <p className="font-mono text-xs text-gris-meta">
+              © {new Date().getFullYear()} River Plate en Israel — Filial Ramat Gan "El Tucu Sajnin" · Vamos River 🔴⚪️
+            </p>
           </div>
         </div>
       </section>
-
-      {/* ================= LIGHTBOX ================= */}
-      <AnimatePresence>
-        {lightboxIdx !== null && galeriaFotos[lightboxIdx] && (
-          <motion.div
-            key="lightbox"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
-            onClick={cerrarLightbox}
-          >
-            {/* Botón cerrar */}
-            <button
-              onClick={cerrarLightbox}
-              className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors z-10"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {/* Contador */}
-            <span className="absolute top-5 left-1/2 -translate-x-1/2 text-white/60 text-sm font-medium">
-              {lightboxIdx + 1} / {galeriaFotos.length}
-            </span>
-
-            {/* Botones nav */}
-            <button
-              onClick={e => { e.stopPropagation(); irAnterior(); }}
-              className="absolute left-3 md:left-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors z-10"
-            >
-              <ChevronLeft className="w-7 h-7" />
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); irSiguiente(); }}
-              className="absolute right-3 md:right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors z-10"
-            >
-              <ChevronRight className="w-7 h-7" />
-            </button>
-
-            {/* Imagen */}
-            <motion.div
-              key={lightboxIdx}
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="relative max-w-5xl max-h-[85vh] mx-16 flex flex-col items-center gap-3"
-              onClick={e => e.stopPropagation()}
-            >
-              <img
-                src={resolverUrl(galeriaFotos[lightboxIdx].url)}
-                alt={galeriaFotos[lightboxIdx].caption}
-                className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl"
-              />
-              <div className="flex items-center gap-4">
-                {galeriaFotos[lightboxIdx].caption && (
-                  <p className="text-white/80 text-sm">{galeriaFotos[lightboxIdx].caption}</p>
-                )}
-                <a
-                  href={resolverUrl(galeriaFotos[lightboxIdx].url)}
-                  download={`river-israel-${lightboxIdx + 1}.jpg`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 bg-river-red hover:bg-river-red/80 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Descargar
-                </a>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── LIGHTBOX DE VIDEO ─────────────────────────────────────────── */}
-      <AnimatePresence>
-        {videoAbierto && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
-            onClick={() => setVideoAbierto(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="relative w-full max-w-4xl"
-              onClick={e => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setVideoAbierto(null)}
-                className="absolute -top-10 right-0 flex items-center gap-1.5 text-white/70 hover:text-white text-sm transition-colors"
-              >
-                <X className="w-5 h-5" /> Cerrar
-              </button>
-              <div className="rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video">
-                <video
-                  key={videoAbierto.id}
-                  src={videoAbierto.url.startsWith("/objects/")
-                    ? `/api/storage${videoAbierto.url}`
-                    : `${import.meta.env.BASE_URL}${videoAbierto.url.replace(/^\//, "")}`}
-                  poster={videoAbierto.thumbnail
-                    ? (videoAbierto.thumbnail.startsWith("/objects/")
-                      ? `/api/storage${videoAbierto.thumbnail}`
-                      : `${import.meta.env.BASE_URL}${videoAbierto.thumbnail.replace(/^\//, "")}`)
-                    : undefined}
-                  controls
-                  autoPlay
-                  className="w-full h-full object-contain bg-black"
-                  title={videoAbierto.titulo}
-                />
-              </div>
-              {videoAbierto.titulo && (
-                <p className="text-white font-bold text-lg mt-3 text-center">{videoAbierto.titulo}</p>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
     </div>
-
-      {mostrarCredencial && (
-        <CredencialGenerador onClose={() => setMostrarCredencial(false)} />
-      )}
-    </>
   );
 }

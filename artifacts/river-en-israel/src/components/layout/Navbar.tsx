@@ -9,13 +9,11 @@ import { SolDeMayo } from "@/components/SolDeMayo";
 type NavLink = { name: string; href: string };
 
 const NAV_LINKS_RIVER: NavLink[] = [
-  { name: "Inicio",           href: "/" },
+  { name: "Portada",          href: "/" },
   { name: "Historia",         href: "/historia" },
   { name: "Plantel",          href: "/equipo" },
-  { name: "Nuestra Filial",   href: "/#filial" },
-  { name: "Galería",          href: "/#galeria" },
-  { name: "Videos",           href: "/#videos" },
-  { name: "Próximos Eventos", href: "/#eventos" },
+  { name: "Fixture",          href: "/fixture" },
+  { name: "Filial",           href: "/#filial" },
 ];
 
 const NAV_LINKS_SCALONETA: NavLink[] = [
@@ -23,7 +21,6 @@ const NAV_LINKS_SCALONETA: NavLink[] = [
   { name: "Grupos",           href: "/scaloneta#grupos" },
   { name: "Plantel",          href: "/scaloneta#plantel" },
   { name: "Estadios",         href: "/scaloneta#estadios" },
-  { name: "Galería y Videos", href: "/scaloneta#galeria-videos" },
   { name: "Fixture Mundial",  href: "/mundial/fixture" },
 ];
 
@@ -35,12 +32,11 @@ export function Navbar() {
   const navLinks = mundialActivo ? NAV_LINKS_SCALONETA : NAV_LINKS_RIVER;
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Scroll to anchor if href has hash (and we're already on the right page)
   const handleNavClick = (href: string) => {
     setMobileMenuOpen(false);
     if (href.includes("#")) {
@@ -66,12 +62,14 @@ export function Navbar() {
   return (
     <nav
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out border-b border-transparent",
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out border-b",
         isScrolled
           ? mundialActivo
-            ? "bg-[#0a1628]/95 backdrop-blur-md py-2 shadow-lg border-arg-celeste/20"
-            : "bg-river-black/95 backdrop-blur-md py-2 shadow-lg border-white/10"
-          : "bg-gradient-to-b from-black/80 to-transparent py-3"
+            ? "bg-[#0a1628]/95 backdrop-blur py-2 shadow-lg border-arg-celeste/20"
+            : "bg-white/95 backdrop-blur py-2 shadow-md border-gris-borde"
+          : mundialActivo
+          ? "bg-gradient-to-b from-black/80 to-transparent py-3 border-transparent"
+          : "bg-white border-b-2 border-tinta py-3"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,10 +78,10 @@ export function Navbar() {
           {/* Logo */}
           <Link href={logoHref} className="flex items-center gap-2 group shrink-0 min-w-0">
             <div className={cn(
-              "escudo-river relative w-10 h-10 overflow-hidden rounded-full border-2 border-white group-hover:scale-105 transition-transform shrink-0",
+              "escudo-river relative w-10 h-10 overflow-hidden rounded-full border-2 group-hover:scale-105 transition-transform shrink-0",
               mundialActivo
                 ? "shadow-[0_0_16px_rgba(241,184,45,0.65)] border-arg-dorado"
-                : "shadow-[0_0_10px_rgba(204,0,0,0.5)]"
+                : "border-tinta shadow-md"
             )}>
               {mundialActivo ? (
                 <>
@@ -101,27 +99,38 @@ export function Navbar() {
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-display font-bold text-base sm:text-lg lg:text-xl text-white leading-none tracking-wide truncate">
+              <span className={cn(
+                "font-display font-bold text-base sm:text-lg lg:text-xl leading-none tracking-tight truncate",
+                mundialActivo ? "text-white" : isScrolled ? "text-tinta" : "text-tinta"
+              )}>
                 {mundialActivo ? (
-                  <>LA <span className="text-arg-celeste">SCALONETA</span> <span className="text-arg-dorado">EN ISRAEL</span></>
+                  <>LA <span className="text-arg-celeste">SCALONETA</span></>
                 ) : "RIVER EN ISRAEL"}
               </span>
-              <span className="text-[0.55rem] text-gray-300 font-semibold tracking-wide flex items-center gap-0.5 truncate">
+              <span className={cn(
+                "text-[0.55rem] font-semibold tracking-wide flex items-center gap-0.5 truncate font-mono uppercase",
+                mundialActivo ? "text-arg-dorado" : "text-gris-meta"
+              )}>
                 <MapPin className={cn("w-2.5 h-2.5 shrink-0", mundialActivo ? "text-arg-dorado" : "text-river-red")} />
-                {mundialActivo ? "Filial Israel" : "Filial River Israel \"El TUCU\" SAJNIN"}
+                {mundialActivo ? "Filial Israel" : "Ramat Gan, Israel"}
               </span>
             </div>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-4">
+          <div className="hidden md:flex items-center gap-2 lg:gap-6">
             {navLinks.map((link) =>
               link.href.startsWith("/") && !link.href.includes("#") ? (
                 <Link
                   key={link.name}
                   href={link.href}
                   className={cn(
-                    "text-white/90 hover:text-white font-medium text-[0.7rem] lg:text-xs uppercase tracking-wide relative group py-1 whitespace-nowrap",
+                    "font-bold text-xs lg:text-sm uppercase tracking-wider relative group py-1 whitespace-nowrap transition-colors",
+                    mundialActivo
+                      ? "text-white/90 hover:text-white"
+                      : isScrolled
+                      ? "text-tinta/80 hover:text-tinta"
+                      : "text-tinta/80 hover:text-tinta"
                   )}
                 >
                   {link.name}
@@ -144,7 +153,14 @@ export function Navbar() {
                       }
                     }
                   }}
-                  className="text-white/90 hover:text-white font-medium text-[0.7rem] lg:text-xs uppercase tracking-wide relative group py-1 whitespace-nowrap"
+                  className={cn(
+                    "font-bold text-xs lg:text-sm uppercase tracking-wider relative group py-1 whitespace-nowrap transition-colors",
+                    mundialActivo
+                      ? "text-white/90 hover:text-white"
+                      : isScrolled
+                      ? "text-tinta/80 hover:text-tinta"
+                      : "text-tinta/80 hover:text-tinta"
+                  )}
                 >
                   {link.name}
                   <span className={cn(
@@ -154,22 +170,25 @@ export function Navbar() {
                 </a>
               )
             )}
-            {/* WhatsApp solo en modo River (la Scaloneta no tiene grupo propio) */}
+            {/* WhatsApp solo en modo River */}
             {!mundialActivo && (
               <a
-                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 bg-river-red hover:bg-river-red-hover text-white px-3 py-1.5 rounded-full font-bold uppercase tracking-wide text-[0.65rem] lg:text-xs transition-all shadow-[0_0_12px_rgba(204,0,0,0.4)] hover:shadow-[0_0_18px_rgba(204,0,0,0.6)] hover:-translate-y-0.5 whitespace-nowrap"
+                className="shrink-0 bg-river-red hover:bg-river-red-hover text-white px-4 py-2 font-bold uppercase tracking-wider text-xs transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
               >
-                Unite al WhatsApp
+                WhatsApp
               </a>
             )}
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-white p-2 shrink-0"
+            className={cn(
+              "md:hidden p-2 shrink-0 transition-colors",
+              mundialActivo ? "text-white" : "text-tinta"
+            )}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Menú"
           >
@@ -189,7 +208,7 @@ export function Navbar() {
               "md:hidden border-t overflow-hidden",
               mundialActivo
                 ? "bg-[#0a1628] border-arg-celeste/20"
-                : "bg-river-black border-white/10"
+                : "bg-white border-gris-borde"
             )}
           >
             <div className="flex flex-col px-4 pt-2 pb-6 space-y-2">
@@ -199,7 +218,12 @@ export function Navbar() {
                     key={link.name}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg uppercase tracking-wider transition-colors"
+                    className={cn(
+                      "px-4 py-3 font-bold text-base uppercase tracking-wider transition-colors",
+                      mundialActivo
+                        ? "text-white/80 hover:text-white hover:bg-white/5"
+                        : "text-tinta/80 hover:text-tinta hover:bg-gris-suave"
+                    )}
                   >
                     {link.name}
                   </Link>
@@ -217,7 +241,12 @@ export function Navbar() {
                         }
                       }
                     }}
-                    className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-lg font-medium text-lg uppercase tracking-wider transition-colors"
+                    className={cn(
+                      "px-4 py-3 font-bold text-base uppercase tracking-wider transition-colors",
+                      mundialActivo
+                        ? "text-white/80 hover:text-white hover:bg-white/5"
+                        : "text-tinta/80 hover:text-tinta hover:bg-gris-suave"
+                    )}
                   >
                     {link.name}
                   </a>
@@ -226,12 +255,12 @@ export function Navbar() {
               {/* WhatsApp solo en River */}
               {!mundialActivo && (
                 <a
-                  href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                  href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-river-red text-white px-4 py-3 rounded-lg font-bold uppercase tracking-wider text-center mt-4"
+                  className="bg-river-red text-white px-4 py-3 font-bold uppercase tracking-wider text-center mt-4"
                 >
-                  Unite al grupo de WhatsApp
+                  Canal de WhatsApp
                 </a>
               )}
             </div>

@@ -40,8 +40,8 @@ const TG_ICON = () => (
   </svg>
 );
 
-const MENU_WIDTH = 256;
-const MENU_HEIGHT_APPROX = 380;
+const MENU_WIDTH = 280;
+const MENU_HEIGHT_APPROX = 420;
 
 export default function ShareButton({ titulo, id, className, compact = false }: ShareButtonProps) {
   const [open, setOpen] = useState(false);
@@ -172,10 +172,10 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
         ref={menuRef}
         role="menu"
         style={{ position: "fixed", top: pos.top, left: pos.left, width: MENU_WIDTH }}
-        className="z-[9999] bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-bottom-1 duration-150"
+        className="z-[9999] bg-white border-2 border-tinta shadow-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-bottom-1 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-1 pt-0.5">
+        <p className="text-[10px] font-bold text-gris-meta uppercase tracking-widest px-4 pb-2 pt-1 font-mono border-b border-gris-borde">
           Compartir en
         </p>
         {opciones.map((op) => (
@@ -187,27 +187,27 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
               if (!op.keepOpen) setOpen(false);
             }}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 transition-colors text-left",
+              "w-full flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-gris-borde/50 last:border-0",
               op.bg
             )}
           >
-            <span className={cn("flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-gray-50", op.fg)}>
+            <span className={cn("flex-shrink-0 w-8 h-8 flex items-center justify-center bg-gris-suave", op.fg)}>
               {op.icon}
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-gray-800 text-sm font-semibold leading-tight">{op.label}</span>
+              <span className="block text-tinta text-sm font-bold leading-tight">{op.label}</span>
               {op.sublabel && (
-                <span className="block text-gray-400 text-[10px] leading-tight mt-0.5 truncate">{op.sublabel}</span>
+                <span className="block text-gris-meta text-[10px] leading-tight mt-0.5 truncate font-mono">{op.sublabel}</span>
               )}
             </span>
-            {op.label === "¡Copiado!" && <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />}
-            {igCopied && op.label === "Instagram" && <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />}
+            {op.label === "¡Copiado!" && <Check className="w-4 h-4 text-green-500 flex-shrink-0" />}
+            {igCopied && op.label === "Instagram" && <Check className="w-4 h-4 text-green-500 flex-shrink-0" />}
           </button>
         ))}
-        <div className="border-t border-gray-100 mt-1" />
+        <div className="border-t-2 border-gris-borde mt-1" />
         <button
           onClick={(e) => { e.stopPropagation(); setOpen(false); }}
-          className="w-full flex items-center justify-center gap-1 py-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+          className="w-full flex items-center justify-center gap-1 py-2 text-[11px] text-gris-meta hover:text-tinta transition-colors font-bold uppercase tracking-wide"
         >
           <X className="w-3 h-3" /> Cerrar
         </button>
@@ -227,11 +227,11 @@ export default function ShareButton({ titulo, id, className, compact = false }: 
         aria-label="Compartir esta noticia"
         title="Compartir esta noticia"
         className={cn(
-          "inline-flex items-center gap-2 text-sm font-bold transition-all rounded-full shadow-md hover:shadow-lg active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-river-red focus-visible:ring-offset-2",
-          compact ? "p-2.5" : "px-4 py-2.5",
+          "inline-flex items-center gap-2 text-sm font-bold transition-all border-2 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-river-red focus-visible:ring-offset-2 uppercase tracking-wide",
+          compact ? "p-2.5" : "px-5 py-2.5",
           open
-            ? "bg-river-red text-white shadow-river-red/30"
-            : "bg-river-red text-white hover:bg-river-red-hover hover:-translate-y-0.5",
+            ? "bg-river-red text-white border-river-red shadow-lg"
+            : "bg-white text-tinta border-tinta hover:bg-river-red hover:text-white hover:border-river-red",
         )}
       >
         <Share2 className="w-4 h-4" />

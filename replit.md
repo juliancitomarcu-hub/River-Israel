@@ -137,7 +137,8 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 ### Autopublicación (scheduler)
 - El ciclo periódico (cada 2h, solo en producción) corre en modo automático: publica la nota directamente (`publicada:true`) y el bot de Telegram envía solo un FYI con botón "Editar en Redactor".
 - **La Scaloneta está oculta**: el ciclo periódico publica SOLO categoría "river" (web, Telegram, Instagram). "seleccion" queda solo para disparos manuales desde el panel/trigger. En el frontend, `/scaloneta` y `/mundial/*` redirigen a `/`.
-- Foto de portada garantizada: la imagen scrapeada del artículo se descarga (validación SSRF + content-type) y se sube a object storage (`/objects/portadas/...`); si falla, se usa una foto aleatoria de `/images/galeria/foto-01..12.jpeg`.
+- Foto de portada: la imagen scrapeada del artículo se descarga (validación SSRF + content-type) y se sube a object storage (`/objects/portadas/...`). **Sin foto real NO hay autopublicación**: la nota se guarda como pendiente y llega a Telegram con botones Publicar/Editar y aviso "sin foto". La foto de respaldo de galería solo aplica en flujo manual/pendiente.
+- Prompt maestro incluye el plantel oficial completo (riverplate.com, julio 2026); arquero titular: Santiago Beltrán. González Pirez nunca debe mencionarse como arquero ni jugador actual.
 - `resolverPortada()` en `use-river-data.ts` resuelve los 3 formatos de portada: `/objects/` → `/api/storage`, `/images/` → BASE_URL, `http(s)` externas tal cual.
 
 ### Dedupe anti-repetidos (scheduler)

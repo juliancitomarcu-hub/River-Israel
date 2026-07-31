@@ -1,270 +1,160 @@
-import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { MapPin, Phone, Facebook, Instagram, Youtube, Twitter, MessageCircle, Send, X, Users } from "lucide-react";
+import { MapPin, Instagram, Facebook } from "lucide-react";
 import { useMundialMode } from "@/lib/mundial-mode";
-
-// ─── HOOK: Contador de visitas persistente ────────────────────────────────────
-// Usa localStorage para saber si es la primera visita del navegador.
-// El contador real vive en PostgreSQL via API.
-
-function useContadorVisitas() {
-  const [conteo, setConteo] = useState<{ total: number; unicas: number } | null>(null);
-
-  useEffect(() => {
-    const clave = "river_israel_visitante";
-    const esNuevo = !localStorage.getItem(clave);
-
-    // Registrar la visita (total siempre, única solo si es nuevo navegador)
-    fetch("/api/visitas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ unica: esNuevo }),
-    })
-      .then((r) => r.json())
-      .then((data: { total: number; unicas: number }) => {
-        setConteo(data);
-        if (esNuevo) {
-          localStorage.setItem(clave, "1");
-        }
-      })
-      .catch(() => {
-        // Fallback: solo mostrar el conteo actual sin registrar
-        fetch("/api/visitas")
-          .then((r) => r.json())
-          .then((data: { total: number; unicas: number }) => setConteo(data))
-          .catch(() => {});
-      });
-  }, []);
-
-  return conteo;
-}
-
-function formatearNumero(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(".0", "")}K`;
-  return n.toString();
-}
+import { cn } from "@/lib/utils";
 
 export function Footer() {
-  const [clicks, setClicks] = useState(0);
-  const [formAbierto, setFormAbierto] = useState(false);
-  const [nombre, setNombre] = useState("");
-  const [mensaje, setMensaje] = useState("");
-  const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
-  const visitas = useContadorVisitas();
   const mundialActivo = useMundialMode();
 
-  const handleEnviar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nombre.trim() || !mensaje.trim()) return;
-    setEstado("enviando");
-    try {
-      const r = await fetch("/api/contacto", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nombre.trim(), mensaje: mensaje.trim() }),
-      });
-      if (r.ok) {
-        setEstado("ok");
-        setNombre("");
-        setMensaje("");
-      } else {
-        setEstado("error");
-      }
-    } catch {
-      setEstado("error");
-    }
-  };
-
-  const handleLogoClick = () => {
-    const next = clicks + 1;
-    setClicks(next);
-    if (next >= 3) {
-      setClicks(0);
-      // En Scaloneta el redactor abre con categoría preseleccionada en Selección
-      window.location.href = mundialActivo
-        ? "/redactor?categoria=seleccion"
-        : "/redactor";
-    }
-    setTimeout(() => setClicks(0), 1500);
-  };
-
-  return (
-    <footer className={`text-white pt-16 pb-8 border-t-4 ${mundialActivo ? "bg-[#0a1628] border-arg-dorado" : "bg-river-black border-river-red"}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-
-          {/* Brand */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleLogoClick}
-                className={`relative w-12 h-12 overflow-hidden rounded-full border-2 cursor-default select-none focus:outline-none ${mundialActivo ? "border-arg-dorado" : "border-white"}`}
-                aria-hidden="true"
-                tabIndex={-1}
-              >
-                {mundialActivo ? (
-                  <div className="absolute inset-0 flex flex-col">
-                    <div className="flex-1 bg-arg-celeste"></div>
-                    <div className="flex-1 bg-white"></div>
-                    <div className="flex-1 bg-arg-celeste"></div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 bg-diagonal-red"></div>
-                )}
-              </button>
-              <span className="font-display font-bold text-3xl">
-                {mundialActivo ? <>LA <span className="text-arg-celeste">SCALONETA</span></> : "RIVER EN ISRAEL"}
-              </span>
+  if (mundialActivo) {
+    // Footer Mundial
+    return (
+      <footer className="bg-[#0a1628] border-t-4 border-arg-dorado text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex justify-center items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full border-2 border-arg-dorado flex flex-col overflow-hidden">
+                <div className="flex-1 bg-arg-celeste"></div>
+                <div className="flex-1 bg-white"></div>
+                <div className="flex-1 bg-arg-celeste"></div>
+              </div>
+              <h3 className="font-display text-2xl">
+                LA <span className="text-arg-celeste">SCALONETA</span> EN ISRAEL
+              </h3>
             </div>
-            <p className="text-gray-400 max-w-sm mt-4">
-              {mundialActivo
-                ? <>Sitio dedicado a <span className="text-arg-celeste">la Selección Argentina</span> rumbo al Mundial 2026, desde la Filial Ramat Gan. 🇦🇷 ❤️ 🇮🇱</>
-                : <>La filial oficial del Club Atlético River Plate en Medio Oriente. Viviendo la pasión por La Banda del Millonario desde la Tierra Santa. 🇦🇷 ❤️ 🇮🇱</>}
+            <p className="text-white/60 text-sm mb-6 max-w-xl mx-auto">
+              Filial de hinchas de la Selección Argentina en Israel. Vamos por el tricampeonato.
             </p>
-            {mundialActivo && (
-              <Link
-                href="/river"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all bg-river-red hover:bg-river-red/90 text-white"
-              >
-                ⚪️🔴 Ir a River en Israel
-              </Link>
-            )}
+            <div className="border-t border-arg-celeste/20 pt-6">
+              <p className="text-white/40 text-xs font-mono">
+                © {new Date().getFullYear()} La Scaloneta en Israel · Filial de hinchas argentinos
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
+  // Footer River (editorial)
+  return (
+    <footer className="bg-white border-t-4 border-tinta text-tinta py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          
+          {/* Columna 1: Identidad */}
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-14 h-14 rounded-full border-2 border-tinta overflow-hidden">
+                <div className="w-full h-full bg-diagonal-red"></div>
+              </div>
+              <div>
+                <h3 className="font-display text-2xl leading-none">RIVER EN ISRAEL</h3>
+                <p className="text-xs text-gris-meta font-mono uppercase tracking-wider">
+                  Filial Ramat Gan "El Tucu Sajnin"
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-gris-meta leading-relaxed max-w-md">
+              La banda millonaria latiendo fuerte desde Tierra Santa. Somos hinchas de River que vivimos la pasión a 12.000 km del Monumental — la misma sangre, el mismo grito.
+            </p>
+            <div className="flex items-center gap-2 mt-4 text-sm text-gris-meta">
+              <MapPin className="w-4 h-4 text-river-red" />
+              <span>Ramat Gan, Israel</span>
+            </div>
           </div>
 
-          {/* Contact */}
+          {/* Columna 2: Navegación */}
           <div>
-            <h4 className="font-display text-xl mb-6 text-river-red">Contacto Filial</h4>
-            <ul className="space-y-4 text-gray-300 mb-5">
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-river-red shrink-0 mt-0.5" />
-                <span>Ramat Gan, Distrito de Tel Aviv, Israel</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-river-red shrink-0" />
-                <a href="https://wa.me/9720559421610" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">+972 055-942-1610</a>
+            <h4 className="font-display text-lg mb-3 border-b border-gris-borde pb-2">NAVEGACIÓN</h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/">
+                  <span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer font-semibold">
+                    Portada
+                  </span>
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => { setFormAbierto(f => !f); setEstado("idle"); }}
-                  className="flex items-center gap-2 bg-river-red hover:bg-river-red/80 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Escribinos
-                </button>
+                <Link href="/historia">
+                  <span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer font-semibold">
+                    Historia
+                  </span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/equipo">
+                  <span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer font-semibold">
+                    Plantel
+                  </span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/fixture">
+                  <span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer font-semibold">
+                    Fixture
+                  </span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/postula">
+                  <span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer font-semibold">
+                    Postulate
+                  </span>
+                </Link>
               </li>
             </ul>
-
-            {/* Mini formulario inline */}
-            {formAbierto && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-                {estado === "ok" ? (
-                  <div className="text-center py-2">
-                    <p className="text-green-400 font-bold text-sm">✅ ¡Mensaje enviado!</p>
-                    <p className="text-gray-400 text-xs mt-1">Te respondemos pronto.</p>
-                    <button onClick={() => { setFormAbierto(false); setEstado("idle"); }} className="mt-3 text-xs text-gray-500 hover:text-white underline">Cerrar</button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleEnviar} className="space-y-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider">Mensaje rápido</p>
-                      <button type="button" onClick={() => setFormAbierto(false)} className="text-white/30 hover:text-white transition-colors">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <input
-                      value={nombre}
-                      onChange={e => setNombre(e.target.value)}
-                      placeholder="Tu nombre"
-                      required
-                      className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-river-red"
-                    />
-                    <textarea
-                      value={mensaje}
-                      onChange={e => setMensaje(e.target.value)}
-                      placeholder="Tu consulta..."
-                      required
-                      rows={3}
-                      className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-river-red resize-none"
-                    />
-                    {estado === "error" && <p className="text-red-400 text-xs">Error al enviar. Intentá de nuevo.</p>}
-                    <button
-                      type="submit"
-                      disabled={estado === "enviando"}
-                      className="w-full flex items-center justify-center gap-2 bg-river-red hover:bg-river-red/80 disabled:opacity-50 text-white text-sm font-bold py-2 rounded-lg transition-colors"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      {estado === "enviando" ? "Enviando..." : "Enviar consulta"}
-                    </button>
-                  </form>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Social */}
+          {/* Columna 3: Redes y contacto */}
           <div>
-            <h4 className="font-display text-xl mb-6 text-river-red">Seguinos</h4>
-            <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-river-red transition-all hover:-translate-y-1">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="https://www.instagram.com/riverplateisrael?igsh=N2RlM2Y3Y25vdjMy&utm_source=qr" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-river-red transition-all hover:-translate-y-1">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-river-red transition-all hover:-translate-y-1">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-river-red transition-all hover:-translate-y-1">
-                <Youtube className="w-5 h-5" />
-              </a>
-            </div>
-            <div className="mt-8">
-              <p className="text-sm text-gray-500 mb-1">Club Atlético River Plate Oficial</p>
-              <a href="https://www.cariverplate.com.ar" target="_blank" rel="noreferrer" className="text-sm font-bold hover:text-river-red transition-colors">
-                www.cariverplate.com.ar
-              </a>
-            </div>
+            <h4 className="font-display text-lg mb-3 border-b border-gris-borde pb-2">SEGUINOS</h4>
+            <ul className="space-y-3 text-sm">
+              <li>
+                <a
+                  href="https://www.instagram.com/riverplateisrael"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gris-meta hover:text-river-red transition-colors font-semibold"
+                >
+                  <Instagram className="w-4 h-4" />
+                  Instagram
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.facebook.com/share/1ANhvcjefr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gris-meta hover:text-river-red transition-colors font-semibold"
+                >
+                  <Facebook className="w-4 h-4" />
+                  Facebook
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gris-meta hover:text-river-red transition-colors font-semibold"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  WhatsApp
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
 
-        {/* ── CONTADOR DE VISITAS ──────────────────────────────────────────── */}
-        <div className="border-t border-white/10 pt-8 mb-6">
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-4 bg-white rounded-2xl border-2 border-red-600 px-6 py-4 shadow-lg">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-red-600 shrink-0" />
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider leading-none mb-1">
-                    Hinchas que pasaron por el Monumental Digital
-                  </p>
-                  <div className="flex items-baseline gap-3">
-                    {visitas === null ? (
-                      <span className="text-2xl font-black text-gray-300 font-display animate-pulse">···</span>
-                    ) : (
-                      <>
-                        <span className="text-3xl font-black text-red-600 font-display leading-none">
-                          {formatearNumero(visitas.total)}
-                        </span>
-                        <span className="text-sm text-gray-400">
-                          visitas · <span className="font-semibold text-gray-600">{formatearNumero(visitas.unicas)}</span> únicas
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── COPYRIGHT ────────────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} River en Israel - Filial River Plate Israel. Todos los derechos reservados.</p>
-          <div className="flex gap-4 mt-4 md:mt-0">
-            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-            <a href="#" className="hover:text-white transition-colors">Términos</a>
-            <Link href="/redactor" className="text-white/5 hover:text-white/5 transition-none select-none" tabIndex={-1} aria-hidden="true">1901</Link>
-          </div>
+        {/* Línea final */}
+        <div className="border-t-2 border-gris-borde pt-6 text-center">
+          <p className="font-mono text-xs text-gris-meta">
+            © {new Date().getFullYear()} River Plate en Israel — Filial Ramat Gan "El Tucu Sajnin" · Todos los derechos reservados
+          </p>
+          <p className="font-mono text-xs text-gris-meta mt-2">
+            Vamos River 🔴⚪️
+          </p>
         </div>
       </div>
     </footer>
