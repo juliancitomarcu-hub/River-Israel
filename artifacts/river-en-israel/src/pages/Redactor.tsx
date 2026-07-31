@@ -127,6 +127,7 @@ interface WebhookEstado {
   urlCoincide: boolean;
   pendingUpdateCount: number | null;
   ultimoError: string | null;
+  ultimoErrorFecha: number | null;
   registradoConSecret: boolean;
   protegido: boolean;
 }
@@ -3480,12 +3481,18 @@ export default function Redactor() {
                         </button>
                       </span>
                     )}
-                    {w.consultaOk && w.ultimoError && (
-                      <span className="inline-flex items-start gap-1 text-[11px] font-semibold text-red-600 pl-1">
-                        <span className="shrink-0">⚠️</span>
-                        <span>Último error de entrega: {w.ultimoError}</span>
-                      </span>
-                    )}
+                    {w.consultaOk && w.ultimoError && (() => {
+                      const edadMs = w.ultimoErrorFecha ? Date.now() - w.ultimoErrorFecha * 1000 : null;
+                      const viejo = edadMs !== null && edadMs > 24 * 60 * 60 * 1000;
+                      return (
+                        <span className={`inline-flex items-start gap-1 text-[11px] pl-1 ${viejo ? "font-normal text-gray-400" : "font-semibold text-red-600"}`}>
+                          <span className="shrink-0">{viejo ? "⚠" : "⚠️"}</span>
+                          <span>
+                            Último error de entrega{edadMs !== null && edadMs >= 0 ? ` (hace ${tiempoRelativo(edadMs)})` : ""}: {w.ultimoError}
+                          </span>
+                        </span>
+                      );
+                    })()}
                     {w.consultaOk && w.registrado && (w.pendingUpdateCount ?? 0) === 0 && !w.ultimoError && (
                       <span className="text-[11px] text-gray-400 pl-1">Sin updates encolados ni errores de entrega.</span>
                     )}

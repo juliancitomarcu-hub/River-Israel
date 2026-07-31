@@ -183,6 +183,8 @@ export interface WebhookInfoVivo {
   pendingUpdateCount: number | null;
   /** Último error de entrega que reporta Telegram, o null. */
   ultimoError: string | null;
+  /** Fecha (unix timestamp, segundos) del último error de entrega, o null. */
+  ultimoErrorFecha: number | null;
 }
 
 /** Consulta getWebhookInfo de Telegram para un bot. */
@@ -202,6 +204,7 @@ export async function consultarWebhookInfo(
     urlCoincide: false,
     pendingUpdateCount: null,
     ultimoError: null,
+    ultimoErrorFecha: null,
   };
 
   if (!token) {
@@ -217,6 +220,7 @@ export async function consultarWebhookInfo(
         url?: string;
         pending_update_count?: number;
         last_error_message?: string;
+        last_error_date?: number;
       };
     };
     if (!data.ok || !data.result) {
@@ -231,6 +235,7 @@ export async function consultarWebhookInfo(
       urlCoincide: !!url && !!urlEsperada && url === urlEsperada,
       pendingUpdateCount: data.result.pending_update_count ?? null,
       ultimoError: data.result.last_error_message ?? null,
+      ultimoErrorFecha: data.result.last_error_date ?? null,
     };
   } catch (err) {
     logger.warn({ bot: categoria, err }, "Error consultando getWebhookInfo de Telegram");
