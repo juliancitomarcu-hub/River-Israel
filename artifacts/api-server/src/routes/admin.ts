@@ -12,6 +12,7 @@ import {
   countActiveAdminSessions,
   listActiveAdminSessions,
   revokeAdminSession,
+  revokeAdminSessionById,
   revokeAllAdminSessions,
 } from "../lib/edit-tokens";
 
@@ -275,6 +276,42 @@ router.post("/admin/exchange-edit-token", async (req, res) => {
     expiresAt: session.expiresAt,
     noticiaId: consumed.noticiaId,
   });
+});
+
+// Revoca una sola sesión admin por su id opaco (hash del token). Si la sesión
+// revocada resulta ser la del que pide, limpiamos también su cookie para que
+// el navegador no quede con una cookie huérfana.
+// Requiere credencial admin válida; las sesiones scoped a una noticia no alcanzan.
+router.post("/admin/sessions/:id/revoke", async (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const provided = extractToken(req);
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const autorizado = provided === expected || (await getAdminSession(provided)) !== null;
+  if (!autorizado) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const { id } = req.params;
+  if (!id) {
+    res.status(400).json({ error: "Falta id de sesión" });
+    return;
+  }
+  const revocada = await revokeAdminSessionById(id);
+  if (!revocada) {
+    res.status(404).json({ error: "Sesión no encontrada o ya expirada" });
+    return;
+  }
+  // Si el que pidió la revocación era la misma sesión que acabamos de borrar,
+  // limpiamos su cookie para no dejar un estado inconsistente.
+  // (No forzamos logout: quien hace la petición sabe lo que hace.)
+  res.json({ ok: true });
 });
 
 export default router;

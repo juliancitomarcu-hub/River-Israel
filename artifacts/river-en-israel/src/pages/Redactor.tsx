@@ -1017,11 +1017,12 @@ export default function Redactor() {
 
   // Detalle de cada sesión admin viva (popover al tocar el contador): creada
   // hace X, caduca en Y, y si es "esta" sesión. El endpoint nunca expone tokens.
-  type SesionAdmin = { createdAt: number; expiresAt: number; actual: boolean };
+  type SesionAdmin = { sessionId: string; createdAt: number; expiresAt: number; actual: boolean };
   const [detalleSesiones, setDetalleSesiones] = useState<SesionAdmin[] | null>(null);
   const [mostrarSesiones, setMostrarSesiones] = useState(false);
   const [cargandoSesiones, setCargandoSesiones] = useState(false);
   const [errorSesiones, setErrorSesiones] = useState("");
+  const [cerrandoSesionId, setCerrandoSesionId] = useState<string | null>(null);
 
   const cargarDetalleSesiones = async () => {
     setCargandoSesiones(true);
@@ -1050,6 +1051,23 @@ export default function Redactor() {
     const abrir = !mostrarSesiones;
     setMostrarSesiones(abrir);
     if (abrir) cargarDetalleSesiones();
+  };
+
+  const cerrarSesion = async (sessionId: string) => {
+    setCerrandoSesionId(sessionId);
+    try {
+      const res = await fetch(`/api/admin/sessions/${sessionId}/revoke`, {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        // Eliminar del listado local y decrementar el contador.
+        setDetalleSesiones(prev => prev?.filter(s => s.sessionId !== sessionId) ?? null);
+        setSesionesActivas(prev => (prev !== null ? Math.max(0, prev - 1) : null));
+      }
+    } catch { /* ignore */ } finally {
+      setCerrandoSesionId(null);
+    }
   };
 
   // "hace 5 min", "hace 2 h", "hace 1 día" — para el popover de sesiones.
@@ -2449,21 +2467,37 @@ export default function Redactor() {
                         <ul className="space-y-1.5">
                           {detalleSesiones.map((s, i) => (
                             <li
-                              key={`${s.createdAt}-${i}`}
+                              key={s.sessionId}
                               className={`text-[11px] rounded-lg px-2 py-1.5 ${s.actual ? "bg-river-red/10 text-river-red" : "bg-gray-50 text-gray-600"}`}
                             >
-                              <span className="font-bold">
-                                {s.actual ? "Esta sesión" : `Sesión ${i + 1}`}
-                              </span>
-                              {" · "}abierta hace {tiempoRelativo(Date.now() - s.createdAt)}
-                              {" · "}caduca en {tiempoRelativo(s.expiresAt - Date.now())}
+                              <div className="flex items-start justify-between gap-1">
+                                <div>
+                                  <span className="font-bold">
+                                    {s.actual ? "Esta sesión" : `Sesión ${i + 1}`}
+                                  </span>
+                                  {" · "}abierta hace {tiempoRelativo(Date.now() - s.createdAt)}
+                                  <br />
+                                  caduca en {tiempoRelativo(s.expiresAt - Date.now())}
+                                </div>
+                                {!s.actual && (
+                                  <button
+                                    type="button"
+                                    onClick={() => cerrarSesion(s.sessionId)}
+                                    disabled={cerrandoSesionId === s.sessionId}
+                                    className="shrink-0 text-[10px] font-bold text-red-500 hover:text-red-700 disabled:opacity-50 mt-0.5"
+                                    title="Cerrar esta sesión"
+                                  >
+                                    {cerrandoSesionId === s.sessionId ? "cerrando…" : "cerrar"}
+                                  </button>
+                                )}
+                              </div>
                             </li>
                           ))}
                         </ul>
                       )
                     )}
                     <p className="text-[10px] text-gray-400 mt-2">
-                      Si ves sesiones que no reconocés, usá "salir de todos".
+                      Si ves sesiones que no reconocés, cerrá solo esa o usá "salir de todos".
                     </p>
                   </div>
                 )}

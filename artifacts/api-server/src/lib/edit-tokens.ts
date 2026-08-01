@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, createHash } from "node:crypto";
 import { db, editTokensTable, panelSessionsTable } from "@workspace/db";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { logger } from "./logger";
@@ -205,12 +205,18 @@ export async function countActiveAdminSessions(): Promise<number> {
   return rows[0]?.count ?? 0;
 }
 
+// Identificador opaco derivado del token: SHA-256 truncado a 16 hex chars.
+// Permite al panel referenciar una sesión específica sin exponer el token real.
+function sessionIdFromToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex").slice(0, 16);
+}
+
 // Lista las sesiones admin vivas (no caducadas) sin exponer el token completo:
-// devuelve creada/expira y un flag "actual" comparando contra el token del que
-// pide. Ordenadas de más nueva a más vieja.
+// devuelve un id opaco, creada/expira y un flag "actual" comparando contra el
+// token del que pide. Ordenadas de más nueva a más vieja.
 export async function listActiveAdminSessions(
   currentToken: string,
-): Promise<Array<{ createdAt: number; expiresAt: number; actual: boolean }>> {
+): Promise<Array<{ sessionId: string; createdAt: number; expiresAt: number; actual: boolean }>> {
   const now = new Date();
   const rows = await db
     .select({
@@ -227,10 +233,31 @@ export async function listActiveAdminSessions(
     )
     .orderBy(sql`${panelSessionsTable.createdAt} desc`);
   return rows.map((r) => ({
+    sessionId: sessionIdFromToken(r.token),
     createdAt: r.createdAt.getTime(),
     expiresAt: r.expiresAt.getTime(),
     actual: r.token === currentToken,
   }));
+}
+
+// Revoca una sola sesión admin buscándola por su id opaco (hash del token).
+// Devuelve true si se encontró y borró, false si no existía o ya caducó.
+export async function revokeAdminSessionById(sessionId: string): Promise<boolean> {
+  const now = new Date();
+  // Traemos todas las sesiones admin vivas y buscamos cuál matchea el hash.
+  const rows = await db
+    .select({ token: panelSessionsTable.token })
+    .from(panelSessionsTable)
+    .where(
+      and(
+        eq(panelSessionsTable.scope, "admin"),
+        sql`${panelSessionsTable.expiresAt} > ${now}`,
+      ),
+    );
+  const match = rows.find((r) => sessionIdFromToken(r.token) === sessionId);
+  if (!match) return false;
+  await db.delete(panelSessionsTable).where(eq(panelSessionsTable.token, match.token));
+  return true;
 }
 
 export async function revokeAdminSession(token: string): Promise<void> {
