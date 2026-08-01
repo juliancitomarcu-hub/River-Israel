@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, editTokensTable, noticiasTable } from "@workspace/db";
-import { desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull } from "drizzle-orm";
 import { requireAdmin } from "../middleware/requireAdmin";
 import {
   leerRedactorSettings,
@@ -49,8 +49,10 @@ async function ultimoLinkResumen(): Promise<
 // título de la nota, para que el panel muestre cuáles siguen vigentes, cuáles
 // fueron usados y cuáles caducaron. Los caducados se purgan periódicamente,
 // así que la lista solo refleja los que todavía existen en la tabla.
+// Incluye el token para que el panel pueda anular links vigentes.
 async function ultimosLinksEdicion(): Promise<
   Array<{
+    token: string;
     noticiaId: number;
     titulo: string | null;
     creadoEn: string;
@@ -60,6 +62,7 @@ async function ultimosLinksEdicion(): Promise<
 > {
   const rows = await db
     .select({
+      token: editTokensTable.token,
       noticiaId: editTokensTable.noticiaId,
       createdAt: editTokensTable.createdAt,
       expiresAt: editTokensTable.expiresAt,
@@ -72,6 +75,7 @@ async function ultimosLinksEdicion(): Promise<
     .orderBy(desc(editTokensTable.createdAt))
     .limit(10);
   return rows.map((row) => ({
+    token: row.token,
     noticiaId: row.noticiaId as number,
     titulo: row.titulo,
     creadoEn: row.createdAt.toISOString(),
@@ -217,6 +221,33 @@ router.put("/redactor-settings", (req, res) => {
     resumenSeccionPostulaciones: settings.resumenSeccionPostulaciones,
     resumenSeccionBorradoresEs: settings.resumenSeccionBorradoresEs,
   });
+});
+
+// Anula (elimina) un link de edición vigente. Solo funciona si el token aún
+// existe, no fue usado y no está caducado; en cualquier otro caso devuelve 404.
+router.delete("/redactor-settings/links-edicion/:token", async (req, res) => {
+  const { token } = req.params;
+  const ahora = new Date();
+  // Verificamos que el token exista, no haya sido usado y siga vigente.
+  const rows = await db
+    .select({ token: editTokensTable.token })
+    .from(editTokensTable)
+    .where(
+      and(
+        eq(editTokensTable.token, token),
+        isNotNull(editTokensTable.noticiaId),
+        isNull(editTokensTable.usedAt),
+        gt(editTokensTable.expiresAt, ahora),
+      ),
+    )
+    .limit(1);
+  if (rows.length === 0) {
+    res.status(404).json({ error: "Token no encontrado, ya usado o caducado" });
+    return;
+  }
+  await db.delete(editTokensTable).where(eq(editTokensTable.token, token));
+  req.log.info({ token }, "Redactor: link de edición anulado manualmente");
+  res.json({ ok: true });
 });
 
 export default router;

@@ -1243,8 +1243,10 @@ export default function Redactor() {
   }, []);
   // Últimos links de edición por nota emitidos (para ver cuáles siguen vigentes).
   const [ultimosLinksEdicion, setUltimosLinksEdicion] = useState<
-    Array<{ noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>
+    Array<{ token: string; noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>
   >([]);
+  // Token que se está anulando en este momento (para deshabilitar el botón).
+  const [anulandoToken, setAnulandoToken] = useState<string | null>(null);
   // Duración (en minutos) de los links de edición por nota (avisos al crear).
   const [linkEdicionTtlMinutos, setLinkEdicionTtlMinutos] = useState<string>("");
   const [guardandoTtlEdicion, setGuardandoTtlEdicion] = useState(false);
@@ -1396,7 +1398,7 @@ export default function Redactor() {
           resumenSeccionPostulaciones?: boolean;
           resumenSeccionBorradoresEs?: boolean;
           ultimoLinkResumen?: { creadoEn: string; expiraEn: string; usado: boolean } | null;
-          ultimosLinksEdicion?: Array<{ noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>;
+          ultimosLinksEdicion?: Array<{ token: string; noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>;
           conteosResumen?: { hebreo: number; postulaciones: number; borradoresEs: number } | null;
         };
         setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
@@ -4827,6 +4829,7 @@ export default function Redactor() {
                         day: "2-digit", month: "2-digit",
                         hour: "2-digit", minute: "2-digit",
                       });
+                      const esVigente = !link.usado && restanteMs > 0;
                       let estado: React.ReactNode;
                       if (link.usado) {
                         estado = (
@@ -4860,6 +4863,32 @@ export default function Redactor() {
                           </span>
                           <span className="text-gray-400 shrink-0">emitido {fmt(emitido)}</span>
                           {estado}
+                          {esVigente && (
+                            <button
+                              onClick={async () => {
+                                setAnulandoToken(link.token);
+                                try {
+                                  const res = await fetch(
+                                    `/api/redactor-settings/links-edicion/${encodeURIComponent(link.token)}`,
+                                    { method: "DELETE" },
+                                  );
+                                  if (res.ok) {
+                                    setUltimosLinksEdicion(prev =>
+                                      prev.map(l =>
+                                        l.token === link.token ? { ...l, usado: true } : l,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  setAnulandoToken(null);
+                                }
+                              }}
+                              disabled={anulandoToken === link.token}
+                              className="shrink-0 text-xs px-2 py-0.5 rounded-full border border-orange-300 text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors disabled:opacity-50"
+                            >
+                              {anulandoToken === link.token ? "Anulando…" : "Anular"}
+                            </button>
+                          )}
                         </li>
                       );
                     })}
