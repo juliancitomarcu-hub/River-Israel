@@ -19,6 +19,38 @@ function escaparMarkdown(s: string): string {
   return s.replace(/([_*`\[])/g, "\\$1");
 }
 
+/**
+ * Ventana de throttle: si el mismo aviso (bot + motivo) se volvió a disparar
+ * dentro de este período, se suprime para no inundar el chat de Telegram.
+ */
+const THROTTLE_MS = 10 * 60 * 1000; // 10 minutos
+
+/**
+ * Registro en memoria de cuándo se envió por última vez cada aviso.
+ * Clave: `${categoria}::${motivo}` (motivo truncado a 300 chars igual que en el texto).
+ */
+const ultimoAviso = new Map<string, number>();
+
+/**
+ * Devuelve true si el aviso debe suprimirse porque ya se envió uno idéntico
+ * dentro de la ventana de throttle. Si no se suprime, actualiza el registro.
+ */
+function throttleAviso(categoria: CategoriaTelegram, motivo: string): boolean {
+  const clave = `${categoria}::${motivo.slice(0, 300)}`;
+  const ahora = Date.now();
+  const ultimo = ultimoAviso.get(clave);
+  if (ultimo !== undefined && ahora - ultimo < THROTTLE_MS) {
+    const segundosRestantes = Math.ceil((THROTTLE_MS - (ahora - ultimo)) / 1000);
+    logger.info(
+      { bot: categoria, motivo, segundosRestantes },
+      "avisarSiWebhookSinProteger: aviso suprimido por throttle (ya se envió uno idéntico hace poco)",
+    );
+    return true;
+  }
+  ultimoAviso.set(clave, ahora);
+  return false;
+}
+
 const NOMBRES: Record<CategoriaTelegram, string> = {
   river: "River en Israel",
   seleccion: "La Scaloneta en Israel",
@@ -37,6 +69,8 @@ export function avisarSiWebhookSinProteger(
   const motivo = !estado.ok
     ? (estado.error ?? "El registro del webhook falló sin detalle")
     : "El webhook quedó registrado pero SIN secret_token";
+
+  if (throttleAviso(categoria, motivo)) return;
 
   logger.warn({ bot: categoria, motivo }, "Webhook sin proteger al arrancar; enviando aviso a Telegram");
 
