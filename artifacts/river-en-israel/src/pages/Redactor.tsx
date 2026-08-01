@@ -2103,6 +2103,16 @@ export default function Redactor() {
     }
   }, []);
 
+  // Refresca los conteos de pendientes cada 60 s mientras la pestaña
+  // "Mis publicaciones (hebreo)" está abierta. Al cambiar de pestaña o
+  // desmontar el componente se cancela el intervalo.
+  useEffect(() => {
+    if (tab !== "publicaciones-hebreo") return;
+    const id = window.setInterval(() => { void cargarHoraResumen(); }, 60_000);
+    return () => window.clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
   const buscarNoticias = async () => {
     setBuscando(true);
     setErrorBusqueda("");
