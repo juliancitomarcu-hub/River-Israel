@@ -7,6 +7,7 @@ import { ejecutarCiclo, type EjecucionResultado, type Categoria } from "../sched
 import { createEditToken, descripcionTtlEdicion } from "../lib/edit-tokens";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
 import { enviarNotaAMake } from "../lib/enviar-a-make";
+import { promocionarNotaEnCanal } from "../lib/promocionar-nota";
 import { webhookSecretParaToken } from "../lib/telegram-webhook-secret";
 
 const router: IRouter = Router();
@@ -421,6 +422,9 @@ async function procesarCallback(
 
       // 📸 Instagram vía Make.com (fire-and-forget)
       if (noticia) enviarNotaAMake(noticia);
+
+      // 📣 Promoción automática en el canal público (fire-and-forget)
+      if (noticia) promocionarNotaEnCanal(noticia).catch(() => {});
 
       const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
       const fotoTexto = noticia?.imagenPortada ? "\n🖼 _Publicada con foto de portada._" : "";

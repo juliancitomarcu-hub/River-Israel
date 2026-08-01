@@ -13,6 +13,7 @@
 import { logger } from "./logger";
 import { credencialesTelegram, type CategoriaTelegram } from "./telegram-cred";
 import { enviarNotaAMake } from "./enviar-a-make";
+import { promocionarNotaEnCanal } from "./promocionar-nota";
 
 /** Escapa caracteres especiales de Markdown (v1) de Telegram. */
 function escaparMarkdown(s: string): string {
@@ -30,6 +31,9 @@ export interface NotaPublicada {
 }
 
 export function notificarNotaPublicada(nota: NotaPublicada): void {
+  // 📣 Promoción automática en el canal público de Telegram (fire-and-forget)
+  promocionarNotaEnCanal(nota).catch(() => {});
+
   // 📸 Instagram vía Make.com (fire-and-forget, no bloquea)
   enviarNotaAMake({
     id: nota.id,

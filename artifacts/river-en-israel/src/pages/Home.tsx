@@ -36,7 +36,7 @@ export default function Home() {
             <h1 className="font-display text-5xl md:text-7xl tracking-tighter text-tinta leading-none mb-2">
               RIVER EN ISRAEL
             </h1>
-            <p className="font-mono text-xs text-gris-meta uppercase tracking-widest">
+            <p className="font-mono text-[10px] text-gris-meta uppercase tracking-widest">
               Filial River Plate Israel Gaby "Tucu" Sajnin · Edición digital {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}
             </p>
           </div>
@@ -380,7 +380,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+              href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
               target="_blank"
               rel="noopener noreferrer"
             >

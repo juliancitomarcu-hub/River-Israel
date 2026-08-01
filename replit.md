@@ -139,6 +139,8 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 - **La Scaloneta está oculta**: el ciclo periódico publica SOLO categoría "river" (web, Telegram, Instagram). "seleccion" queda solo para disparos manuales desde el panel/trigger. En el frontend, `/scaloneta` y `/mundial/*` redirigen a `/`.
 - Foto de portada: la imagen scrapeada del artículo se descarga (validación SSRF + content-type) y se sube a object storage (`/objects/portadas/...`). **Sin foto real NO hay autopublicación**: la nota se guarda como pendiente y llega a Telegram con botones Publicar/Editar y aviso "sin foto". La foto de respaldo de galería solo aplica en flujo manual/pendiente.
 - Prompt maestro incluye el plantel oficial completo (riverplate.com, julio 2026); arquero titular: Santiago Beltrán. González Pirez nunca debe mencionarse como arquero ni jugador actual.
+- Promoción automática: cada nota publicada (autopublicación, Redactor o botón Publicar del bot) se postea al canal público de Telegram (`TELEGRAM_CANAL_ID`, el bot debe ser admin) con foto, extracto, fuente y botón "Leer en riverplateisrael.com"; si la nota es previa de partido se agrega tarjeta "⏰ Próximo partido" con datos de `/api/partido-proximo` (`src/lib/promocionar-nota.ts`).
+- Open Graph dinámico por nota: `/noticia/:id` se enruta al api-server (paths del artifact.toml) y `src/og-noticia.ts` sirve el shell del SPA con og:title/og:image/og:description de la nota → vista previa correcta en WhatsApp/redes.
 - `resolverPortada()` en `use-river-data.ts` resuelve los 3 formatos de portada: `/objects/` → `/api/storage`, `/images/` → BASE_URL, `http(s)` externas tal cual.
 
 ### Dedupe anti-repetidos (scheduler)

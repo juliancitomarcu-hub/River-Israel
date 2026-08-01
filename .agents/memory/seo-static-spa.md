@@ -18,11 +18,15 @@ que sólo atiende `/api`. Bajo el mismo dominio, el proxy enruta por path
   montar la ruta a nivel app en `app.ts` **fuera** del router `/api` (el proxy no
   reescribe el path, así que Express recibe `/sitemap.xml` tal cual).
 - **`robots.txt` es estático** en `public/` del frontend (lo sirve el host estático).
-- **Meta tags por nota = client-side a propósito.** El usuario eligió que con que
-  Google los lea alcanza (no SSR). Helper: `src/lib/seo.ts`. Consecuencia: las
-  previsualizaciones de WhatsApp/Facebook muestran la imagen **general** del sitio,
-  no la de cada nota. Para previews por nota habría que enrutar `/noticia/*` por el
-  servidor e inyectar OG en el shell (decisión pendiente, no implementada).
+- **OG por nota (implementado ago 2026):** `/noticia` está en los `paths` del
+  api-server; un handler baja el shell del SPA desde SITE_URL (cache 10 min),
+  inyecta og:title/description/image por nota y lo sirve. Los usuarios reales
+  cargan el mismo SPA; los crawlers ven la tarjeta correcta. Las portadas de
+  object storage (`/objects/...`) se publican vía `/api/storage/objects/...` —
+  cualquier URL pública de imagen debe usar ese prefijo.
+- Promoción automática: toda publicación (scheduler, redactor, botón del bot)
+  postea al canal público de Telegram si `TELEGRAM_CANAL_ID` está seteada
+  (el bot debe ser admin del canal). WhatsApp no tiene API para canales.
 - **Google Analytics** se inyecta en build vía plugin `transformIndexHtml` en
   `vite.config.ts`, gated por `process.env.GOOGLE_ANALYTICS_ID`. Sin la env var no
   inyecta nada. El usuario setea esa env var y redeploya.

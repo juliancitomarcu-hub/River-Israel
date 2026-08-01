@@ -9,6 +9,7 @@ import * as path from "path";
 import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
 import { limpiarNota } from "./lib/limpiar-asteriscos";
 import { enviarNotaAMake } from "./lib/enviar-a-make";
+import { promocionarNotaEnCanal } from "./lib/promocionar-nota";
 import { urlImagenSegura } from "./lib/url-imagen-segura";
 import { leerEstadoApp, guardarEstadoApp } from "./lib/app-estado";
 import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
@@ -795,6 +796,8 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         }),
       });
       logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl }, "Scheduler: nota autopublicada con foto automática");
+      // 📣 Promoción automática en el canal público (fire-and-forget)
+      promocionarNotaEnCanal(savedNoticia).catch(() => {});
     } else {
       // ── MODO MANUAL: artículo completo + 2 botones ────────────────────
       // Si hay imagen scrapeada, la enviamos primero como sendPhoto
