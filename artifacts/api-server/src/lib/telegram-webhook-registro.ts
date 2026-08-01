@@ -57,6 +57,15 @@ const estados: Record<CategoriaTelegram, RegistroWebhookEstado> = {
   seleccion: estadoVacio(),
 };
 
+/**
+ * ¿Vale la pena reintentar el registro? Solo cuando falló pese a tener
+ * configuración completa (url armada): fallos de red o rechazo transitorio de
+ * Telegram. Falta de token/dominio no se arregla reintentando.
+ */
+export function fallaReintentable(estado: RegistroWebhookEstado): boolean {
+  return !estado.ok && estado.url !== null;
+}
+
 /** Devuelve el estado del último intento de registro de este proceso. */
 export function estadoRegistro(categoria: CategoriaTelegram): RegistroWebhookEstado {
   return estados[categoria];

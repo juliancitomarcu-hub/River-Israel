@@ -10,7 +10,7 @@ import { PROMPT_MAESTRO_SELECCION } from "../lib/prompt-maestro-seleccion";
 import { requireAdmin } from "../middleware/requireAdmin";
 import { type CategoriaImagen } from "../lib/generar-imagen-ig";
 import { credencialesTelegram, estadoTelegram } from "../lib/telegram-cred";
-import { estadoWebhookPanel, registrarWebhook } from "../lib/telegram-webhook-registro";
+import { estadoWebhookPanel, registrarWebhook, fallaReintentable } from "../lib/telegram-webhook-registro";
 import { avisarSiWebhookSinProteger } from "../lib/avisar-webhook-sin-proteger";
 import { limpiarNota } from "../lib/limpiar-asteriscos";
 
@@ -72,21 +72,36 @@ router.post("/registrar-webhook", async (req, res) => {
   };
   const categoriaFinal = categoria === "seleccion" ? "seleccion" : "river";
 
-  const registro = await registrarWebhook(categoriaFinal, {
-    descartarPendientes: descartarPendientes === true,
-  });
+  const opciones = { descartarPendientes: descartarPendientes === true };
+  const ESPERA_REINTENTO_MS = 2_000;
+  const MAX_REINTENTOS = 2;
+
+  let registro = await registrarWebhook(categoriaFinal, opciones);
+  let reintentos = 0;
+
+  while (fallaReintentable(registro) && reintentos < MAX_REINTENTOS) {
+    reintentos++;
+    req.log.warn(
+      { categoria: categoriaFinal, error: registro.error, intento: reintentos + 1 },
+      "Re-registro del webhook falló; reintentando en 2s",
+    );
+    await new Promise<void>((resolve) => setTimeout(resolve, ESPERA_REINTENTO_MS));
+    registro = await registrarWebhook(categoriaFinal, opciones);
+  }
+
   avisarSiWebhookSinProteger(categoriaFinal, registro);
   if (!registro.ok) {
-    req.log.warn({ categoria: categoriaFinal, error: registro.error }, "No se pudo re-registrar el webhook");
+    req.log.warn({ categoria: categoriaFinal, error: registro.error, reintentos }, "No se pudo re-registrar el webhook");
     res.status(502).json({
       ok: false,
       error: registro.error ?? "No se pudo registrar el webhook.",
+      reintentos,
     });
     return;
   }
 
   const estado = await estadoWebhookPanel(categoriaFinal);
-  res.json({ ok: true, estado });
+  res.json({ ok: true, estado, reintentos });
 });
 
 /**

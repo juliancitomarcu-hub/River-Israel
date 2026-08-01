@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { iniciarScheduler } from "./scheduler";
-import { registrarWebhook, type RegistroWebhookEstado } from "./lib/telegram-webhook-registro";
+import { registrarWebhook, fallaReintentable, type RegistroWebhookEstado } from "./lib/telegram-webhook-registro";
 import { avisarSiWebhookSinProteger, avisarWebhookRecuperado } from "./lib/avisar-webhook-sin-proteger";
 import type { CategoriaTelegram } from "./lib/telegram-cred";
 import { initRedactorSettings } from "./lib/redactor-settings";
@@ -27,15 +27,6 @@ const esperar = (ms: number) => new Promise<void>((resolve) => setTimeout(resolv
 
 /** Esperas antes de cada reintento (backoff creciente). */
 const ESPERAS_REINTENTO_MS = [5_000, 15_000, 45_000];
-
-/**
- * ¿Vale la pena reintentar? Solo cuando el registro falló pese a tener
- * configuración completa (url armada): fallos de red o rechazo transitorio de
- * Telegram. Falta de token/dominio no se arregla reintentando.
- */
-function fallaReintentable(estado: RegistroWebhookEstado): boolean {
-  return !estado.ok && estado.url !== null;
-}
 
 /**
  * Registra el webhook de un bot con reintentos y backoff creciente ante
