@@ -452,7 +452,7 @@ export default function Noticia() {
                   {formatearFecha(data.createdAt)}
                 </span>
                 <span className="text-white/40">·</span>
-                <span>River en Israel — Filial Ramat Gan</span>
+                <span>River en Israel — Filial River Plate Israel Gaby "Tucu" Sajnin</span>
               </div>
             </div>
           </div>

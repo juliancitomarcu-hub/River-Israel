@@ -37,7 +37,7 @@ export default function Home() {
               RIVER EN ISRAEL
             </h1>
             <p className="font-mono text-xs text-gris-meta uppercase tracking-widest">
-              Filial Ramat Gan "El Tucu Sajnin" · Edición digital {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}
+              Filial River Plate Israel Gaby "Tucu" Sajnin · Edición digital {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}
             </p>
           </div>
           
@@ -372,7 +372,7 @@ export default function Home() {
       <section id="filial" className="bg-tinta text-white py-16 border-t-4 border-river-red">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-display text-4xl md:text-5xl mb-4">
-            Sumate a la Filial Ramat Gan
+            Sumate a la Filial River Plate Israel Gaby "Tucu" Sajnin
           </h2>
           <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
             Somos hinchas de River que vivimos la pasión millonaria desde Israel. 
@@ -442,7 +442,7 @@ export default function Home() {
           </div>
           <div className="mt-8 pt-6 border-t border-gris-borde text-center">
             <p className="font-mono text-xs text-gris-meta">
-              © {new Date().getFullYear()} River Plate en Israel — Filial Ramat Gan "El Tucu Sajnin" · Vamos River 🔴⚪️
+              © {new Date().getFullYear()} River Plate en Israel — Filial River Plate Israel Gaby "Tucu" Sajnin · Vamos River 🔴⚪️
             </p>
           </div>
         </div>

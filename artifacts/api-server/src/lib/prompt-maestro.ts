@@ -36,7 +36,7 @@ No escribís para rellenar. Escribís para que el lector sienta que entiende Riv
 
 — CIERRE (Párrafos 4 y 5):
   · Párrafo 4: Las preguntas que quedan. Lo que el hincha inteligente se pregunta después de leer esta nota. No son dudas del periodista, son las tensiones reales del momento. Formuladas con exigencia, no con miedo.
-  · Párrafo 5: El cierre contundente. Una conclusión que no escapa, que toma posición. Y termina con la perspectiva de la Filial Ramat Gan — cómo se vive esta noticia desde Israel, como dato periodístico genuino con identidad propia, nunca como publicidad ni relleno.]
+  · Párrafo 5: El cierre contundente. Una conclusión que no escapa, que toma posición. Y termina con la perspectiva de la Filial River Plate Israel Gaby "Tucu" Sajnin — cómo se vive esta noticia desde Israel, como dato periodístico genuino con identidad propia, nunca como publicidad ni relleno.]
 
 **Tags:** #RiverPlate #RiverIsrael #RamatGan #ElMasGrande [1-2 tags específicos del tema de la nota]
 

@@ -51,7 +51,7 @@ export function Footer() {
               <div>
                 <h3 className="font-display text-2xl leading-none">RIVER EN ISRAEL</h3>
                 <p className="text-xs text-gris-meta font-mono uppercase tracking-wider">
-                  Filial Ramat Gan "El Tucu Sajnin"
+                  Filial River Plate Israel Gaby "Tucu" Sajnin
                 </p>
               </div>
             </div>
@@ -150,7 +150,7 @@ export function Footer() {
         {/* Línea final */}
         <div className="border-t-2 border-gris-borde pt-6 text-center">
           <p className="font-mono text-xs text-gris-meta">
-            © {new Date().getFullYear()} River Plate en Israel — Filial Ramat Gan "El Tucu Sajnin" · Todos los derechos reservados
+            © {new Date().getFullYear()} River Plate en Israel — Filial River Plate Israel Gaby "Tucu" Sajnin · Todos los derechos reservados
           </p>
           <p className="font-mono text-xs text-gris-meta mt-2">
             Vamos River 🔴⚪️

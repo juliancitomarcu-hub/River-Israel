@@ -4216,7 +4216,7 @@ export default function Redactor() {
             </div>
             <div>
               <p className="font-bold text-white mb-1">🇮🇱 Contexto local</p>
-              <p>La IA menciona la Filial Ramat Gan e invita a los hinchas en Israel a unirse.</p>
+              <p>La IA menciona la Filial River Plate Israel Gaby "Tucu" Sajnin e invita a los hinchas en Israel a unirse.</p>
             </div>
             <div>
               <p className="font-bold text-white mb-1">📱 Privacidad total</p>

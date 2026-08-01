@@ -308,7 +308,7 @@ export default function CredencialGenerador({ onClose }: Props) {
           <div className="bg-river-black px-6 py-4 flex items-center justify-between">
             <div>
               <p className="text-river-red text-xs font-bold uppercase tracking-widest">Club Atlético River Plate</p>
-              <h2 className="text-white font-display font-bold text-xl">Tu Credencial · Filial Ramat Gan</h2>
+              <h2 className="text-white font-display font-bold text-xl">Tu Credencial · Filial River Plate Israel Gaby "Tucu" Sajnin</h2>
             </div>
             <button onClick={onClose} className="text-white/50 hover:text-white transition-colors p-1">
               <X className="w-6 h-6" />
@@ -319,7 +319,7 @@ export default function CredencialGenerador({ onClose }: Props) {
             {!generada ? (
               <div className="space-y-5">
                 <p className="text-gray-500 text-sm">
-                  Completá tus datos para generar tu credencial simbólica como miembro de la Filial Ramat Gan.
+                  Completá tus datos para generar tu credencial simbólica como miembro de la Filial River Plate Israel Gaby "Tucu" Sajnin.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -377,7 +377,7 @@ export default function CredencialGenerador({ onClose }: Props) {
                 <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Categoría</p>
-                    <p className="font-bold text-sm text-river-black">Filial Ramat Gan</p>
+                    <p className="font-bold text-sm text-river-black">Filial River Plate Israel Gaby "Tucu" Sajnin</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Nº Socio</p>
