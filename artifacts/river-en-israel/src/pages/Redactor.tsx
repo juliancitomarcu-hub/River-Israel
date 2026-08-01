@@ -1023,6 +1023,25 @@ export default function Redactor() {
   const [cargandoSesiones, setCargandoSesiones] = useState(false);
   const [errorSesiones, setErrorSesiones] = useState("");
   const [cerrandoSesionId, setCerrandoSesionId] = useState<string | null>(null);
+  const sesionesRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!mostrarSesiones) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (sesionesRef.current && !sesionesRef.current.contains(e.target as Node)) {
+        setMostrarSesiones(false);
+      }
+    };
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMostrarSesiones(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [mostrarSesiones]);
 
   const cargarDetalleSesiones = async () => {
     setCargandoSesiones(true);
@@ -2433,7 +2452,7 @@ export default function Redactor() {
               {cerrandoTodo ? "cerrando..." : "salir de todos"}
             </button>
             {sesionesActivas !== null && (
-              <span className="relative">
+              <span className="relative" ref={sesionesRef}>
                 <button
                   type="button"
                   onClick={toggleSesiones}
