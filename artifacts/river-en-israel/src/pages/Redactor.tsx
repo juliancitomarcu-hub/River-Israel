@@ -4858,9 +4858,14 @@ export default function Redactor() {
                           key={`${link.noticiaId}-${link.creadoEn}-${idx}`}
                           className="flex items-center gap-2 flex-wrap text-xs bg-white border border-gray-200 rounded-lg px-3 py-1.5"
                         >
-                          <span className="flex-1 min-w-[140px] text-river-black truncate">
+                          <a
+                            href={`/noticia/${link.noticiaId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 min-w-[140px] text-river-black truncate hover:text-river-red hover:underline transition-colors"
+                          >
                             {link.titulo || `Nota #${link.noticiaId}`}
-                          </span>
+                          </a>
                           <span className="text-gray-400 shrink-0">emitido {fmt(emitido)}</span>
                           {estado}
                           {esVigente && (
