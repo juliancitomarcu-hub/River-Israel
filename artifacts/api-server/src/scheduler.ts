@@ -805,16 +805,27 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       // 📣 Promoción automática en el canal público (fire-and-forget)
       promocionarNotaEnCanal(savedNoticia).catch(() => {});
     } else {
-      // ── MODO MANUAL: artículo completo + 2 botones ────────────────────
-      // Si hay imagen scrapeada, la enviamos primero como sendPhoto
-      if (imagenAutoUrl) {
+      // ── MODO MANUAL / PENDIENTE: artículo completo + 2 botones ────────
+      // Siempre mandamos la foto de portada primero (la del artículo si existe,
+      // o la de respaldo elegida), para que la nota llegue completa al bot.
+      const fotoParaTelegram =
+        imagenAutoUrl ??
+        (imagenPortadaFinal?.startsWith("/objects/")
+          ? `https://${dominioTelegram}/api/storage${imagenPortadaFinal}`
+          : imagenPortadaFinal
+            ? `https://${dominioTelegram}${imagenPortadaFinal}`
+            : null);
+      if (fotoParaTelegram) {
+        const capFoto = usoFallback
+          ? `🖼 _Foto de respaldo (el artículo no traía foto) — ${titulo}_`
+          : `🖼 _Foto de portada — ${titulo}_`;
         await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            photo: imagenAutoUrl,
-            caption: `🖼 _Foto de portada — ${titulo}_`,
+            photo: fotoParaTelegram,
+            caption: capFoto,
             parse_mode: "Markdown",
           }),
         }).catch(() => { /* no bloquear si falla la foto */ });
@@ -828,7 +839,9 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         ]],
       };
 
-      const etiquetaCatMan = categoria === "seleccion" ? "🇦🇷 _Selección Argentina_\n\n" : "";
+      const etiquetaCatMan = categoria === "seleccion"
+        ? "🇦🇷 _Categoría: Selección Argentina_\n\n"
+        : "⚪️🔴 _Categoría: River_\n\n";
       const avisoSinFoto = degradadaSinFoto
         ? "🖼 _El artículo no tenía foto de portada: la nota NO se publicó sola. Revisala, cargale una foto desde el Redactor y publicala._\n\n"
         : "";
