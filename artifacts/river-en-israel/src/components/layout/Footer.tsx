@@ -1,10 +1,28 @@
-import { Link } from "wouter";
+import { useRef } from "react";
+import { Link, useLocation } from "wouter";
 import { MapPin, Instagram, Facebook } from "lucide-react";
 import { useMundialMode } from "@/lib/mundial-mode";
 import { cn } from "@/lib/utils";
 
 export function Footer() {
   const mundialActivo = useMundialMode();
+  const [, navigate] = useLocation();
+  const clicksRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Acceso oculto: triple click en el logo del footer abre el Redactor IA
+  const handleLogoClick = () => {
+    clicksRef.current += 1;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (clicksRef.current >= 3) {
+      clicksRef.current = 0;
+      navigate("/redactor");
+      return;
+    }
+    timerRef.current = setTimeout(() => {
+      clicksRef.current = 0;
+    }, 1500);
+  };
 
   if (mundialActivo) {
     // Footer Mundial
@@ -45,7 +63,10 @@ export function Footer() {
           {/* Columna 1: Identidad */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 rounded-full border-2 border-tinta overflow-hidden">
+              <div
+                className="w-14 h-14 rounded-full border-2 border-tinta overflow-hidden cursor-default select-none"
+                onClick={handleLogoClick}
+              >
                 <div className="w-full h-full bg-diagonal-red"></div>
               </div>
               <div>
