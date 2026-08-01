@@ -82,8 +82,21 @@ async function obtenerProximoPartido(): Promise<ProximoPartido | null> {
  * Envía la nota al canal público de Telegram. Fire-and-forget:
  * llamar sin await o con .catch(() => {}).
  */
+/**
+ * Normaliza el identificador del canal: acepta "@usuario", "-100...",
+ * un link "https://t.me/usuario" o el usuario pelado "usuario".
+ */
+export function normalizarCanalId(valor: string): string {
+  let v = valor.trim();
+  const m = v.match(/t\.me\/([A-Za-z0-9_]+)/);
+  if (m) return `@${m[1]}`;
+  if (v.startsWith("@") || v.startsWith("-") || /^\d+$/.test(v)) return v;
+  return `@${v}`;
+}
+
 export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise<void> {
-  const canal = process.env.TELEGRAM_CANAL_ID;
+  const canalCrudo = process.env.TELEGRAM_CANAL_ID;
+  const canal = canalCrudo ? normalizarCanalId(canalCrudo) : canalCrudo;
   const token = process.env.TELEGRAM_TOKEN;
   if (!canal || !token) {
     logger.info(
