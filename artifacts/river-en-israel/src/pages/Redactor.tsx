@@ -4683,10 +4683,10 @@ export default function Redactor() {
               </p>
               <div className="space-y-2">
                 {([
-                  { campo: "resumenSeccionHebreo", valor: resumenSeccionHebreo, label: "Traducciones al hebreo pendientes", conteo: conteosResumen?.hebreo },
-                  { campo: "resumenSeccionPostulaciones", valor: resumenSeccionPostulaciones, label: "Postulaciones de redactores sin revisar", conteo: conteosResumen?.postulaciones },
-                  { campo: "resumenSeccionBorradoresEs", valor: resumenSeccionBorradoresEs, label: "Borradores en español sin publicar", conteo: conteosResumen?.borradoresEs },
-                ] as const).map(({ campo, valor, label, conteo }) => (
+                  { campo: "resumenSeccionHebreo", valor: resumenSeccionHebreo, label: "Traducciones al hebreo pendientes", conteo: conteosResumen?.hebreo, tabDestino: "publicaciones-hebreo" as Tab, irATab: () => { setTab("publicaciones-hebreo"); cargarNoticiasHebreo(); cargarHoraResumen(); } },
+                  { campo: "resumenSeccionPostulaciones", valor: resumenSeccionPostulaciones, label: "Postulaciones de redactores sin revisar", conteo: conteosResumen?.postulaciones, tabDestino: "postulantes" as Tab, irATab: () => { setTab("postulantes"); cargarPostulaciones(); } },
+                  { campo: "resumenSeccionBorradoresEs", valor: resumenSeccionBorradoresEs, label: "Borradores en español sin publicar", conteo: conteosResumen?.borradoresEs, tabDestino: "publicaciones" as Tab, irATab: () => { setTab("publicaciones"); cargarPublicaciones(); } },
+                ] as const).map(({ campo, valor, label, conteo, irATab }) => (
                   <label key={campo} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -4697,14 +4697,18 @@ export default function Redactor() {
                     />
                     <span className="text-xs font-semibold text-gray-600">{label}</span>
                     {typeof conteo === "number" && (
-                      <span
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                          conteo > 0 ? "bg-river-red/10 text-river-red" : "bg-gray-200 text-gray-500"
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); irATab(); }}
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full transition-opacity ${
+                          conteo > 0
+                            ? "bg-river-red/10 text-river-red hover:bg-river-red/20 cursor-pointer"
+                            : "bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-pointer"
                         }`}
-                        title={`Pendientes ahora: ${conteo}`}
+                        title={`${conteo} pendientes · Ir a revisar`}
                       >
                         {conteo}
-                      </span>
+                      </button>
                     )}
                   </label>
                 ))}
