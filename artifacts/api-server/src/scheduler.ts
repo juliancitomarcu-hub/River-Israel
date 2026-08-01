@@ -704,18 +704,11 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     if (imagenAutoUrl) {
       imagenPortadaFinal = await guardarPortadaEnStorage(imagenAutoUrl);
     }
-    // Regla: la autopublicación NUNCA sale sin foto real del artículo.
-    // Si no hay imagen (o falló la descarga), la nota NO se publica sola:
-    // se guarda como pendiente y llega a Telegram con botones Publicar/Editar
-    // para que un humano decida (puede cambiarle la foto desde el Redactor).
-    const autopublicar = esAutomatico && !!imagenPortadaFinal;
-    const degradadaSinFoto = esAutomatico && !imagenPortadaFinal;
-    if (degradadaSinFoto) {
-      logger.warn(
-        { titulo, url: noticiaElegida.url, imagenAutoUrl },
-        "Scheduler: sin foto de portada real, la nota queda pendiente de aprobación (no se autopublica)",
-      );
-    }
+    // Regla (pedido del usuario, ago 2026): en modo automático la nota SIEMPRE
+    // se autopublica en el sitio. Si el artículo no traía foto (o falló la
+    // descarga), se usa una foto de respaldo de la galería y se avisa en la
+    // notificación de Telegram para que puedan cambiarla desde el Redactor.
+    const autopublicar = esAutomatico;
     const usoFallback = !imagenPortadaFinal;
     if (!imagenPortadaFinal) {
       imagenPortadaFinal = portadaFallback();
@@ -779,14 +772,55 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       enviarNotaAMake(savedNoticia);
     }
 
+    // Escape básico de Markdown para campos dinámicos (título/fuente) que van
+    // dentro de *...* o _..._ — evita errores de parseo en Telegram.
+    const escMd = (s: string) => s.replace(/([*_`[\]])/g, "");
+
+    // Foto de portada para Telegram: la del artículo si existe (solo URLs
+    // absolutas http/https), o la de respaldo (absolutizada al dominio del sitio).
+    const imagenAutoAbsoluta = imagenAutoUrl?.startsWith("//")
+      ? `https:${imagenAutoUrl}`
+      : imagenAutoUrl?.startsWith("http")
+        ? imagenAutoUrl
+        : null;
+    const fotoParaTelegram =
+      imagenAutoAbsoluta ??
+      (imagenPortadaFinal?.startsWith("/objects/")
+        ? `https://${dominioTelegram}/api/storage${imagenPortadaFinal}`
+        : imagenPortadaFinal
+          ? `https://${dominioTelegram}${imagenPortadaFinal}`
+          : null);
+    const capFotoBase = usoFallback
+      ? `🖼 _Foto de respaldo (el artículo no traía foto; podés cambiarla desde el Redactor) — ${escMd(titulo)}_`
+      : `🖼 _Foto de portada — ${escMd(titulo)}_`;
+    // Telegram limita los captions a 1024 caracteres
+    const capFoto = capFotoBase.length > 1024 ? capFotoBase.slice(0, 1023) + "_" : capFotoBase;
+    if (fotoParaTelegram) {
+      await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          photo: fotoParaTelegram,
+          caption: capFoto,
+          parse_mode: "Markdown",
+        }),
+      }).catch(() => { /* no bloquear si falla la foto */ });
+    }
+
     if (autopublicar) {
-      // ── MODO AUTOMÁTICO: FYI solo, ya está publicada ──────────────────
-      const fotoTexto = usoFallback
-        ? "\n🖼 _Foto de portada de respaldo (podés cambiarla desde el Redactor)_"
-        : "\n🖼 _Foto de portada del artículo incluida_";
-      const etiquetaCat = categoria === "seleccion" ? "🇦🇷 _Categoría: Selección Argentina_\n" : "⚪️🔴 _Categoría: River_\n";
-      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n${etiquetaCat}📡 _Fuente: ${fuenteNombre}_${fotoTexto}\n⏱ _El link de edición dura ${descripcionTtlEdicion()}_`;
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      // ── MODO AUTOMÁTICO: ya publicada en el sitio; llega la notificación
+      // completa: foto (arriba), categoría, título, artículo y fuente.
+      const etiquetaCat = categoria === "seleccion"
+        ? "🇦🇷 _Categoría: Selección Argentina_\n\n"
+        : "⚪️🔴 _Categoría: River_\n\n";
+      const encabezadoFYI = `✅ *Nota autopublicada en el sitio*\n\n${etiquetaCat}📰 *${escMd(titulo)}*\n\n`;
+      const pieFYI = `\n\n${tags}\n\n📡 _Fuente: ${escMd(fuenteNombre)}_\n⏱ _El link de edición dura ${descripcionTtlEdicion()}_`;
+      const textoFYICompleto = encabezadoFYI + contenido + pieFYI;
+      const mensajeFIY = textoFYICompleto.length > TELEGRAM_MAX
+        ? textoFYICompleto.slice(0, TELEGRAM_MAX - 1).replace(/[^.!?…]*$/, "") + "."
+        : textoFYICompleto;
+      const resFYI = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -801,35 +835,15 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
           },
         }),
       });
-      logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl }, "Scheduler: nota autopublicada con foto automática");
+      const dataFYI = await resFYI.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+      if (!resFYI.ok || !dataFYI?.ok) {
+        logger.error({ status: resFYI.status, dataFYI }, "Scheduler: la nota se autopublicó pero falló la notificación de Telegram");
+      }
+      logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl, usoFallback }, "Scheduler: nota autopublicada");
       // 📣 Promoción automática en el canal público (fire-and-forget)
       promocionarNotaEnCanal(savedNoticia).catch(() => {});
     } else {
       // ── MODO MANUAL / PENDIENTE: artículo completo + 2 botones ────────
-      // Siempre mandamos la foto de portada primero (la del artículo si existe,
-      // o la de respaldo elegida), para que la nota llegue completa al bot.
-      const fotoParaTelegram =
-        imagenAutoUrl ??
-        (imagenPortadaFinal?.startsWith("/objects/")
-          ? `https://${dominioTelegram}/api/storage${imagenPortadaFinal}`
-          : imagenPortadaFinal
-            ? `https://${dominioTelegram}${imagenPortadaFinal}`
-            : null);
-      if (fotoParaTelegram) {
-        const capFoto = usoFallback
-          ? `🖼 _Foto de respaldo (el artículo no traía foto) — ${titulo}_`
-          : `🖼 _Foto de portada — ${titulo}_`;
-        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            photo: fotoParaTelegram,
-            caption: capFoto,
-            parse_mode: "Markdown",
-          }),
-        }).catch(() => { /* no bloquear si falla la foto */ });
-      }
 
       // Artículo completo — sin truncar. El contenido redactado cabe dentro de 4096 chars.
       const replyMarkup = {
@@ -842,11 +856,8 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       const etiquetaCatMan = categoria === "seleccion"
         ? "🇦🇷 _Categoría: Selección Argentina_\n\n"
         : "⚪️🔴 _Categoría: River_\n\n";
-      const avisoSinFoto = degradadaSinFoto
-        ? "🖼 _El artículo no tenía foto de portada: la nota NO se publicó sola. Revisala, cargale una foto desde el Redactor y publicala._\n\n"
-        : "";
-      const encabezado = `${avisoSinFoto}${etiquetaCatMan}📰 *${titulo}*\n\n`;
-      const pie        = `\n\n${tags}\n\n📡 _Fuente: ${fuenteNombre}_`;
+      const encabezado = `${etiquetaCatMan}📰 *${escMd(titulo)}*\n\n`;
+      const pie        = `\n\n${tags}\n\n📡 _Fuente: ${escMd(fuenteNombre)}_`;
       const textoCompleto = encabezado + contenido + pie;
       // Salvaguarda: si supera 4096 cortamos en oración completa
       const texto = textoCompleto.length > TELEGRAM_MAX
