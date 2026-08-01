@@ -198,7 +198,7 @@ export default function Fixture() {
           <p className="font-display text-3xl mb-2">VIVÍ LOS PARTIDOS CON LA FILIAL</p>
           <p className="text-white/80 mb-6">Unite al grupo para ver los partidos juntos desde Israel.</p>
           <a
-            href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+            href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold px-8 py-3 transition-colors uppercase tracking-wide"

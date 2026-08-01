@@ -173,7 +173,7 @@ export function Navbar() {
             {/* WhatsApp solo en modo River */}
             {!mundialActivo && (
               <a
-                href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+                href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 bg-river-red hover:bg-river-red-hover text-white px-4 py-2 font-bold uppercase tracking-wider text-xs transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
@@ -255,7 +255,7 @@ export function Navbar() {
               {/* WhatsApp solo en River */}
               {!mundialActivo && (
                 <a
-                  href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+                  href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-river-red text-white px-4 py-3 font-bold uppercase tracking-wider text-center mt-4"

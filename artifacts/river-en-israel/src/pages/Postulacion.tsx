@@ -223,7 +223,7 @@ export default function Postulacion() {
             Unite al canal de WhatsApp para recibir las novedades al instante.
           </p>
           <a
-            href="https://whatsapp.com/channel/0029VbCkS5VHrDZiSDf9g01s"
+            href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold px-8 py-3 transition-colors uppercase tracking-wide"
