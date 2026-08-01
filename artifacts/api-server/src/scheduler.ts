@@ -249,6 +249,12 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
     }
   }
 
+  // Guardarraíl: nunca dejar el título "firmado" por el medio de origen
+  // (ej: "River ganó - Olé"). La nota se presenta como redacción propia.
+  titulo = titulo
+    .replace(/\s+[-–—|]\s+(Olé|Ole|TyC Sports|Clarín|Clarin|La Nación|La Nacion|Infobae|ESPN|DeporTV|LA17|Doble Amarilla|cariverplate\.com\.ar|riverplate\.com)\s*$/i, "")
+    .trim();
+
   // ── Extraer bajada ─────────────────────────────────────────────────────────
   let bajada = "";
   for (let i = 0; i < lines.length; i++) {

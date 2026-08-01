@@ -111,7 +111,8 @@ export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise
 
   const titulo = escaparMarkdown(nota.titulo.slice(0, 250));
   const extracto = escaparMarkdown(extraerExtracto(nota.contenido));
-  const fuenteTexto = nota.fuente ? `\n📡 _Fuente: ${escaparMarkdown(nota.fuente.slice(0, 80))}_` : "";
+  // Sin firma de fuente: la nota se presenta como redacción propia del diario.
+  const fuenteTexto = "";
 
   // ⏰ Tarjeta de próximo partido solo si la nota es una previa / habla del fixture
   let tarjetaPartido = "";
