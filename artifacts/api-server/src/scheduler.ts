@@ -141,18 +141,42 @@ function marcarUrlProcesada(url: string, estado: SchedulerState): void {
   estado.urlsProcesadas.push(normalizada);
 }
 
-// ─── FILTRO DE ANTIGÜEDAD POR URL ─────────────────────────────────────────────
-// Muchos sitios incluyen la fecha en la URL: /2026/04/07/ o -2026-04-07-
-// Si detectamos fecha en la URL y es ≥ 3 días, la descartamos.
-function urlDemaisiadoVieja(url: string): boolean {
+// ─── FILTROS DE ACTUALIDAD Y URL ───────────────────────────────────────────────
+// Muchos sitios incluyen la fecha en la URL: /2026/04/07/ o -2026-04-07-.
+// La fecha también sirve como respaldo cuando el HTML no expone datePublished.
+function extraerFechaDeUrl(url: string): Date | null {
+  if (!url) return null;
+  const m = url.match(/[\/\-](20\d{2})[\/\-](\d{2})[\/\-](\d{2})(?:[\/\-]|$)/);
+  if (!m) return null;
+  const anio = Number(m[1]);
+  const mes = Number(m[2]);
+  const dia = Number(m[3]);
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia, 12));
+  return fecha.getUTCFullYear() === anio &&
+    fecha.getUTCMonth() === mes - 1 &&
+    fecha.getUTCDate() === dia
+    ? fecha
+    : null;
+}
+
+// Excluye páginas de autor, etiquetas, búsquedas y secciones: no son artículos
+// aunque algunos scrapers las devuelvan con un título periodístico.
+function pareceUrlDeArticulo(url: string): boolean {
   if (!url) return false;
-  // Patrón /YYYY/MM/DD/ o -YYYY-MM-DD o similar
-  const m = url.match(/[\/\-](20\d{2})[\/\-](\d{2})[\/\-](\d{2})[\/\-]/);
-  if (!m) return false;
-  const [, anio, mes, dia] = m.map(Number);
-  const fechaArticulo = Date.UTC(anio, mes - 1, dia);
-  const ahora = Date.now();
-  const diasAtras = (ahora - fechaArticulo) / (1000 * 60 * 60 * 24);
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    return !/(^|\/)(autor|author|tag|tags|tema|category|categoria|seccion|search|buscar)(\/|$)/.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+// Si detectamos fecha en la URL y es ≥ 3 días, la descartamos incluso antes
+// de descargar el artículo. La autopublicación aplica luego un límite más duro.
+function urlDemaisiadoVieja(url: string): boolean {
+  const fechaArticulo = extraerFechaDeUrl(url);
+  if (!fechaArticulo) return false;
+  const diasAtras = (Date.now() - fechaArticulo.getTime()) / (1000 * 60 * 60 * 24);
   return diasAtras >= 3;
 }
 
@@ -328,47 +352,26 @@ function limpiarTexto(texto: string): string {
     .trim();
 }
 
-// Extrae la fecha de publicación del artículo leyendo metadatos del HTML.
-// Devuelve un Date o null si no se pudo determinar.
-function extraerFechaDeHtml($: ReturnType<typeof cheerio.load>): Date | null {
-  // 1. Open Graph / article:published_time
-  const ogDate = $('meta[property="article:published_time"]').attr("content")
-    ?? $('meta[name="article:published_time"]').attr("content")
-    ?? $('meta[property="article:modified_time"]').attr("content");
-  if (ogDate) {
-    const d = new Date(ogDate);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  // 2. <time> con datetime
-  const timeEl = $("time[datetime]").first().attr("datetime");
-  if (timeEl) {
-    const d = new Date(timeEl);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  // 3. JSON-LD datePublished
-  let ldDate: string | null = null;
-  $('script[type="application/ld+json"]').each((_, el) => {
-    if (ldDate) return;
-    try {
-      const obj = JSON.parse($(el).text()) as Record<string, unknown>;
-      const dp = obj["datePublished"] ?? obj["dateModified"];
-      if (typeof dp === "string") ldDate = dp;
-    } catch { /* skip */ }
-  });
-  if (ldDate) {
-    const d = new Date(ldDate);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  return null;
-}
-
 interface TextoArticulo {
   texto: string;
   fechaPublicacion: Date | null;
   imagenUrl: string | null;
+  esArticulo: boolean;
+}
+
+function resolverUrlDocumento(raw: unknown, base: string): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  try {
+    return new URL(raw, base).toString();
+  } catch {
+    return null;
+  }
+}
+
+function fechaValida(raw: unknown): Date | null {
+  if (typeof raw !== "string") return null;
+  const fecha = new Date(raw);
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
 }
 
 async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
@@ -377,11 +380,83 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
       headers: { "User-Agent": UA, "Accept-Language": "es-AR,es;q=0.9" },
       signal: AbortSignal.timeout(12000),
     });
-    if (!res.ok) return { texto: "", fechaPublicacion: null, imagenUrl: null };
+    if (!res.ok) return { texto: "", fechaPublicacion: null, imagenUrl: null, esArticulo: false };
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    const fechaPublicacion = extraerFechaDeHtml($);
+    const urlFinal = res.url || url;
+    const canonical = resolverUrlDocumento(
+      $('link[rel="canonical"]').attr("href") ??
+        $('meta[property="og:url"]').attr("content"),
+      urlFinal,
+    );
+    const urlPagina = canonical ?? urlFinal;
+    const paginaCoincideConRespuesta =
+      normalizarUrl(urlPagina) === normalizarUrl(urlFinal);
+    const tipoOg = ($('meta[property="og:type"]').attr("content") ?? "").toLowerCase();
+
+    // Reunir únicamente nodos Article/NewsArticle. Luego exigimos que su URL
+    // corresponda al documento canónico solicitado, no a una tarjeta/listado.
+    const nodosArticulo: Record<string, unknown>[] = [];
+    const buscarNodosArticulo = (value: unknown): void => {
+      if (value === null || typeof value !== "object") return;
+      if (Array.isArray(value)) {
+        for (const item of value) buscarNodosArticulo(item);
+        return;
+      }
+      const obj = value as Record<string, unknown>;
+      const tipo = obj["@type"];
+      const tipos = Array.isArray(tipo) ? tipo : [tipo];
+      if (tipos.some((t) => typeof t === "string" && /^(news)?article$/i.test(t))) {
+        nodosArticulo.push(obj);
+      }
+      for (const child of Object.values(obj)) buscarNodosArticulo(child);
+    };
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        buscarNodosArticulo(JSON.parse($(el).text()) as unknown);
+      } catch { /* skip */ }
+    });
+
+    const urlsDeNodo = (nodo: Record<string, unknown>): string[] => {
+      const main = nodo["mainEntityOfPage"];
+      const candidatos: unknown[] = [
+        nodo["url"],
+        nodo["@id"],
+        typeof main === "object" && main !== null
+          ? (main as Record<string, unknown>)["@id"] ?? (main as Record<string, unknown>)["url"]
+          : main,
+      ];
+      return candidatos
+        .map((valor) => resolverUrlDocumento(valor, urlPagina))
+        .filter((valor): valor is string => Boolean(valor));
+    };
+
+    let nodoArticulo = nodosArticulo.find((nodo) =>
+      urlsDeNodo(nodo).some((urlNodo) => normalizarUrl(urlNodo) === normalizarUrl(urlPagina)),
+    );
+    // Algunos medios omiten url/mainEntityOfPage en su único NewsArticle.
+    // Solo lo aceptamos cuando el propio documento declara og:type=article.
+    if (!nodoArticulo && nodosArticulo.length === 1 && tipoOg === "article") {
+      nodoArticulo = nodosArticulo[0];
+    }
+
+    const esArticulo =
+      paginaCoincideConRespuesta &&
+      (Boolean(nodoArticulo) || tipoOg === "article");
+
+    // La fecha debe pertenecer al nodo Article que coincide con la URL. Si no
+    // hay JSON-LD, aceptamos metadata/tiempo solo en una página og:type=article.
+    let fechaPublicacion = nodoArticulo
+      ? fechaValida(nodoArticulo["datePublished"])
+      : null;
+    if (!fechaPublicacion && esArticulo && tipoOg === "article") {
+      fechaPublicacion = fechaValida(
+        $('meta[property="article:published_time"]').attr("content") ??
+          $('meta[name="article:published_time"]').attr("content") ??
+          $("article time[datetime]").first().attr("datetime"),
+      );
+    }
 
     // Extraer imagen principal del artículo
     const imagenUrl =
@@ -391,7 +466,11 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
       $('meta[name="og:image"]').attr("content") ??
       null;
 
-    // Selectores en orden de prioridad; incluye cariverplate.com.ar (#wrappertext) y otros sitios
+    // Primero usamos articleBody del nodo canónico. Si no existe, extraemos
+    // párrafos solo de contenedores de contenido del artículo confirmado.
+    const articleBodyLd = nodoArticulo && typeof nodoArticulo["articleBody"] === "string"
+      ? limpiarTexto(nodoArticulo["articleBody"])
+      : "";
     const SELECTORES = [
       "article p",
       ".article-body p",
@@ -404,12 +483,15 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
       ".desarrollada p",       // cariverplate.com.ar (fallback)
     ].join(", ");
 
-    let parrafos = $(SELECTORES)
-      .map((_idx, el) => limpiarTexto($(el).text().trim()))
-      .get()
-      .filter((t: string) => t.length > 50);
+    let parrafos: string[] = esArticulo
+      ? $(SELECTORES)
+          .map((_idx, el) => limpiarTexto($(el).text().trim()))
+          .get()
+          .filter((t: string) => t.length > 50)
+      : [];
 
-    // Fallback: si ningún selector especializado funcionó, buscar todos los <p> con texto
+    // Fallback solo para extracción manual. No convierte por sí mismo una
+    // portada/sección en artículo: esArticulo conserva la evidencia positiva.
     if (parrafos.length === 0) {
       parrafos = $("p")
         .map((_idx, el) => limpiarTexto($(el).text().trim()))
@@ -417,10 +499,17 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
         .filter((t: string) => t.length > 80);
     }
 
-    const texto = parrafos.slice(0, 20).join("\n\n");
-    return { texto: texto.length > 200 ? texto : "", fechaPublicacion, imagenUrl };
+    const texto = articleBodyLd.length > 200
+      ? articleBodyLd
+      : parrafos.slice(0, 20).join("\n\n");
+    return {
+      texto: texto.length > 200 ? texto : "",
+      fechaPublicacion,
+      imagenUrl,
+      esArticulo,
+    };
   } catch {
-    return { texto: "", fechaPublicacion: null, imagenUrl: null };
+    return { texto: "", fechaPublicacion: null, imagenUrl: null, esArticulo: false };
   }
 }
 
@@ -524,6 +613,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
 
     let fuente: string = fuenteOverride ?? fuentesList[indiceInicial];
     let noticiaElegida: { titulo: string; url: string; fuente: string } | null = null;
+    let articuloElegido: TextoArticulo | null = null;
     let huboScrapingOk = false;
 
     for (let intento = 0; intento < maxIntentos; intento++) {
@@ -568,6 +658,12 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
 
       // ── DEDUPLICACIÓN TRIPLE: URL procesada + antigüedad + título ────────
       for (const candidata of noticias) {
+        // 0. Exigir una URL de artículo real; páginas de autor/sección generan
+        // notas falsas o desactualizadas al mezclar varios contenidos.
+        if (!pareceUrlDeArticulo(candidata.url)) {
+          logger.info({ url: candidata.url, titulo: candidata.titulo }, "Scheduler: URL no corresponde a un artículo, saltando");
+          continue;
+        }
         // 1. Descartar si la URL ya fue procesada (igual artículo, distinto ciclo)
         if (candidata.url && urlYaProcesada(candidata.url, estado)) {
           logger.info({ url: candidata.url }, "Scheduler: URL ya procesada, saltando");
@@ -586,6 +682,46 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         // 3. Descartar si el tema (por título) ya fue cubierto esta semana
         const yaExistePorTitulo = await tituloYaProcesado(candidata.titulo);
         if (yaExistePorTitulo) continue;
+
+        // 4. En automático, validar el documento real ANTES de elegirlo. Si
+        // falla, seguimos con la próxima noticia/fuente en este mismo ciclo.
+        if (esAutomatico) {
+          const articulo = await obtenerTextoArticulo(candidata.url);
+          const fecha = articulo.fechaPublicacion ?? extraerFechaDeUrl(candidata.url);
+          const diasAtras = fecha
+            ? (Date.now() - fecha.getTime()) / (1000 * 60 * 60 * 24)
+            : null;
+          const motivoBloqueo =
+            !articulo.esArticulo
+              ? "la página no tiene evidencia de ser un artículo"
+              : !articulo.texto
+                ? "no se pudo extraer un cuerpo periodístico"
+                : !fecha
+                  ? "no tiene fecha de publicación verificable"
+                  : diasAtras! < -0.5
+                    ? "la fecha de publicación es futura o anómala"
+                    : diasAtras! >= 2
+                      ? "supera las 48 horas de antigüedad"
+                      : null;
+
+          if (motivoBloqueo) {
+            logger.warn(
+              {
+                url: candidata.url,
+                titulo: candidata.titulo,
+                fecha: fecha?.toISOString() ?? null,
+                diasAtras: diasAtras?.toFixed(1) ?? null,
+                motivo: motivoBloqueo,
+              },
+              "Scheduler: candidato bloqueado por control de actualidad",
+            );
+            marcarUrlProcesada(candidata.url, estado);
+            await guardarEstado(estado);
+            continue;
+          }
+
+          articuloElegido = { ...articulo, fechaPublicacion: fecha };
+        }
 
         noticiaElegida = candidata;
         break;
@@ -606,24 +742,30 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     // ── EXTRAER TEXTO DEL ARTÍCULO + VALIDAR FECHA ────────────────────────
     let textoParaIA = noticiaElegida.titulo;
     let imagenAutoUrl: string | null = null;
+    let fechaPublicacionVerificada: Date | null = null;
     if (noticiaElegida.url) {
-      const { texto, fechaPublicacion, imagenUrl } = await obtenerTextoArticulo(noticiaElegida.url);
+      const { texto, fechaPublicacion: fechaHtml, imagenUrl } =
+        articuloElegido ?? await obtenerTextoArticulo(noticiaElegida.url);
+      const fechaPublicacion = fechaHtml ?? extraerFechaDeUrl(noticiaElegida.url);
+      fechaPublicacionVerificada = fechaPublicacion;
       imagenAutoUrl = imagenUrl;
 
-      // Si la fecha del artículo es detectable y tiene más de 3 días, descartar
+      // Rechazar fechas futuras anómalas y artículos de más de 48 horas en el
+      // flujo automático. Los pedidos manuales mantienen el máximo de 3 días.
       if (fechaPublicacion) {
         const diasAtras = (Date.now() - fechaPublicacion.getTime()) / (1000 * 60 * 60 * 24);
-        if (diasAtras >= 3) {
+        const limiteDias = esAutomatico ? 2 : 3;
+        if (diasAtras < -0.5 || diasAtras >= limiteDias) {
           logger.warn(
-            { url: noticiaElegida.url, titulo: noticiaElegida.titulo, diasAtras: diasAtras.toFixed(1), fecha: fechaPublicacion.toISOString() },
-            "Scheduler: artículo viejo detectado por fecha del HTML, descartando"
+            { url: noticiaElegida.url, titulo: noticiaElegida.titulo, diasAtras: diasAtras.toFixed(1), limiteDias, fecha: fechaPublicacion.toISOString() },
+            "Scheduler: fecha fuera de la ventana de actualidad, descartando"
           );
           // Marcar como procesada para no volver a intentarlo
           marcarUrlProcesada(noticiaElegida.url, estado);
           await guardarEstado(estado);
           return { tipo: "todas_procesadas", fuente };
         }
-        logger.info({ fechaPublicacion: fechaPublicacion.toISOString(), diasAtras: diasAtras.toFixed(1) }, "Scheduler: artículo dentro del rango de fechas");
+        logger.info({ fechaPublicacion: fechaPublicacion.toISOString(), diasAtras: diasAtras.toFixed(1), limiteDias }, "Scheduler: artículo dentro del rango de actualidad");
       }
 
       if (texto) {
@@ -639,10 +781,17 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     const tagsFallback = categoria === "seleccion"
       ? "#Argentina #Scaloneta #Mundial2026 #LaScaloneta"
       : "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
+    const solicitudConFuente = `${contextoSitio}.
+Fecha actual: ${new Date().toISOString()}.
+Fecha verificada del artículo: ${fechaPublicacionVerificada?.toISOString() ?? "no disponible (pedido manual)"}.
+URL de la fuente: ${noticiaElegida.url}.
+Usá únicamente los hechos presentes en este texto fuente:
+
+${textoParaIA}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: `${contextoSitio}:\n\n${textoParaIA}` }] }],
+      contents: [{ role: "user", parts: [{ text: solicitudConFuente }] }],
       config: {
         systemInstruction: promptSistema,
         maxOutputTokens: 8000,
@@ -674,7 +823,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       const expansion = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [
-          { role: "user",  parts: [{ text: `${contextoSitio}:\n\n${textoParaIA}` }] },
+          { role: "user",  parts: [{ text: solicitudConFuente }] },
           { role: "model", parts: [{ text: resultado }] },
           { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 1400 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial River Plate Israel Gaby \"Tucu\" Sajnin. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
         ],
@@ -689,6 +838,23 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     }
 
     const { titulo, contenido } = parsed;
+    // Cinturón de seguridad editorial: aunque una fuente reciente conserve
+    // contexto viejo o la IA ignore el prompt, una nota automática no puede
+    // presentar nuevamente a Coudet como parte de la actualidad de River.
+    // Las menciones históricas pueden revisarse mediante el flujo manual.
+    if (
+      esAutomatico &&
+      categoria === "river" &&
+      /\b(coudet|chacho|eduardo\s+ponzio)\b/i.test(`${titulo}\n${contenido}`)
+    ) {
+      logger.error(
+        { url: noticiaElegida.url, titulo },
+        "Scheduler: nota bloqueada por contexto técnico desactualizado",
+      );
+      marcarUrlProcesada(noticiaElegida.url, estado);
+      await guardarEstado(estado);
+      return { tipo: "todas_procesadas", fuente };
+    }
     // Si la IA dejó el fallback de River para una nota de Selección (raro pero posible),
     // sustituimos por los tags correctos de la categoría.
     let { tags } = parsed;

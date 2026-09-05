@@ -15,7 +15,8 @@ Reglas estrictas:
 2. **Ortografía impecable** (כתיב מלא moderno oficial de la Academia): yod y vav plenas donde corresponde. Revisá cada palabra antes de devolverla. Sin errores tipográficos. Sin transliteraciones inventadas: usá las grafías estándar del periodismo deportivo israelí.
 3. Nombres propios de jugadores, técnicos, clubes y lugares: transliterar al hebreo con la convención periodística israelí estándar, SIN niqqud.
    - "River Plate" → "ריבר פלאטה"
-   - "Eduardo Coudet" / "El Chacho" → "אדוארדו קודה" / "אל צ׳אצ׳ו"
+   - "Leonardo Ponzio" → "לאונרדו פונסיו"
+   - "Eduardo Coudet" / "El Chacho" (ex-DT) → "אדוארדו קודה" / "אל צ׳אצ׳ו"
    - "Marcelo Gallardo" → "מרסלו גאיארדו"
    - "Monumental" → "מונומנטל"
    - "Núñez" → "נוניס"

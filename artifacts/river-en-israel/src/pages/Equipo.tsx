@@ -191,7 +191,7 @@ function PlayerCard({ jugador, index }: { jugador: Jugador; index: number }) {
   );
 }
 
-function CoudetCard() {
+function PonzioCard() {
   const [flipped, setFlipped] = useState(false);
 
   return (
@@ -209,16 +209,18 @@ function CoudetCard() {
           className="absolute inset-0 rounded-lg overflow-hidden group"
           style={{ backfaceVisibility: "hidden" }}
         >
-          <img
-            src="/images/coudet.jpeg"
-            alt="Eduardo Coudet"
-            className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-500"
-          />
+          <div
+            role="img"
+            aria-label="Leonardo Ponzio, director técnico interino"
+            className="w-full h-full bg-gradient-to-br from-[#17171d] via-[#292933] to-river-red flex items-center justify-center"
+          >
+            <span className="font-display text-7xl text-white/90 tracking-tight">LP</span>
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-river-red/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
           <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/95 via-black/60 to-transparent">
             <p className="text-river-red text-[10px] font-bold uppercase tracking-widest">Director Técnico</p>
-            <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest">Eduardo "Chacho"</p>
-            <p className="text-white font-display font-bold text-base uppercase">Coudet</p>
+            <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest">Leonardo</p>
+            <p className="text-white font-display font-bold text-base uppercase">Ponzio</p>
           </div>
           <div className="absolute top-2 right-2 bg-river-red/20 border border-river-red/40 rounded-full px-2 py-0.5">
             <span className="text-river-red text-[9px] font-bold uppercase tracking-widest">DT</span>
@@ -233,8 +235,8 @@ function CoudetCard() {
         >
           <div className="h-1 w-12 bg-river-red mb-3 rounded-full" />
           <p className="text-river-red text-[10px] font-bold uppercase tracking-[0.2em]">Director Técnico</p>
-          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mt-1">Eduardo "Chacho"</p>
-          <p className="text-white font-display font-black text-xl uppercase">Coudet</p>
+          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mt-1">Leonardo</p>
+          <p className="text-white font-display font-black text-xl uppercase">Ponzio</p>
 
           <div className="h-px bg-white/10 my-3" />
           <div className="flex flex-col gap-3 flex-1">
@@ -244,11 +246,11 @@ function CoudetCard() {
             </div>
             <div>
               <p className="text-white/30 text-[9px] uppercase tracking-widest mb-0.5">Cargo</p>
-              <p className="text-white font-semibold text-sm">Entrenador principal</p>
+              <p className="text-white font-semibold text-sm">Entrenador interino</p>
             </div>
             <div>
-              <p className="text-white/30 text-[9px] uppercase tracking-widest mb-0.5">Edad</p>
-              <p className="text-white font-black text-2xl font-display">48</p>
+              <p className="text-white/30 text-[9px] uppercase tracking-widest mb-0.5">Desde</p>
+              <p className="text-white font-black text-xl font-display">27/08/2026</p>
             </div>
           </div>
           <div className="mt-auto pt-2 border-t border-white/10">
@@ -328,7 +330,7 @@ export default function Equipo() {
             PLANTILLA PROFESIONAL
           </h1>
           <p className="text-white/70 text-lg font-mono">
-            Temporada 2026 · DT Eduardo Coudet
+            Temporada 2026 · DT interino Leonardo Ponzio
           </p>
           <p className="text-white/50 text-sm mt-2">Tocá cada jugador para ver su información</p>
         </div>
@@ -421,13 +423,13 @@ export default function Equipo() {
           <div className="flex-1 h-px bg-gris-borde" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
-          <CoudetCard />
+          <PonzioCard />
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-10 text-center">
         <p className="text-gris-meta text-xs font-mono">
-          Datos actualizados al 29 de marzo de 2026 · Fuente: cariverplate.com.ar
+          Cuerpo técnico actualizado al 27 de agosto de 2026 · Fuente: comunicado oficial de River Plate
         </p>
       </div>
     </div>

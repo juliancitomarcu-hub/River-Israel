@@ -126,7 +126,7 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 - Módulo compartido: `artifacts/api-server/src/lib/prompt-maestro.ts`
 - Usado tanto por `scheduler.ts` como por `routes/redactor.ts`
 - 6 secciones obligatorias: EL IMPACTO, ANÁLISIS TÁCTICO, LA MÍSTICA, CITAS Y CONTEXTO, PREGUNTAS, LA SENTENCIA
-- DT actual: Eduardo Coudet. Gallardo solo como referencia histórica.
+- DT interino actual: Leonardo Ponzio (comunicado oficial del 27/08/2026). Coudet, Gallardo y Demichelis solo como referencias históricas.
 
 ### Estado persistente en DB (`app_estado`)
 - Tabla `app_estado` (clave PK, valor jsonb): guarda `scheduler_state` (rotación de fuentes, categoriaFlip, urlsProcesadas) y `redactor_settings`. Antes vivían en JSON locales que producción borraba en cada reinicio → la rotación siempre arrancaba en "bolavip" y no se publicaba nada.

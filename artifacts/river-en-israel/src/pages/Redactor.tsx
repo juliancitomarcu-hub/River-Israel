@@ -3121,7 +3121,8 @@ export default function Redactor() {
                     { n: "Era Gallardo I", y: "2014–2022", c: "bg-river-red text-white" },
                     { n: "Era Demichelis", y: "2023–2024", c: "bg-river-red/80 text-white" },
                     { n: "Era Gallardo II", y: "2024–2026", c: "bg-river-red text-white" },
-                    { n: "Era Coudet", y: "2026–Pres.", c: "bg-river-red/60 text-white" },
+                    { n: "Ciclo Coudet", y: "2026", c: "bg-river-red/60 text-white" },
+                    { n: "Interinato Ponzio", y: "2026–Pres.", c: "bg-river-red text-white" },
                   ].map(e => (
                     <span key={e.n} className={`text-xs font-bold px-3 py-1 rounded-full ${e.c}`}>
                       {e.n} · <span className="font-normal opacity-80">{e.y}</span>
