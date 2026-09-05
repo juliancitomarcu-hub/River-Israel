@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { iniciarScheduler } from "./scheduler";
 import { registrarWebhook, fallaReintentable, consultarWebhookInfo, type RegistroWebhookEstado } from "./lib/telegram-webhook-registro";
 import { avisarSiWebhookSinProteger, avisarWebhookRecuperado } from "./lib/avisar-webhook-sin-proteger";
+import { chequearColaUpdates } from "./lib/avisar-cola-updates";
 import type { CategoriaTelegram } from "./lib/telegram-cred";
 import { initRedactorSettings } from "./lib/redactor-settings";
 
@@ -97,6 +98,33 @@ async function chequearYRecuperarWebhook(categoria: CategoriaTelegram): Promise<
   await registrarWebhookConReintentos(categoria);
 }
 
+const INTERVALO_CHEQUEO_COLA_MS = 5 * 60 * 1000;  // cada 5 minutos
+const PRIMER_CHEQUEO_COLA_MS    = 5 * 60 * 1000;  // primer chequeo a los 5 min del arranque
+
+/**
+ * Inicia el chequeo periódico de la cola de updates pendientes para ambos bots.
+ * Solo debe llamarse en producción.
+ */
+function iniciarChequeoPeriodicoCola(): void {
+  logger.info(
+    { primerChequeoMinutos: 5, intervaloMinutos: 5 },
+    "Chequeo periódico de cola de updates: iniciado — primer chequeo en 5 min, luego cada 5 min",
+  );
+
+  const ejecutarChequeo = (): void => {
+    (["river", "seleccion"] as CategoriaTelegram[]).forEach((cat) => {
+      chequearColaUpdates(cat).catch((err) =>
+        logger.error({ err, bot: cat }, "Chequeo periódico de cola de updates: error inesperado"),
+      );
+    });
+  };
+
+  setTimeout(() => {
+    ejecutarChequeo();
+    setInterval(ejecutarChequeo, INTERVALO_CHEQUEO_COLA_MS);
+  }, PRIMER_CHEQUEO_COLA_MS);
+}
+
 function iniciarChequeoPeriodicoWebhook(): void {
   logger.info(
     { primerChequeoMinutos: 90, intervaloHoras: 2 },
@@ -146,6 +174,7 @@ app.listen(port, (err) => {
     .finally(() => {
       if (esProduccion) {
         iniciarChequeoPeriodicoWebhook();
+        iniciarChequeoPeriodicoCola();
       }
     });
 
