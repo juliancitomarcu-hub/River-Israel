@@ -136,7 +136,9 @@ router.post("/postular-redactor", upload.single("archivo"), async (req, res) => 
 
     // Mensaje Telegram
     const tipoEmoji = tipo === "Periodista" ? "🎙️" : tipo === "Creador" ? "🎬" : "❤️";
-    const textoTg = textoCorregido.slice(0, 900) + (textoCorregido.length > 900 ? "..." : "");
+    // The applicant's article stays private in the panel/database. Telegram
+    // gets metadata and moderation buttons, never the submitted article body.
+    const textoTg = "📝 El texto completo quedó guardado para revisión privada en el panel.";
 
     let mensajeTg =
       `🔴 *NUEVA POSTULACIÓN DE REDACTOR*\n\n` +

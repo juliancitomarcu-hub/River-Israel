@@ -14,11 +14,7 @@ import { logger } from "./logger";
 import { credencialesTelegram, type CategoriaTelegram } from "./telegram-cred";
 import { enviarNotaAMake } from "./enviar-a-make";
 import { promocionarNotaEnCanal } from "./promocionar-nota";
-
-/** Escapa caracteres especiales de Markdown (v1) de Telegram. */
-function escaparMarkdown(s: string): string {
-  return s.replace(/([_*`\[])/g, "\\$1");
-}
+import { resolverCaptionTelegram } from "./openai-news";
 
 export interface NotaPublicada {
   id: number;
@@ -27,6 +23,7 @@ export interface NotaPublicada {
   fuente?: string | null;
   imagenPortada?: string | null;
   contenido?: string | null;
+  telegramCaption?: string | null;
   tags?: string | null;
 }
 
@@ -55,13 +52,11 @@ export function notificarNotaPublicada(nota: NotaPublicada): void {
   const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
   const url = `https://${dominio}/noticia/${nota.id}`;
 
-  const etiquetaCat = categoria === "seleccion" ? "🇦🇷 _Selección Argentina_\n" : "⚪️🔴 _River_\n";
-  const fuenteTexto = nota.fuente ? `📡 _Fuente: ${escaparMarkdown(nota.fuente.slice(0, 100))}_\n` : "";
-  const fotoTexto = nota.imagenPortada ? "🖼 _Con foto de portada_\n" : "";
-  const texto =
-    `📢 *Nota publicada en el sitio*\n\n` +
-    `📰 *${escaparMarkdown(nota.titulo.slice(0, 300))}*\n\n` +
-    etiquetaCat + fuenteTexto + fotoTexto;
+  const texto = resolverCaptionTelegram(nota.telegramCaption, {
+    titulo: nota.titulo.slice(0, 300),
+    contenido: nota.contenido,
+    url,
+  });
 
   void fetch(`https://api.telegram.org/bot${cred.token}/sendMessage`, {
     method: "POST",
@@ -76,9 +71,12 @@ export function notificarNotaPublicada(nota: NotaPublicada): void {
     }),
   })
     .then(async (res) => {
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        logger.warn({ status: res.status, body, notaId: nota.id }, "notificarNotaPublicada: Telegram respondió con error");
+      const body = await res.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+      if (!res.ok || body?.ok === false) {
+        logger.warn(
+          { status: res.status, description: body?.description, notaId: nota.id },
+          "notificarNotaPublicada: Telegram respondió con error",
+        );
       }
     })
     .catch((err) => {

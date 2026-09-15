@@ -1,22 +1,17 @@
 import { Router, type IRouter } from "express";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ai } from "@workspace/integrations-gemini-ai";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { PROMPT_MAESTRO } from "../lib/prompt-maestro";
-import { PROMPT_MAESTRO_SELECCION } from "../lib/prompt-maestro-seleccion";
 import { requireAdmin } from "../middleware/requireAdmin";
 import { type CategoriaImagen } from "../lib/generar-imagen-ig";
 import { credencialesTelegram, estadoTelegram } from "../lib/telegram-cred";
 import { estadoWebhookPanel, registrarWebhook, fallaReintentable } from "../lib/telegram-webhook-registro";
 import { avisarSiWebhookSinProteger } from "../lib/avisar-webhook-sin-proteger";
 import { limpiarNota } from "../lib/limpiar-asteriscos";
-
-function elegirPrompt(categoria: CategoriaImagen): string {
-  return categoria === "seleccion" ? PROMPT_MAESTRO_SELECCION : PROMPT_MAESTRO;
-}
+import { asegurarOpenAIConfigurado, generarNotaEstructurada, resolverCaptionTelegram, validarTelegramCaption } from "../lib/openai-news";
+import { obtenerCaptionPorTexto, recordarCaptionPorNota, recordarCaptionPorTexto } from "../lib/telegram-caption-cache";
 
 const router: IRouter = Router();
 
@@ -275,30 +270,32 @@ router.post("/procesar-noticia", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
 
   try {
-    const intro = categoriaFinal === "seleccion"
-      ? "Transformá esta noticia para el sitio La Scaloneta en Israel (Selección Argentina, Mundial 2026):"
-      : "Transformá esta noticia para el sitio River en Israel:";
-    const stream = await ai.models.generateContentStream({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: `${intro}\n\n${texto}` }] }],
-      config: {
-        systemInstruction: elegirPrompt(categoriaFinal),
-        maxOutputTokens: 8192,
-      },
+    const paquete = await generarNotaEstructurada({
+      sourceText: texto,
+      categoria: categoriaFinal,
     });
-
-    for await (const chunk of stream) {
-      const content = chunk.text;
-      if (content) {
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
-      }
-    }
+    const content = [
+      `**Título:** ${paquete.titulo}`,
+      "",
+      `**Bajada:** ${paquete.bajada}`,
+      "",
+      "**Contenido:**",
+      paquete.web_content,
+      "",
+      `**Tags:** ${paquete.tags}`,
+    ].join("\n");
+    recordarCaptionPorTexto(content, paquete.telegram_caption);
+    res.write(`data: ${JSON.stringify({
+      content,
+      telegram_caption: paquete.telegram_caption,
+    })}\n\n`);
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
   } catch (err) {
     req.log.error({ err }, "Error procesando noticia con IA");
-    res.write(`data: ${JSON.stringify({ error: "Error al procesar la noticia" })}\n\n`);
+    const detalle = err instanceof Error ? err.message : "No se pudo procesar la noticia";
+    res.write(`data: ${JSON.stringify({ error: detalle })}\n\n`);
     res.end();
   }
 });
@@ -330,7 +327,33 @@ router.post("/enviar-telegram", async (req, res) => {
   }
 
   try {
-    const { titulo, contenido, tags } = parsearResultado(texto);
+    asegurarOpenAIConfigurado();
+    let { titulo, contenido, tags } = parsearResultado(texto);
+    // Nunca confiar en un teaser enviado por el navegador: sólo reutilizamos
+    // uno generado por este servidor para este texto exacto. Si el redactor
+    // editó el artículo, se regenera antes del insert.
+    let captionGenerado = obtenerCaptionPorTexto(texto);
+    if (!captionGenerado) {
+      const paquete = await generarNotaEstructurada({
+        sourceText: textoOriginal?.trim() || contenido,
+        sourceUrl: fuente,
+        categoria: categoriaFinal,
+      });
+      titulo = paquete.titulo;
+      contenido = `${paquete.bajada}\n\n${paquete.web_content}`.trim();
+      tags = paquete.tags;
+      captionGenerado = paquete.telegram_caption;
+    }
+    if (captionGenerado) {
+      const captionDePrueba = captionGenerado.replaceAll(
+        "{{ARTICLE_URL}}",
+        "https://riverplateisrael.com/noticia/0",
+      );
+      if (!validarTelegramCaption(captionDePrueba)) {
+        res.status(422).json({ error: "El teaser de Telegram no cumple el formato editorial requerido." });
+        return;
+      }
+    }
 
     const [noticia] = await db
       .insert(noticiasTable)
@@ -346,11 +369,19 @@ router.post("/enviar-telegram", async (req, res) => {
         categoria: categoriaFinal,
       })
       .returning();
+    const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+    const caption = resolverCaptionTelegram(captionGenerado, {
+      titulo,
+      contenido,
+      url: `https://${dominio}/noticia/${noticia.id}`,
+    });
+    recordarCaptionPorNota(noticia.id, caption);
+    recordarCaptionPorTexto(texto, caption);
 
     // Mandar primero la foto de portada (si hay) para previsualización en Telegram.
     if (imagenPortada) {
       try {
-        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        const fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -360,6 +391,13 @@ router.post("/enviar-telegram", async (req, res) => {
             parse_mode: "Markdown",
           }),
         });
+        const fotoData = await fotoRes.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+        if (!fotoRes.ok || fotoData?.ok === false) {
+          req.log.warn(
+            { status: fotoRes.status, description: fotoData?.description, noticiaId: noticia.id },
+            "Telegram rechazó la foto de previsualización",
+          );
+        }
       } catch (err) {
         req.log.warn({ err }, "No se pudo mandar la foto de portada por Telegram, sigo con el texto");
       }
@@ -375,15 +413,8 @@ router.post("/enviar-telegram", async (req, res) => {
       ],
     };
 
-    // Texto completo como mensaje independiente — nunca como caption de foto.
-    // La imagen se adjunta por separado vía el botón 📸 (telegram-webhook.ts).
-    // Telegram admite hasta 4096 chars en sendMessage, vs 1024 en caption de imagen.
-    const TELEGRAM_MAX = 4096;
-    const encabezado = `📰 *NUEVA NOTA — ${cred.marca}*\n\n*${titulo}*\n\n`;
-    const pie = `\n\n${tags}\n\n_¿Publicamos esta nota en el sitio?_`;
-    const maxCuerpo = TELEGRAM_MAX - encabezado.length - pie.length - 5;
-    const cuerpo = contenido.length > maxCuerpo ? contenido.slice(0, maxCuerpo) + "…" : contenido;
-    const mensajeTexto = encabezado + cuerpo + pie;
+    // Telegram recibe el teaser estructurado, nunca web_content completo.
+    const mensajeTexto = caption;
 
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
@@ -415,7 +446,13 @@ router.post("/enviar-telegram", async (req, res) => {
     res.json({ ok: true, noticiaId: noticia.id });
   } catch (err) {
     req.log.error({ err }, "Error en enviar-telegram");
-    res.status(500).json({ error: "Error de conexión con Telegram" });
+    const detalle = err instanceof Error ? err.message : "";
+    const esErrorOpenAI = detalle.startsWith("No se pudo generar una nota editorial válida:") ||
+      detalle.includes("OPENAI_API_KEY") ||
+      detalle.startsWith("OpenAI respondió");
+    res.status(esErrorOpenAI ? 502 : 500).json({
+      error: esErrorOpenAI ? detalle : "Error de conexión con Telegram",
+    });
   }
 });
 

@@ -1,4 +1,3 @@
-import { ai } from "@workspace/integrations-gemini-ai";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { and, desc, eq, sql as sqlRaw } from "drizzle-orm";
@@ -6,15 +5,13 @@ import * as cheerio from "cheerio";
 import { logger } from "./lib/logger";
 import * as fs from "fs";
 import * as path from "path";
-import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
-import { limpiarNota } from "./lib/limpiar-asteriscos";
 import { enviarNotaAMake } from "./lib/enviar-a-make";
+import { limpiarNota } from "./lib/limpiar-asteriscos";
 import { promocionarNotaEnCanal } from "./lib/promocionar-nota";
 import { urlImagenSegura } from "./lib/url-imagen-segura";
 import { leerEstadoApp, guardarEstadoApp } from "./lib/app-estado";
-import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
-import { createEditToken, createLongEditToken, descripcionTtlEdicion, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
+import { createEditToken, createLongEditToken, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
 import { credencialesTelegram } from "./lib/telegram-cred";
 import { leerRedactorSettings, guardarRedactorSettings } from "./lib/redactor-settings";
 import {
@@ -23,6 +20,8 @@ import {
   listarPendientesBorradoresEs,
 } from "./lib/resumen-pendientes";
 import { ObjectStorageService } from "./lib/objectStorage";
+import { extraerFechaDelEvento, generarNotaEstructurada, resolverCaptionTelegram } from "./lib/openai-news";
+import { recordarCaptionPorNota } from "./lib/telegram-caption-cache";
 
 export type Categoria = "river" | "seleccion";
 
@@ -743,6 +742,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     let textoParaIA = noticiaElegida.titulo;
     let imagenAutoUrl: string | null = null;
     let fechaPublicacionVerificada: Date | null = null;
+    let fechaEventoVerificada: Date | null = null;
     if (noticiaElegida.url) {
       const { texto, fechaPublicacion: fechaHtml, imagenUrl } =
         articuloElegido ?? await obtenerTextoArticulo(noticiaElegida.url);
@@ -771,73 +771,28 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       if (texto) {
         textoParaIA = `${noticiaElegida.titulo}\n\n${texto}`;
       }
+      // La fecha de publicación sólo sirve para el filtro de actualidad. Para
+      // convertir una hora argentina a Israel hay que usar la fecha explícita
+      // del partido/evento, porque las reglas de horario de verano pueden
+      // cambiar entre la publicación y el encuentro.
+      fechaEventoVerificada = extraerFechaDelEvento(
+        textoParaIA,
+        fechaPublicacionVerificada?.getUTCFullYear(),
+      );
     }
 
-    // ── GENERAR CON IA (Gemini Flash) ─────────────────────────────────────
-    const promptSistema = categoria === "seleccion" ? PROMPT_SELECCION : PROMPT_MAESTRO;
-    const contextoSitio = categoria === "seleccion"
-      ? "Transformá esta noticia para el sitio La Scaloneta en Israel"
-      : "Transformá esta noticia para el sitio River en Israel";
-    const tagsFallback = categoria === "seleccion"
-      ? "#Argentina #Scaloneta #Mundial2026 #LaScaloneta"
-      : "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
-    const solicitudConFuente = `${contextoSitio}.
-Fecha actual: ${new Date().toISOString()}.
-Fecha verificada del artículo: ${fechaPublicacionVerificada?.toISOString() ?? "no disponible (pedido manual)"}.
-URL de la fuente: ${noticiaElegida.url}.
-Usá únicamente los hechos presentes en este texto fuente:
-
-${textoParaIA}`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: solicitudConFuente }] }],
-      config: {
-        systemInstruction: promptSistema,
-        maxOutputTokens: 8000,
-      },
+    // ── GENERAR PAQUETE ESTRUCTURADO (OpenAI gpt-4o-mini) ──────────────────
+    // La generación y la validación de web_content + telegram_caption ocurren
+    // antes del insert. Un error o salida inválida deja el artículo sin guardar.
+    const paquete = await generarNotaEstructurada({
+      sourceText: textoParaIA,
+      sourceUrl: noticiaElegida.url,
+      eventDate: fechaEventoVerificada,
+      categoria,
     });
-
-    let resultado = response.text ?? "";
-    if (!resultado || resultado.length < 50) {
-      logger.error("Scheduler: la IA no generó contenido");
-      return { tipo: "ia_sin_contenido" };
-    }
-
-    logger.info({
-      chars: resultado.length,
-      preview: resultado.slice(0, 200).replace(/\n/g, "↵"),
-    }, "Scheduler: output AI inicial");
-
-    // ── CONTROL DE CALIDAD PRE-GUARDADO ───────────────────────────────────
-    let parsed = parsearResultado(resultado);
-    const MINIMO_CHARS = 1400;
-    const cortada = /[…\.]{3,}\s*$/.test(parsed.contenido.trimEnd());
-    const corta   = parsed.contenido.length < MINIMO_CHARS;
-
-    if (corta || cortada) {
-      logger.warn({
-        chars: parsed.contenido.length,
-        cortada,
-      }, "Scheduler: nota insuficiente, solicitando expansión a la IA");
-      const expansion = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [
-          { role: "user",  parts: [{ text: solicitudConFuente }] },
-          { role: "model", parts: [{ text: resultado }] },
-          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 1400 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial River Plate Israel Gaby \"Tucu\" Sajnin. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
-        ],
-        config: { systemInstruction: promptSistema, maxOutputTokens: 8000 },
-      });
-      const resultadoExpandido = expansion.text ?? "";
-      if (resultadoExpandido && resultadoExpandido.length > resultado.length) {
-        resultado = resultadoExpandido;
-        parsed = parsearResultado(resultado);
-        logger.info({ chars: parsed.contenido.length }, "Scheduler: expansión aplicada");
-      }
-    }
-
-    const { titulo, contenido } = parsed;
+    const titulo = paquete.titulo;
+    const contenido = `${paquete.bajada}\n\n${paquete.web_content}`.trim();
+    const telegramCaption = paquete.telegram_caption;
     // Cinturón de seguridad editorial: aunque una fuente reciente conserve
     // contexto viejo o la IA ignore el prompt, una nota automática no puede
     // presentar nuevamente a Coudet como parte de la actualidad de River.
@@ -855,12 +810,7 @@ ${textoParaIA}`;
       await guardarEstado(estado);
       return { tipo: "todas_procesadas", fuente };
     }
-    // Si la IA dejó el fallback de River para una nota de Selección (raro pero posible),
-    // sustituimos por los tags correctos de la categoría.
-    let { tags } = parsed;
-    if (categoria === "seleccion" && /^#RiverPlate/.test(tags.trim())) {
-      tags = tagsFallback;
-    }
+    const tags = paquete.tags;
     const fuenteNombre = noticiaElegida.fuente ?? fuente;
 
     // ── PORTADA GARANTIZADA ───────────────────────────────────────────────
@@ -911,6 +861,7 @@ ${textoParaIA}`;
       }
       return { tipo: "todas_procesadas", fuente };
     }
+    recordarCaptionPorNota(savedNoticia.id, telegramCaption);
 
     // Marcar URL como procesada para no volver a enviarla
     if (noticiaElegida.url) {
@@ -929,7 +880,6 @@ ${textoParaIA}`;
     const { token, chatId } = cred;
 
     const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
-    const TELEGRAM_MAX = 4096;
 
     // 🌐 Si se publicó automáticamente, lanzar traducción al hebreo en background
     if (autopublicar && savedNoticia) {
@@ -937,10 +887,6 @@ ${textoParaIA}`;
       // 📸 Instagram vía Make.com (fire-and-forget)
       enviarNotaAMake(savedNoticia);
     }
-
-    // Escape básico de Markdown para campos dinámicos (título/fuente) que van
-    // dentro de *...* o _..._ — evita errores de parseo en Telegram.
-    const escMd = (s: string) => s.replace(/([*_`[\]])/g, "");
 
     // Foto de portada para Telegram: la del artículo si existe (solo URLs
     // absolutas http/https), o la de respaldo (absolutizada al dominio del sitio).
@@ -957,12 +903,12 @@ ${textoParaIA}`;
           ? `https://${dominioTelegram}${imagenPortadaFinal}`
           : null);
     const capFotoBase = usoFallback
-      ? `🖼 _Foto de respaldo (el artículo no traía foto; podés cambiarla desde el Redactor) — ${escMd(titulo)}_`
-      : `🖼 _Foto de portada — ${escMd(titulo)}_`;
+      ? `🖼 _Foto de respaldo (el artículo no traía foto; podés cambiarla desde el Redactor) — ${titulo.replace(/[*_`[\]]/g, "")}_`
+      : `🖼 _Foto de portada — ${titulo.replace(/[*_`[\]]/g, "")}_`;
     // Telegram limita los captions a 1024 caracteres
     const capFoto = capFotoBase.length > 1024 ? capFotoBase.slice(0, 1023) + "_" : capFotoBase;
     if (fotoParaTelegram) {
-      await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+      const fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -971,21 +917,29 @@ ${textoParaIA}`;
           caption: capFoto,
           parse_mode: "Markdown",
         }),
-      }).catch(() => { /* no bloquear si falla la foto */ });
+      }).catch((err) => {
+        logger.warn({ err, id: savedNoticia.id }, "Scheduler: error de red enviando foto a Telegram");
+        return null;
+      });
+      if (fotoRes) {
+        const fotoData = await fotoRes.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+        if (!fotoRes.ok || fotoData?.ok === false) {
+          logger.warn(
+            { status: fotoRes.status, description: fotoData?.description, id: savedNoticia.id },
+            "Scheduler: Telegram rechazó la foto",
+          );
+        }
+      }
     }
 
     if (autopublicar) {
-      // ── MODO AUTOMÁTICO: ya publicada en el sitio; llega la notificación
-      // completa: foto (arriba), categoría, título, artículo y fuente.
-      const etiquetaCat = categoria === "seleccion"
-        ? "🇦🇷 _Categoría: Selección Argentina_\n\n"
-        : "⚪️🔴 _Categoría: River_\n\n";
-      const encabezadoFYI = `✅ *Nota autopublicada en el sitio*\n\n${etiquetaCat}📰 *${escMd(titulo)}*\n\n`;
-      const pieFYI = `\n\n${tags}\n\n📡 _Fuente: ${escMd(fuenteNombre)}_\n⏱ _El link de edición dura ${descripcionTtlEdicion()}_`;
-      const textoFYICompleto = encabezadoFYI + contenido + pieFYI;
-      const mensajeFIY = textoFYICompleto.length > TELEGRAM_MAX
-        ? textoFYICompleto.slice(0, TELEGRAM_MAX - 1).replace(/[^.!?…]*$/, "") + "."
-        : textoFYICompleto;
+      // ── MODO AUTOMÁTICO: Telegram recibe solamente el teaser generado,
+      // nunca el artículo completo.
+      const mensajeFIY = resolverCaptionTelegram(telegramCaption, {
+        titulo,
+        contenido,
+        url: `https://${dominioTelegram}/noticia/${savedNoticia.id}`,
+      });
       const resFYI = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1007,11 +961,9 @@ ${textoParaIA}`;
       }
       logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl, usoFallback }, "Scheduler: nota autopublicada");
       // 📣 Promoción automática en el canal público (fire-and-forget)
-      promocionarNotaEnCanal(savedNoticia).catch(() => {});
+      promocionarNotaEnCanal({ ...savedNoticia, telegramCaption }).catch(() => {});
     } else {
-      // ── MODO MANUAL / PENDIENTE: artículo completo + 2 botones ────────
-
-      // Artículo completo — sin truncar. El contenido redactado cabe dentro de 4096 chars.
+      // ── MODO MANUAL / PENDIENTE: teaser + 2 botones ─────────────────────
       const replyMarkup = {
         inline_keyboard: [[
           { text: "✅ Publicar", callback_data: `publicar_${savedNoticia.id}` },
@@ -1019,16 +971,11 @@ ${textoParaIA}`;
         ]],
       };
 
-      const etiquetaCatMan = categoria === "seleccion"
-        ? "🇦🇷 _Categoría: Selección Argentina_\n\n"
-        : "⚪️🔴 _Categoría: River_\n\n";
-      const encabezado = `${etiquetaCatMan}📰 *${escMd(titulo)}*\n\n`;
-      const pie        = `\n\n${tags}\n\n📡 _Fuente: ${escMd(fuenteNombre)}_`;
-      const textoCompleto = encabezado + contenido + pie;
-      // Salvaguarda: si supera 4096 cortamos en oración completa
-      const texto = textoCompleto.length > TELEGRAM_MAX
-        ? textoCompleto.slice(0, TELEGRAM_MAX - 1).replace(/[^.!?…]*$/, "") + "."
-        : textoCompleto;
+      const texto = resolverCaptionTelegram(telegramCaption, {
+        titulo,
+        contenido,
+        url: `https://${dominioTelegram}/noticia/${savedNoticia.id}`,
+      });
 
       const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",

@@ -16,66 +16,17 @@
  */
 
 import { logger } from "./logger";
-
-/** Escapa caracteres especiales de Markdown (v1) de Telegram. */
-function escaparMarkdown(s: string): string {
-  return s.replace(/([_*`\[])/g, "\\$1");
-}
+import { resolverCaptionTelegram } from "./openai-news";
 
 export interface NotaParaPromocionar {
   id: number;
   titulo: string;
   contenido?: string | null;
+  telegramCaption?: string | null;
   fuente?: string | null;
   imagenPortada?: string | null;
   categoria?: string | null;
   tags?: string | null;
-}
-
-/** Primer párrafo legible de la nota, sin markdown, recortado. */
-function extraerExtracto(contenido: string | null | undefined, max = 220): string {
-  if (!contenido) return "";
-  const plano = contenido
-    .replace(/[#*_`>]/g, "")
-    .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-    .trim();
-  const parrafo = plano.split(/\n{2,}|\n/).find((p) => p.trim().length > 60) ?? plano;
-  const texto = parrafo.trim().replace(/\s+/g, " ");
-  if (texto.length <= max) return texto;
-  return `${texto.slice(0, max).replace(/\s+\S*$/, "")}…`;
-}
-
-/** Heurística: ¿la nota habla del próximo partido / es una previa? */
-function esPrevia(nota: NotaParaPromocionar): boolean {
-  const texto = `${nota.titulo} ${nota.tags ?? ""} ${(nota.contenido ?? "").slice(0, 800)}`.toLowerCase();
-  return /previa|próximo partido|proximo partido|se enfrenta|enfrenta a|recibe a|visita a|\bvs\.?\b|fixture|se juega|antesala/.test(
-    texto,
-  );
-}
-
-interface ProximoPartido {
-  fecha?: string;
-  horaIsrael?: string;
-  equipoLocal?: string;
-  equipoVisitante?: string;
-  estado?: string;
-}
-
-/** Consulta el próximo partido a la propia API (usa el caché interno). */
-async function obtenerProximoPartido(): Promise<ProximoPartido | null> {
-  try {
-    const puerto = process.env.PORT ?? "8080";
-    const res = await fetch(`http://127.0.0.1:${puerto}/api/partido-proximo`, {
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as ProximoPartido;
-    if (!data?.equipoLocal || !data?.equipoVisitante) return null;
-    if (data.estado === "FINALIZADO") return null;
-    return data;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -108,28 +59,14 @@ export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise
 
   const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
   const urlNota = `https://${dominio}/noticia/${nota.id}`;
-
-  const titulo = escaparMarkdown(nota.titulo.slice(0, 250));
-  const extracto = escaparMarkdown(extraerExtracto(nota.contenido));
-  // Sin firma de fuente: la nota se presenta como redacción propia del diario.
-  const fuenteTexto = "";
-
-  // ⏰ Tarjeta de próximo partido solo si la nota es una previa / habla del fixture
-  let tarjetaPartido = "";
-  if (esPrevia(nota)) {
-    const partido = await obtenerProximoPartido();
-    if (partido) {
-      const cruce = escaparMarkdown(`${partido.equipoLocal} vs ${partido.equipoVisitante}`);
-      const cuando = [partido.fecha, partido.horaIsrael ? `${partido.horaIsrael} HS` : null]
-        .filter(Boolean)
-        .map((s) => escaparMarkdown(String(s)))
-        .join(" — ");
-      tarjetaPartido = `\n\n⏰ *Próximo partido: ${cruce}*${cuando ? `\n🗓 ${cuando} (hora Israel)` : ""}\n_Consultá el fixture en vivo en la web._`;
-    }
-  }
-
-  const caption =
-    `📰 *${titulo}*\n\n` + (extracto ? `${extracto}\n` : "") + fuenteTexto + tarjetaPartido;
+  // El paquete generado antes de guardar ya trae un teaser separado. Si la
+  // nota es histórica o fue creada antes de este flujo, el fallback sigue
+  // siendo un teaser de dos oraciones, nunca el artículo completo.
+  const caption = resolverCaptionTelegram(nota.telegramCaption, {
+    titulo: nota.titulo.slice(0, 250),
+    contenido: nota.contenido,
+    url: urlNota,
+  });
 
   const replyMarkup = {
     inline_keyboard: [[{ text: "📖 Leer en riverplateisrael.com", url: urlNota }]],
@@ -152,14 +89,14 @@ export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise
         body: JSON.stringify({
           chat_id: canal,
           photo: fotoUrl,
-          caption: caption.slice(0, 1020),
+           caption,
           parse_mode: "Markdown",
           reply_markup: replyMarkup,
         }),
         signal: AbortSignal.timeout(15000),
       });
       // Si Telegram no pudo bajar la foto, degradamos a mensaje de texto.
-      if (!res.ok) {
+      if (!(await telegramAcepto(res))) {
         logger.warn({ id: nota.id, status: res.status }, "promocionarNotaEnCanal: sendPhoto falló, reintento como texto");
         res = await enviarTexto(token, canal, caption, replyMarkup);
       }
@@ -167,15 +104,24 @@ export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise
       res = await enviarTexto(token, canal, caption, replyMarkup);
     }
 
-    if (res.ok) {
+    if (await telegramAcepto(res)) {
       logger.info({ id: nota.id, canal }, "promocionarNotaEnCanal: nota promocionada en el canal público");
     } else {
-      const cuerpo = await res.text().catch(() => "");
-      logger.error({ id: nota.id, status: res.status, cuerpo: cuerpo.slice(0, 300) }, "promocionarNotaEnCanal: Telegram rechazó el envío");
+      const data = await res.clone().json().catch(() => null) as { description?: string } | null;
+      logger.error(
+        { id: nota.id, status: res.status, description: data?.description },
+        "promocionarNotaEnCanal: Telegram rechazó el envío",
+      );
     }
   } catch (err) {
     logger.error({ err, id: nota.id }, "promocionarNotaEnCanal: error enviando al canal");
   }
+}
+
+async function telegramAcepto(res: Response): Promise<boolean> {
+  if (!res.ok) return false;
+  const data = await res.clone().json().catch(() => null) as { ok?: boolean } | null;
+  return data?.ok !== false;
 }
 
 async function enviarTexto(
@@ -189,7 +135,7 @@ async function enviarTexto(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: canal,
-      text: caption.slice(0, 4000),
+      text: caption,
       parse_mode: "Markdown",
       reply_markup: replyMarkup,
       disable_web_page_preview: true,

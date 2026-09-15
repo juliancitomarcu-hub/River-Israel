@@ -1128,6 +1128,7 @@ export default function Redactor() {
   };
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");
+  const [telegramCaption, setTelegramCaption] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
   const [copiado, setCopiado] = useState(false);
   const [telegramEstado, setTelegramEstado] = useState<EstadoTelegram>("idle");
@@ -1937,6 +1938,7 @@ export default function Redactor() {
         const n = data.noticia;
         const texto = `**Título:** ${n.titulo}\n\n**Contenido:**\n${n.contenido}\n\n**Tags:** ${n.tags}`;
         setResultado(texto);
+        setTelegramCaption("");
         setEstado("listo");
         setModoEdicionId(n.id);
         setEditando(true);
@@ -1959,6 +1961,7 @@ export default function Redactor() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           textoResultado: resultadoEditado,
+          telegramCaption,
           ...(imagenPortada ? { imagenPortada } : {}),
         }),
       });
@@ -2174,6 +2177,7 @@ export default function Redactor() {
   const seleccionarNoticia = (titulo: string) => {
     setTextoOriginal(titulo);
     setResultado("");
+    setTelegramCaption("");
     setEstado("idle");
     setTelegramEstado("idle");
   };
@@ -2183,6 +2187,7 @@ export default function Redactor() {
 
     setEstado("procesando");
     setResultado("");
+    setTelegramCaption("");
     setTelegramEstado("idle");
 
     try {
@@ -2209,11 +2214,12 @@ export default function Redactor() {
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             try {
-              const data = JSON.parse(line.slice(6)) as { content?: string; done?: boolean; error?: string };
+              const data = JSON.parse(line.slice(6)) as { content?: string; telegram_caption?: string; done?: boolean; error?: string };
               if (data.content) {
                 setResultado((prev) => prev + data.content);
                 resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
               }
+              if (data.telegram_caption) setTelegramCaption(data.telegram_caption);
               if (data.done) setEstado("listo");
               if (data.error) setEstado("error");
             } catch { /* ignore incomplete chunks */ }
@@ -2235,6 +2241,7 @@ export default function Redactor() {
   const reiniciar = () => {
     setTextoOriginal("");
     setResultado("");
+    setTelegramCaption("");
     setEstado("idle");
     setTelegramEstado("idle");
     setTelegramError("");
@@ -2256,6 +2263,8 @@ export default function Redactor() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           textoResultado: resultado,
+          telegramCaption,
+          categoria,
           textoOriginal,
           fuente: noticiaSeleccionada?.fuente ?? fuente,
           imagenPortada,
@@ -2285,6 +2294,7 @@ export default function Redactor() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           texto: resultado,
+          telegramCaption,
           textoOriginal,
           fuente: noticiaSeleccionada?.fuente ?? fuente,
           imagenPortada,
