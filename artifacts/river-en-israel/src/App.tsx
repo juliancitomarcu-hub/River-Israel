@@ -12,6 +12,7 @@ import Equipo from "@/pages/Equipo";
 import Historia from "@/pages/Historia";
 import Postulacion from "@/pages/Postulacion";
 import NotFound from "@/pages/not-found";
+import { VisitorAnalytics } from "@/components/VisitorAnalytics";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +26,7 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <div className="flex flex-col min-h-screen">
+      <VisitorAnalytics />
       <Navbar />
       <main className="flex-grow">
         <Switch>

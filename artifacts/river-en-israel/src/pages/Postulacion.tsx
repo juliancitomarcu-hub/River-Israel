@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Send, User, Mail, Phone, MapPin, MessageSquare, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Postulacion() {
   const [nombre, setNombre] = useState("");
@@ -33,6 +34,7 @@ export default function Postulacion() {
         setEstado("error");
       } else {
         setEstado("ok");
+        trackEvent("membership_application_submitted", { page: "postula" });
         setNombre("");
         setEmail("");
         setTelefono("");
