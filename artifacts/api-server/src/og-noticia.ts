@@ -93,15 +93,15 @@ function reemplazarMeta(html: string, prop: string, contenido: string, attr = "p
     "i",
   );
   const tag = `<meta ${attr}="${prop}" content="${contenido}" />`;
-  if (regex.test(html)) return html.replace(regex, tag);
-  return html.replace(/<\/head>/i, `  ${tag}\n</head>`);
+  if (regex.test(html)) return html.replace(regex, () => tag);
+  return html.replace(/<\/head>/i, () => `  ${tag}\n</head>`);
 }
 
 function reemplazarCanonical(html: string, url: string): string {
   const regex = /<link\b(?=[^>]*\brel=["']canonical["'])(?=[^>]*\bhref=["'][^"']*["'])[^>]*\/?>/i;
   const tag = `<link rel="canonical" href="${url}" />`;
-  if (regex.test(html)) return html.replace(regex, tag);
-  return html.replace(/<\/head>/i, `  ${tag}\n</head>`);
+  if (regex.test(html)) return html.replace(regex, () => tag);
+  return html.replace(/<\/head>/i, () => `  ${tag}\n</head>`);
 }
 
 function urlImagenSocial(id: number): string {
@@ -120,7 +120,7 @@ export function construirHtmlNoticia(shell: string, nota: NoticiaOgData): string
   const urlNota = escapeHtml(`${SITE_URL}/noticia/${nota.id}`);
 
   let html = shell;
-  html = html.replace(/<title>[^<]*<\/title>/i, `<title>${titulo} · River en Israel</title>`);
+  html = html.replace(/<title>[^<]*<\/title>/i, () => `<title>${titulo} · River en Israel</title>`);
   html = reemplazarMeta(html, "og:title", titulo);
   html = reemplazarMeta(html, "og:description", descripcion);
   html = reemplazarMeta(html, "og:image", imagen);

@@ -32,7 +32,7 @@ que sólo atiende `/api`. Bajo el mismo dominio, el proxy enruta por path
   inyecta nada. El usuario setea esa env var y redeploya.
 
 **Why:** evita asumir que el frontend estático puede hacer trabajo dinámico, y deja
-claro por qué el OG por nota no llega a WhatsApp con el approach actual.
+claro por qué los metadatos sólo del lado del cliente no llegan a WhatsApp.
 
 El shell usado para las notas debe provenir del mismo entorno que sirve sus recursos.
 

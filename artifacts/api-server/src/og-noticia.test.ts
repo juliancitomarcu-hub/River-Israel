@@ -29,6 +29,21 @@ test("renderiza head dinámico por artículo con URLs absolutas", () => {
   assert.match(html, /<link rel="canonical" href="https:\/\/riverplateisrael\.com\/noticia\/42"/);
 });
 
+test("preserva el shell y trata títulos y bajadas como texto literal", () => {
+  const shell = `<!doctype html><html><head><title>Sitio</title>
+    <meta content="Sitio" property="og:title">
+    </head><body><div id="root"></div><script type="module" src="/assets/app.js"></script></body></html>`;
+  const titulo = `River $& $' $\` $$ <campeón> "2026"`;
+  const html = construirHtmlNoticia(shell, {
+    id: 27, titulo, contenido: "Una bajada literal $& que no debe insertar etiquetas ni alterar los recursos de la aplicación.",
+  });
+  assert.ok(html.includes(`content="River $&amp; $' $\` $$ &lt;campeón&gt; &quot;2026&quot;"`));
+  assert.ok(html.includes(`content="Una bajada literal $&amp; que no debe insertar etiquetas`));
+  assert.equal(html.split("<body>")[1], shell.split("<body>")[1]);
+  assert.equal((html.match(/property="og:title"/g) ?? []).length, 1);
+  assert.equal((html.match(/<title>/g) ?? []).length, 1);
+});
+
 test("la imagen social generada y la portada redimensionada miden 1200x630", async () => {
   const fallback = await generarImagenFallback("Una nota sin imagen de portada");
   const portada = await sharp(Buffer.from(

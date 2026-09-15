@@ -1,5 +1,5 @@
 - [Telegram Markdown injection](telegram-markdown.md) — user text forwarded to Telegram with parse_mode Markdown must be escaped + length-capped.
 - [Prod FS efímero](prod-ephemeral-fs.md) — estado persistente va a la tabla app_estado, nunca a JSON locales; GET /api debe dar 200 o el deployment reinicia en loop.
-- [SEO en SPA estático](seo-static-spa.md) — sitemap/root dinámicos salen del api-server (path en artifact.toml + ruta fuera de /api); meta por nota es client-side (no llega a WhatsApp).
+- [SEO en SPA estático](seo-static-spa.md) — rutas dinámicas requieren proxy al API; el shell de noticias debe corresponder al entorno para no romper recursos del SPA.
 - [Telegram webhook secret no legible](telegram-webhook-secret.md) — getWebhookInfo NO devuelve secret_token; protección se infiere con URL en vivo + registro en memoria del proceso.
 - [Actualidad editorial](actualidad-editorial.md) — la autopublicación exige artículo canónico, fecha publicada ≤48 h y cuerpo real; nunca usar cuerpo técnico fijo sin verificar.
