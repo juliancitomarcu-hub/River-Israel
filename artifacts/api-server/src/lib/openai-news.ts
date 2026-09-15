@@ -4,6 +4,7 @@ const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const OPENAI_MODEL = "gpt-4o-mini";
 const ARTICLE_URL_PLACEHOLDER = "{{ARTICLE_URL}}";
 const MAX_ATTEMPTS = 2;
+class OpenAIQuotaError extends Error {}
 
 export function asegurarOpenAIConfigurado(): void {
   if (!process.env.OPENAI_API_KEY?.trim()) {
@@ -342,7 +343,17 @@ Devolvé únicamente el objeto JSON solicitado.`;
   });
 
   if (!response.ok) {
-    // Never include the response body: OpenAI may echo sensitive request data.
+    // Inspect only allowlisted codes; never log the provider response body.
+    const failure = await response.json().catch(() => null) as {
+      error?: { code?: string; type?: string };
+    } | null;
+    if (failure?.error?.code === "credit_balance_exhausted" ||
+        failure?.error?.code === "insufficient_quota" ||
+        failure?.error?.type === "insufficient_quota") {
+      throw new OpenAIQuotaError(
+        "OpenAI no tiene créditos disponibles. Recargá saldo en la facturación de OpenAI para reanudar la generación.",
+      );
+    }
     throw new Error(`OpenAI respondió HTTP ${response.status}`);
   }
   const data = await response.json() as {
@@ -369,6 +380,7 @@ export async function generarNotaEstructurada(input: NewsGenerationInput): Promi
     try {
       return await pedirOpenAI(input);
     } catch (error) {
+      if (error instanceof OpenAIQuotaError) throw error;
       ultimoError = error;
       if (intento < MAX_ATTEMPTS) {
         logger.warn({ intento }, "OpenAI: salida inválida o error transitorio; reintentando");

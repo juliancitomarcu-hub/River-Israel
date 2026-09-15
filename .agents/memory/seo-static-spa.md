@@ -33,3 +33,9 @@ que sólo atiende `/api`. Bajo el mismo dominio, el proxy enruta por path
 
 **Why:** evita asumir que el frontend estático puede hacer trabajo dinámico, y deja
 claro por qué el OG por nota no llega a WhatsApp con el approach actual.
+
+El shell usado para las notas debe provenir del mismo entorno que sirve sus recursos.
+
+**Why:** reutilizar el HTML de producción en desarrollo deja referencias a archivos compilados que no existen en el preview y produce una página en blanco.
+
+**How to apply:** al cambiar el renderizado de metadatos, comprobar tanto el HTML que ve el crawler como la carga del artículo en el navegador; no basta con verificar las etiquetas.
