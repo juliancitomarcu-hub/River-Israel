@@ -8,6 +8,24 @@
 import * as zod from "zod";
 
 /**
+ * @summary Last validated River Plate professional roster
+ */
+export const GetPlantelResponse = zod.object({
+  jugadores: zod.array(
+    zod.object({
+      numero: zod.number().nullable(),
+      nombre: zod.string(),
+      apellido: zod.string(),
+      posicion: zod.enum(["ARQ", "DEF", "MED", "DEL"]),
+      nacionalidad: zod.string(),
+      foto: zod.string().url(),
+    }),
+  ),
+  actualizadoEn: zod.date(),
+  fuente: zod.string().url(),
+});
+
+/**
  * Returns server health status
  * @summary Health check
  */

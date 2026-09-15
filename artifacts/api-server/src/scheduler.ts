@@ -22,8 +22,32 @@ import {
 import { ObjectStorageService } from "./lib/objectStorage";
 import { extraerFechaDelEvento, generarNotaEstructurada, resolverCaptionTelegram } from "./lib/openai-news";
 import { recordarCaptionPorNota } from "./lib/telegram-caption-cache";
+import { actualizarPlantelProfesional } from "./lib/plantel";
 
 export type Categoria = "river" | "seleccion";
+
+const INTERVALO_ACTUALIZACION_PLANTEL_MS = 6 * 60 * 60 * 1000;
+let actualizadorPlantelIniciado = false;
+
+/**
+ * Refreshes the official roster at startup and periodically. Refresh failures
+ * are isolated from the news scheduler; actualizarPlantelProfesional writes
+ * only after full validation, so app_estado retains the prior good record.
+ */
+export function iniciarActualizadorPlantel(): void {
+  if (actualizadorPlantelIniciado) return;
+  actualizadorPlantelIniciado = true;
+
+  const actualizar = (): void => {
+    actualizarPlantelProfesional().catch((err) => {
+      logger.warn({ err }, "No se pudo actualizar el plantel profesional; se conserva el último plantel validado");
+    });
+  };
+
+  actualizar();
+  setInterval(actualizar, INTERVALO_ACTUALIZACION_PLANTEL_MS);
+  logger.info({ intervaloHoras: 6 }, "Actualizador periódico del plantel profesional iniciado");
+}
 
 // Fuentes en orden de prioridad — La Página Millonaria, sitio oficial y Olé primero
 const FUENTES = [

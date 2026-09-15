@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { contextoPlantelParaPrompt } from "./plantel";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const OPENAI_MODEL = "gpt-4o-mini";
@@ -270,7 +271,7 @@ const SYSTEM_PROMPT_RIVER = `Sos el redactor jefe de River en Israel, un portal 
 
 La fuente es un cable interno no publicado. Usá exclusivamente los hechos explícitos de la fuente delimitada. No inventes declaraciones, citas, resultados, jugadores, lesiones, formaciones, cargos, cifras, horarios, canales de TV, confirmaciones oficiales, decisiones arbitrales ni fallos de organismos. Conservá el grado de certeza: un rumor sigue siendo rumor y una posibilidad no es un hecho. No atribuyas decisiones oficiales sin confirmación explícita. No nombres el medio o sitio de origen. Si falta un dato, omitilo o expresá claramente que no está confirmado.
 
-Contexto factual vigente que no se puede degradar: Leonardo Ponzio es el DT interino de River. Eduardo "Chacho" Coudet dejó de ser el entrenador y no puede aparecer tomando decisiones presentes; Marcelo Gallardo y Martín Demichelis también son ex-DT. Si la fuente posterior menciona un cambio de entrenador, presentalo como confirmado solamente si el propio cable incluye una confirmación oficial de River. Nunca completes de memoria el plantel, posiciones, altas, bajas o titularidades: si no sabés si alguien sigue en el plantel, referite al equipo como colectivo.
+Contexto factual vigente que no se puede degradar: Leonardo Ponzio es el DT interino de River. Eduardo "Chacho" Coudet dejó de ser el entrenador y no puede aparecer tomando decisiones presentes; Marcelo Gallardo y Martín Demichelis también son ex-DT. Si la fuente posterior menciona un cambio de entrenador, presentalo como confirmado solamente si el propio cable incluye una confirmación oficial de River. El plantel vigente se entrega dinámicamente desde la base oficial: no lo completes de memoria ni inventes altas, bajas o titularidades.
 
 Cuando la fuente mencione una polémica arbitral, describí solamente el hecho verificable y la reacción documentada: nunca sugieras complicidad, favores, ilegitimidad, ni fabriques un juicio arbitral o una resolución. River puede ser el protagonista y la voz puede ser apasionada, pero los hechos mandan.
 
@@ -310,6 +311,9 @@ async function pedirOpenAI(input: NewsGenerationInput, correction?: string): Pro
 
   const categoria = input.categoria === "seleccion" ? "seleccion" : "river";
   const sourceUrl = input.sourceUrl?.trim() || "no disponible";
+  const contextoPlantel = categoria === "river"
+    ? await contextoPlantelParaPrompt()
+    : "";
   const userPrompt = `CATEGORÍA: ${categoria}
 ${contextoHorario(input.eventDate)}
 URL DE ORIGEN (solo contexto interno, no la menciones): ${sourceUrl}
@@ -337,7 +341,7 @@ ${correction ? `La respuesta anterior fue rechazada: ${correction}. Corregí ese
       messages: [
         {
           role: "system",
-          content: categoria === "seleccion" ? SYSTEM_PROMPT_SELECCION : SYSTEM_PROMPT_RIVER,
+          content: `${categoria === "seleccion" ? SYSTEM_PROMPT_SELECCION : SYSTEM_PROMPT_RIVER}${contextoPlantel ? `\n\n${contextoPlantel}` : ""}`,
         },
         { role: "user", content: userPrompt },
       ],

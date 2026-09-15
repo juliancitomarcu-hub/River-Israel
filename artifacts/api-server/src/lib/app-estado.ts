@@ -17,7 +17,7 @@ export async function leerEstadoApp<T>(clave: string): Promise<T | null> {
   }
 }
 
-export async function guardarEstadoApp(clave: string, valor: unknown): Promise<void> {
+export async function guardarEstadoApp(clave: string, valor: unknown): Promise<boolean> {
   try {
     await db
       .insert(appEstadoTable)
@@ -26,7 +26,9 @@ export async function guardarEstadoApp(clave: string, valor: unknown): Promise<v
         target: appEstadoTable.clave,
         set: { valor, actualizadoEn: sql`now()` },
       });
+    return true;
   } catch (err) {
     logger.warn({ err, clave }, "app-estado: no se pudo guardar");
+    return false;
   }
 }

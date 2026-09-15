@@ -1,77 +1,97 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  getGetPlantelQueryKey,
+  useGetPlantel,
+  type JugadorPlantel,
+} from "@workspace/api-client-react";
 import { useMundialMode } from "@/lib/mundial-mode";
 import { SolDeMayo } from "@/components/SolDeMayo";
 import { CountdownArgentina } from "@/components/CountdownArgentina";
 
-type PosicionFiltro = "TODOS" | "ARQUEROS" | "DEFENSORES" | "MEDIOCAMPISTAS" | "DELANTEROS";
-type PosicionJugador = "ARQUEROS" | "DEFENSORES" | "MEDIOCAMPISTAS" | "DELANTEROS";
-
-interface Jugador {
-  numero: number;
-  nombre: string;
-  apellido: string;
-  posicion: PosicionJugador;
-  posicionDetalle: string;
-  nacionalidad: string;
-  bandera: string;
-  edad: number;
-  foto?: string;
-}
-
-// Fotos oficiales del plantel — riverplate.com (julio 2026)
-const P = "https://sitiooficialstorageprod.blob.core.windows.net/imagenes-sitio/imagenes-plantel/futbol/2026/07";
-
-const JUGADORES: Jugador[] = [
-  // ── ARQUEROS ──
-  { numero: 33, nombre: "Ezequiel",     apellido: "Centurión",        posicion: "ARQUEROS",       posicionDetalle: "Arquero",                nacionalidad: "Argentina", bandera: "🇦🇷", edad: 29, foto: `${P}/33-Ezequiel_Centurion_0dc85e8b1f65_f4ce541a.png` },
-  { numero: 41, nombre: "Santiago",     apellido: "Beltrán",          posicion: "ARQUEROS",       posicionDetalle: "Arquero titular",        nacionalidad: "Argentina", bandera: "🇦🇷", edad: 21, foto: `${P}/41-Santiago_Beltr_n_c6edeb62eccb_b879ccdd.png` },
-  { numero: 57, nombre: "Jeremías",     apellido: "Martinet",         posicion: "ARQUEROS",       posicionDetalle: "Arquero",                nacionalidad: "Argentina", bandera: "🇦🇷", edad: 21, foto: `${P}/57-Jerem_as_Martinet_1e220e316850_9cc5309c.png` },
-  // ── DEFENSORES ──
-  { numero: 2,  nombre: "Tobías",       apellido: "Ramírez",          posicion: "DEFENSORES",     posicionDetalle: "Defensor central",       nacionalidad: "Argentina", bandera: "🇦🇷", edad: 20, foto: `${P}/2-Tob_as_Ramirez_c8e50f6941ec_3d5a3e07.png` },
-  { numero: 5,  nombre: "Juan",         apellido: "Portillo",         posicion: "DEFENSORES",     posicionDetalle: "Defensor",               nacionalidad: "Argentina", bandera: "🇦🇷", edad: 26, foto: `${P}/5-Juan_Portillo_4eb08ac52cea_ddd14abf.png` },
-  { numero: 13, nombre: "Lautaro",      apellido: "Rivero",           posicion: "DEFENSORES",     posicionDetalle: "Defensor central",       nacionalidad: "Argentina", bandera: "🇦🇷", edad: 22, foto: `${P}/13-Lautaro_Rivero_ec43a3599c52_ee48e9e9.png` },
-  { numero: 20, nombre: "Giovanni",     apellido: "González",         posicion: "DEFENSORES",     posicionDetalle: "Lateral derecho",        nacionalidad: "Uruguay",   bandera: "🇺🇾", edad: 31, foto: `${P}/20-Giovanni_Gonzalez_7a726a7fffe9_0339ce75.png` },
-  { numero: 21, nombre: "Marcos",       apellido: "Acuña",            posicion: "DEFENSORES",     posicionDetalle: "Lateral izquierdo",      nacionalidad: "Argentina", bandera: "🇦🇷", edad: 34, foto: `${P}/21-Marcos_Acu_a_5c4bdfea9d7a_99fce46e.png` },
-  { numero: 28, nombre: "Lucas",        apellido: "Martínez Quarta",  posicion: "DEFENSORES",     posicionDetalle: "Defensor central",       nacionalidad: "Argentina", bandera: "🇦🇷", edad: 30, foto: `${P}/28-Lucas_Martinez_Quarta_1aeb69be246c_a966453b.png` },
-  { numero: 29, nombre: "Gonzalo",      apellido: "Montiel",          posicion: "DEFENSORES",     posicionDetalle: "Lateral derecho",        nacionalidad: "Argentina", bandera: "🇦🇷", edad: 29, foto: `${P}/29-Gonzalo_Montiel_acc3e65084e3_33db76d6.png` },
-  { numero: 30, nombre: "Nicolás",      apellido: "Otamendi",         posicion: "DEFENSORES",     posicionDetalle: "Defensor central",       nacionalidad: "Argentina", bandera: "🇦🇷", edad: 38, foto: `${P}/30-Nicol_s_Otamendi_e04b1ecf99a1_82427cd4.png` },
-  { numero: 31, nombre: "Facundo",      apellido: "González",         posicion: "DEFENSORES",     posicionDetalle: "Defensor central",       nacionalidad: "Uruguay",   bandera: "🇺🇾", edad: 23, foto: `${P}/31-Facundo_Gonzalez_d9dff17d3d0b_5fbf2c87.png` },
-  { numero: 36, nombre: "Ulises",       apellido: "Giménez",          posicion: "DEFENSORES",     posicionDetalle: "Defensor central",       nacionalidad: "Argentina", bandera: "🇦🇷", edad: 20, foto: `${P}/36-Ulises_Gim_nez_d03c2ad149e2_14311d1d.png` },
-  // ── MEDIOCAMPISTAS ──
-  { numero: 6,  nombre: "Aníbal",       apellido: "Moreno",           posicion: "MEDIOCAMPISTAS", posicionDetalle: "Volante central",        nacionalidad: "Argentina", bandera: "🇦🇷", edad: 27, foto: `${P}/6-Anibal_Moreno_c18b0cd43132_75ba8c26.png` },
-  { numero: 8,  nombre: "Mauro",        apellido: "Arambarri",        posicion: "MEDIOCAMPISTAS", posicionDetalle: "Volante central",        nacionalidad: "Uruguay",   bandera: "🇺🇾", edad: 30, foto: `${P}/8-Mauro_Arambarri_fed2146e9a77_d71f2d80.png` },
-  { numero: 15, nombre: "Fausto",       apellido: "Vera",             posicion: "MEDIOCAMPISTAS", posicionDetalle: "Mediocampista",          nacionalidad: "Argentina", bandera: "🇦🇷", edad: 26, foto: `${P}/15-Fausto_Vera_0074e6d1d6eb_8519646b.png` },
-  { numero: 24, nombre: "Juan Cruz",    apellido: "Meza",             posicion: "MEDIOCAMPISTAS", posicionDetalle: "Mediocampista ofensivo", nacionalidad: "Argentina", bandera: "🇦🇷", edad: 19, foto: `${P}/24-Juan_Cruz_Meza_6e946d9ced74_30af40d2.png` },
-  { numero: 26, nombre: "Tomás",        apellido: "Galván",           posicion: "MEDIOCAMPISTAS", posicionDetalle: "Mediocampista",          nacionalidad: "Argentina", bandera: "🇦🇷", edad: 26, foto: `${P}/26-Tom_s_Galv_n_654aa1a970b6_f096b3b8.png` },
-  { numero: 44, nombre: "Lucas",        apellido: "Silva",            posicion: "MEDIOCAMPISTAS", posicionDetalle: "Mediocampista",          nacionalidad: "Argentina", bandera: "🇦🇷", edad: 20, foto: `${P}/44-Lucas_Silva_c829ce056789_9b4a5541.png` },
-  // ── DELANTEROS ──
-  { numero: 9,  nombre: "Sebastián",    apellido: "Driussi",          posicion: "DELANTEROS",     posicionDetalle: "Delantero centro",       nacionalidad: "Argentina", bandera: "🇦🇷", edad: 30, foto: `${P}/9-Sebast_an_Driussi_bd878f422af9_4bc20518.png` },
-  { numero: 10, nombre: "Ángel",        apellido: "Correa",           posicion: "DELANTEROS",     posicionDetalle: "Delantero",              nacionalidad: "Argentina", bandera: "🇦🇷", edad: 31, foto: `${P}/10-Angel_Correa_3bdc609f6279_7e774bbe.png` },
-  { numero: 11, nombre: "Facundo",      apellido: "Colidio",          posicion: "DELANTEROS",     posicionDetalle: "Delantero",              nacionalidad: "Argentina", bandera: "🇦🇷", edad: 26, foto: `${P}/11-Facundo_Colidio_e4e961ebc1b1_9a97feed.png` },
-  { numero: 18, nombre: "Lucas",        apellido: "Beltrán",          posicion: "DELANTEROS",     posicionDetalle: "Delantero centro",       nacionalidad: "Argentina", bandera: "🇦🇷", edad: 25, foto: `${P}/18-Lucas_Beltr_n_b1fc7e965be6_2880836e.png` },
-  { numero: 19, nombre: "Rafael",       apellido: "Borré",            posicion: "DELANTEROS",     posicionDetalle: "Delantero centro",       nacionalidad: "Colombia",  bandera: "🇨🇴", edad: 30, foto: `${P}/19-Rafael_Borr_bcdfb1eb8a37_9d7795d8.png` },
-  { numero: 25, nombre: "Lautaro",      apellido: "Pereyra",          posicion: "DELANTEROS",     posicionDetalle: "Delantero",              nacionalidad: "Argentina", bandera: "🇦🇷", edad: 20, foto: `${P}/25-Lautaro_Pereyra_c466383f76e5_925820b9.png` },
-  { numero: 32, nombre: "Agustín",      apellido: "Ruberto",          posicion: "DELANTEROS",     posicionDetalle: "Delantero centro",       nacionalidad: "Argentina", bandera: "🇦🇷", edad: 20, foto: `${P}/32_-_Agustin_Ruberto_04c0458b1b9d_300ae6c0.png` },
-  { numero: 35, nombre: "Joaquín",      apellido: "Freitas",          posicion: "DELANTEROS",     posicionDetalle: "Delantero",              nacionalidad: "Argentina", bandera: "🇦🇷", edad: 21, foto: `${P}/35-Joaquin_Freitas_b08a06d2e552_df4ee422.png` },
-];
+type PosicionFiltro = "TODOS" | JugadorPlantel["posicion"];
+type PosicionJugador = JugadorPlantel["posicion"];
+type Jugador = JugadorPlantel;
 
 const ORDEN_POSICION: Record<PosicionJugador, number> = {
-  ARQUEROS: 0, DEFENSORES: 1, MEDIOCAMPISTAS: 2, DELANTEROS: 3,
+  ARQ: 0,
+  DEF: 1,
+  MED: 2,
+  DEL: 3,
 };
 
 const LABEL_POSICION: Record<PosicionJugador, string> = {
-  ARQUEROS: "Arqueros", DEFENSORES: "Defensores",
-  MEDIOCAMPISTAS: "Mediocampistas", DELANTEROS: "Delanteros",
+  ARQ: "Arqueros",
+  DEF: "Defensores",
+  MED: "Mediocampistas",
+  DEL: "Delanteros",
+};
+
+const DETALLE_POSICION: Record<PosicionJugador, string> = {
+  ARQ: "Arquero",
+  DEF: "Defensor",
+  MED: "Mediocampista",
+  DEL: "Delantero",
 };
 
 const FILTROS: { label: string; value: PosicionFiltro }[] = [
   { label: "Todos", value: "TODOS" },
-  { label: "Arqueros", value: "ARQUEROS" },
-  { label: "Defensores", value: "DEFENSORES" },
-  { label: "Mediocampistas", value: "MEDIOCAMPISTAS" },
-  { label: "Delanteros", value: "DELANTEROS" },
+  { label: "Arqueros", value: "ARQ" },
+  { label: "Defensores", value: "DEF" },
+  { label: "Mediocampistas", value: "MED" },
+  { label: "Delanteros", value: "DEL" },
 ];
+
+const POSICIONES: PosicionJugador[] = ["ARQ", "DEF", "MED", "DEL"];
+
+function ordenarJugadores(a: Jugador, b: Jugador): number {
+  const porPosicion = ORDEN_POSICION[a.posicion] - ORDEN_POSICION[b.posicion];
+  if (porPosicion !== 0) return porPosicion;
+
+  if (a.numero === null && b.numero !== null) return 1;
+  if (a.numero !== null && b.numero === null) return -1;
+  if (a.numero !== null && b.numero !== null && a.numero !== b.numero) {
+    return a.numero - b.numero;
+  }
+
+  return `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es");
+}
+
+function claveJugador(jugador: Jugador): string {
+  return [
+    jugador.numero ?? "sin-numero",
+    jugador.nombre,
+    jugador.apellido,
+    jugador.posicion,
+    jugador.foto,
+  ].join(":");
+}
+
+function banderaPara(nacionalidad: string): string | null {
+  const banderas: Record<string, string> = {
+    Argentina: "🇦🇷",
+    Colombia: "🇨🇴",
+    Uruguay: "🇺🇾",
+  };
+
+  return banderas[nacionalidad] ?? null;
+}
+
+function formatearFechaActualizacion(actualizadoEn: string): string {
+  const fecha = new Date(actualizadoEn);
+  if (Number.isNaN(fecha.getTime())) return actualizadoEn;
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(fecha);
+}
+
+function mensajeDeError(error: unknown): string {
+  return error instanceof Error && error.message
+    ? error.message
+    : "No pudimos cargar el plantel oficial.";
+}
 
 function PlayerCard({ jugador, index }: { jugador: Jugador; index: number }) {
   const [flipped, setFlipped] = useState(false);
@@ -112,15 +132,17 @@ function PlayerCard({ jugador, index }: { jugador: Jugador; index: number }) {
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-white/5 to-black/20">
               <span className="text-7xl font-display font-black text-white/10 select-none leading-none">
-                {jugador.numero}
+                  {jugador.numero ?? "—"}
               </span>
-              <span className="text-4xl mt-4">{jugador.bandera}</span>
+                {banderaPara(jugador.nacionalidad) && (
+                  <span className="text-4xl mt-4">{banderaPara(jugador.nacionalidad)}</span>
+                )}
             </div>
           )}
 
           <div className="absolute top-3 left-3 z-20">
             <span className="text-white/25 font-display font-black text-4xl leading-none hover:text-white/50 transition-colors">
-              {jugador.numero}
+              {jugador.numero ?? "—"}
             </span>
           </div>
 
@@ -156,7 +178,7 @@ function PlayerCard({ jugador, index }: { jugador: Jugador; index: number }) {
               {jugador.apellido}
             </p>
             <p className="text-river-red font-display font-black text-xl leading-tight mb-0.5">
-              {jugador.numero}
+              {jugador.numero ?? "—"}
             </p>
           </div>
 
@@ -166,17 +188,17 @@ function PlayerCard({ jugador, index }: { jugador: Jugador; index: number }) {
             <div>
               <p className="text-white/30 text-[9px] uppercase tracking-widest mb-0.5">Nacionalidad</p>
               <p className="text-white font-semibold text-sm flex items-center gap-1.5">
-                <span>{jugador.bandera}</span>
+                {banderaPara(jugador.nacionalidad) && <span>{banderaPara(jugador.nacionalidad)}</span>}
                 {jugador.nacionalidad}
               </p>
             </div>
             <div>
               <p className="text-white/30 text-[9px] uppercase tracking-widest mb-0.5">Posición</p>
-              <p className="text-white font-semibold text-sm">{jugador.posicionDetalle}</p>
+              <p className="text-white font-semibold text-sm">{DETALLE_POSICION[jugador.posicion]}</p>
             </div>
             <div>
-              <p className="text-white/30 text-[9px] uppercase tracking-widest mb-0.5">Edad</p>
-              <p className="text-white font-black text-2xl font-display">{jugador.edad}</p>
+              <p className="text-white/30 text-[9px] uppercase tracking-widest mb-0.5">Dorsal</p>
+              <p className="text-white font-black text-2xl font-display">{jugador.numero ?? "—"}</p>
             </div>
           </div>
 
@@ -265,6 +287,21 @@ function PonzioCard() {
 export default function Equipo() {
   const mundialActivo = useMundialMode();
   const [filtro, setFiltro] = useState<PosicionFiltro>("TODOS");
+  const {
+    data: plantel,
+    error: plantelError,
+    isError: plantelTieneError,
+    isFetching: plantelEstaCargando,
+    isLoading: plantelEstaCargandoInicial,
+    refetch: reintentarPlantel,
+  } = useGetPlantel({
+    query: {
+      queryKey: getGetPlantelQueryKey(),
+      enabled: !mundialActivo,
+      refetchOnMount: true,
+      staleTime: 5 * 60 * 1000,
+    },
+  });
 
   if (mundialActivo) {
     return (
@@ -300,19 +337,14 @@ export default function Equipo() {
     );
   }
 
+  const jugadores = plantel?.jugadores ?? [];
   const jugadoresFiltrados =
     filtro === "TODOS"
-      ? [...JUGADORES].sort(
-          (a, b) =>
-            ORDEN_POSICION[a.posicion] - ORDEN_POSICION[b.posicion] ||
-            a.numero - b.numero
-        )
-      : JUGADORES.filter((j) => j.posicion === filtro).sort(
-          (a, b) => a.numero - b.numero
-        );
+      ? [...jugadores].sort(ordenarJugadores)
+      : jugadores.filter((j) => j.posicion === filtro).sort(ordenarJugadores);
 
   const grupos = filtro === "TODOS"
-    ? (["ARQUEROS", "DEFENSORES", "MEDIOCAMPISTAS", "DELANTEROS"] as PosicionJugador[]).map((pos) => ({
+    ? POSICIONES.map((pos) => ({
         posicion: pos,
         jugadores: jugadoresFiltrados.filter((j) => j.posicion === pos),
       }))
@@ -368,7 +400,64 @@ export default function Equipo() {
       {/* Grid */}
       <div className="max-w-7xl mx-auto px-4 pt-10 pb-6">
         <AnimatePresence mode="wait">
-          {grupos ? (
+          {plantelEstaCargandoInicial ? (
+            <motion.div
+              key="cargando"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="rounded-lg border border-gris-borde bg-white p-10 text-center"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-gris-borde border-t-river-red" />
+              <p className="font-display text-lg font-bold uppercase tracking-widest text-tinta">
+                Cargando plantel oficial
+              </p>
+              <p className="mt-2 text-sm text-gris-meta">
+                Estamos buscando la última lista validada por River Plate.
+              </p>
+            </motion.div>
+          ) : plantelTieneError ? (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="rounded-lg border border-river-red/30 bg-white p-10 text-center"
+              role="alert"
+            >
+              <p className="font-display text-lg font-bold uppercase tracking-widest text-tinta">
+                No se pudo cargar el plantel
+              </p>
+              <p className="mx-auto mt-2 max-w-xl text-sm text-gris-meta">
+                {mensajeDeError(plantelError)}
+              </p>
+              <button
+                type="button"
+                onClick={() => void reintentarPlantel()}
+                disabled={plantelEstaCargando}
+                className="mt-6 inline-flex items-center justify-center rounded-md bg-river-red px-5 py-3 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-river-red/90 disabled:cursor-wait disabled:opacity-60"
+              >
+                {plantelEstaCargando ? "Reintentando…" : "Reintentar"}
+              </button>
+            </motion.div>
+          ) : jugadores.length === 0 ? (
+            <motion.div
+              key="vacio"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="rounded-lg border border-gris-borde bg-white p-10 text-center"
+            >
+              <p className="font-display text-lg font-bold uppercase tracking-widest text-tinta">
+                El plantel todavía no está disponible
+              </p>
+              <p className="mt-2 text-sm text-gris-meta">
+                La fuente oficial aún no publicó una lista validada.
+              </p>
+            </motion.div>
+          ) : grupos ? (
             /* TODOS: agrupado por posición */
             <motion.div
               key="grupos"
@@ -389,7 +478,7 @@ export default function Equipo() {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
                     {jugadores.map((jugador, i) => (
-                      <PlayerCard key={jugador.numero} jugador={jugador} index={i} />
+                      <PlayerCard key={claveJugador(jugador)} jugador={jugador} index={i} />
                     ))}
                   </div>
                 </div>
@@ -406,7 +495,7 @@ export default function Equipo() {
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4"
             >
               {jugadoresFiltrados.map((jugador, i) => (
-                <PlayerCard key={jugador.numero} jugador={jugador} index={i} />
+                <PlayerCard key={claveJugador(jugador)} jugador={jugador} index={i} />
               ))}
             </motion.div>
           )}
@@ -428,6 +517,19 @@ export default function Equipo() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-10 text-center">
+        {plantel && (
+          <p className="text-gris-meta text-xs font-mono">
+            Plantel actualizado el {formatearFechaActualizacion(plantel.actualizadoEn)} · Fuente:{" "}
+            <a
+              href={plantel.fuente}
+              target="_blank"
+              rel="noreferrer"
+              className="underline decoration-river-red/50 underline-offset-2 hover:text-tinta"
+            >
+              River Plate
+            </a>
+          </p>
+        )}
         <p className="text-gris-meta text-xs font-mono">
           Cuerpo técnico actualizado al 27 de agosto de 2026 · Fuente: comunicado oficial de River Plate
         </p>

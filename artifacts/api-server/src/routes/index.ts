@@ -24,6 +24,7 @@ import adminRouter from "./admin";
 import propuestaEventoRouter from "./propuesta-evento";
 import comentariosRouter from "./comentarios";
 import instagramImagenRouter from "./instagram-imagen";
+import plantelRouter from "./plantel";
 
 const router: IRouter = Router();
 
@@ -58,5 +59,6 @@ router.use(adminRouter);
 router.use(propuestaEventoRouter);
 router.use(comentariosRouter);
 router.use(instagramImagenRouter);
+router.use(plantelRouter);
 
 export default router;

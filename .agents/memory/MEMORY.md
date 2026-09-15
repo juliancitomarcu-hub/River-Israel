@@ -3,3 +3,4 @@
 - [SEO en SPA estático](seo-static-spa.md) — rutas dinámicas requieren proxy al API; el shell de noticias debe corresponder al entorno para no romper recursos del SPA.
 - [Telegram webhook secret no legible](telegram-webhook-secret.md) — getWebhookInfo NO devuelve secret_token; protección se infiere con URL en vivo + registro en memoria del proceso.
 - [Actualidad editorial](actualidad-editorial.md) — la autopublicación exige artículo canónico, fecha publicada ≤48 h y cuerpo real; nunca usar cuerpo técnico fijo sin verificar.
+- [Validación del plantel](official-roster-validation.md) — exigir total coherente y tamaño mínimo independiente antes de reemplazar el último plantel válido.

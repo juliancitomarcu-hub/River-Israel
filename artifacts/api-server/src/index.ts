@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { iniciarScheduler } from "./scheduler";
+import { iniciarActualizadorPlantel, iniciarScheduler } from "./scheduler";
 import { registrarWebhook, fallaReintentable, consultarWebhookInfo, type RegistroWebhookEstado } from "./lib/telegram-webhook-registro";
 import { avisarSiWebhookSinProteger, avisarWebhookRecuperado } from "./lib/avisar-webhook-sin-proteger";
 import { chequearColaUpdates } from "./lib/avisar-cola-updates";
@@ -166,6 +166,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  iniciarActualizadorPlantel();
 
   registrarWebhookTelegram()
     .catch((err) => {
