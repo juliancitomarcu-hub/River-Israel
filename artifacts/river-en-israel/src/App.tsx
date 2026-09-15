@@ -11,6 +11,7 @@ import Fixture from "@/pages/Fixture";
 import Equipo from "@/pages/Equipo";
 import Historia from "@/pages/Historia";
 import Postulacion from "@/pages/Postulacion";
+import Galeria from "@/pages/Galeria";
 import NotFound from "@/pages/not-found";
 import { VisitorAnalytics } from "@/components/VisitorAnalytics";
 
@@ -47,6 +48,7 @@ function Router() {
           <Route path="/fixture" component={Fixture} />
           <Route path="/equipo" component={Equipo} />
           <Route path="/historia" component={Historia} />
+          <Route path="/galeria" component={Galeria} />
           <Route path="/postula" component={Postulacion} />
           <Route component={NotFound} />
         </Switch>

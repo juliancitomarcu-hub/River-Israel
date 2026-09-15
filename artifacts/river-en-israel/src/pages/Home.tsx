@@ -424,6 +424,7 @@ export default function Home() {
                 <li><Link href="/historia" className="text-gris-meta hover:text-river-red transition-colors">Nuestra historia</Link></li>
                 <li><Link href="/equipo" className="text-gris-meta hover:text-river-red transition-colors">Plantel</Link></li>
                 <li><Link href="/fixture" className="text-gris-meta hover:text-river-red transition-colors">Fixture</Link></li>
+                <li><Link href="/galeria" className="text-gris-meta hover:text-river-red transition-colors">Galería</Link></li>
               </ul>
             </div>
             <div>

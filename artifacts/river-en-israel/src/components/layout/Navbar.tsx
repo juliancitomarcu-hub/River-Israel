@@ -13,6 +13,7 @@ const NAV_LINKS_RIVER: NavLink[] = [
   { name: "Historia",         href: "/historia" },
   { name: "Plantel",          href: "/equipo" },
   { name: "Fixture",          href: "/fixture" },
+  { name: "Galería",          href: "/galeria" },
   { name: "Filial",           href: "/#filial" },
 ];
 

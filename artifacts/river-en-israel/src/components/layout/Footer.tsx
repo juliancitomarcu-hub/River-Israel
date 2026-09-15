@@ -118,6 +118,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/galeria">
+                  <span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer font-semibold">
+                    Galería
+                  </span>
+                </Link>
+              </li>
+              <li>
                 <Link href="/postula">
                   <span className="text-gris-meta hover:text-river-red transition-colors cursor-pointer font-semibold">
                     Postulate
