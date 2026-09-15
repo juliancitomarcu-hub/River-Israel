@@ -304,7 +304,7 @@ const JSON_SCHEMA = {
   },
 } as const;
 
-async function pedirOpenAI(input: NewsGenerationInput): Promise<GeneratedNewsPackage> {
+async function pedirOpenAI(input: NewsGenerationInput, correction?: string): Promise<GeneratedNewsPackage> {
   asegurarOpenAIConfigurado();
   const apiKey = process.env.OPENAI_API_KEY!.trim();
 
@@ -318,7 +318,10 @@ URL DE ORIGEN (solo contexto interno, no la menciones): ${sourceUrl}
 ${input.sourceText.trim()}
 </FUENTE_INTERNA>
 
-Devolvé únicamente el objeto JSON solicitado.`;
+Devolvé únicamente el objeto JSON solicitado.
+Apuntá a 350 palabras en web_content (sin contar título, bajada ni tags).
+telegram_caption: escribí dos oraciones terminadas en punto, sin una tercera oración de CTA. Ejemplo de estructura (adaptá el hecho): "⚪🔴 River prepara una novedad que une a su gente. 🚨 Descubrí los detalles [en la web]({{ARTICLE_URL}})."
+${correction ? `La respuesta anterior fue rechazada: ${correction}. Corregí ese requisito sin inventar hechos ni rellenar con afirmaciones no sustentadas.` : ""}`;
 
   const response = await fetch(OPENAI_URL, {
     method: "POST",
@@ -378,7 +381,7 @@ export async function generarNotaEstructurada(input: NewsGenerationInput): Promi
   let ultimoError: unknown;
   for (let intento = 1; intento <= MAX_ATTEMPTS; intento++) {
     try {
-      return await pedirOpenAI(input);
+      return await pedirOpenAI(input, ultimoError instanceof Error ? ultimoError.message : undefined);
     } catch (error) {
       if (error instanceof OpenAIQuotaError) throw error;
       ultimoError = error;
