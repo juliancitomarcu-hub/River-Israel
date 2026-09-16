@@ -5,6 +5,7 @@ import { ai } from "@workspace/integrations-gemini-ai";
 import { ObjectStorageService } from "./objectStorage";
 import { validarCaption } from "./instagram-core";
 import { urlImagenSeguraAsync } from "./url-imagen-segura";
+import { logger } from "./logger";
 
 export interface NotaIG { id: number; titulo: string; contenido: string; imagenPortada?: string | null }
 const xml = (s: string) => s.replace(/[<>&"']/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
@@ -71,9 +72,14 @@ async function cargarPortada(nota: NotaIG, base: URL): Promise<Buffer | null> {
 
 async function placaEditorialFallback(nota: NotaIG, base: URL): Promise<Buffer> {
   const portada = await cargarPortada(nota, base);
-  const lienzo = portada
-    ? sharp(await sharp(portada, { limitInputPixels: 25_000_000 }).resize(1080, 1350, { fit: "cover" }).modulate({ saturation: 0.82 }).jpeg().toBuffer())
-    : sharp({ create: { width: 1080, height: 1350, channels: 3, background: ESTILO_RIVER.palette.ink } });
+  if (!portada) {
+    throw new Error("La generación editorial falló y la nota no tiene una foto apta para el respaldo");
+  }
+  const lienzo = sharp(await sharp(portada, { limitInputPixels: 25_000_000 })
+    .resize(1080, 1350, { fit: "cover" })
+    .modulate({ saturation: 0.72, brightness: 0.94 })
+    .jpeg()
+    .toBuffer());
   const lineas = lineasTitulo(nota.titulo);
   const overlay = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
     <defs>
@@ -108,8 +114,8 @@ export async function generarPlacaInstagram(nota: NotaIG): Promise<string> {
   const base = new URL(process.env.INSTAGRAM_PUBLIC_BASE_URL ?? "");
   if (base.protocol !== "https:" || base.username || base.password) throw new Error("Configurar INSTAGRAM_PUBLIC_BASE_URL como origen HTTPS público");
   try {
-    const reference = await readFile(new URL("./assets/editorial/referencia-river.png", import.meta.url)).catch(() =>
-      readFile(new URL("../../assets/editorial/referencia-river.png", import.meta.url)));
+    const reference = await readFile(new URL("./assets/editorial/referencia-river-v2.png", import.meta.url)).catch(() =>
+      readFile(new URL("../../assets/editorial/referencia-river-v2.png", import.meta.url)));
     const response = await ai.models.generateContent({
       model: process.env.EDITORIAL_IMAGE_MODEL || "gemini-2.5-flash-image",
       contents: [{ role: "user", parts: [
@@ -123,7 +129,11 @@ export async function generarPlacaInstagram(nota: NotaIG): Promise<string> {
     const jpeg = await sharp(Buffer.from(image.data, "base64"), { limitInputPixels: 25_000_000 })
       .resize(1080, 1350, { fit: "contain", background: ESTILO_RIVER.palette.ivory }).jpeg({ quality: 90 }).toBuffer();
     return subirCreativo(nota, jpeg, base);
-  } catch {
+  } catch (err) {
+    logger.warn(
+      { err, noticiaId: nota.id, estilo: ESTILO_RIVER.version },
+      "Instagram: falló la generación editorial; se usa la composición de respaldo",
+    );
     return subirCreativo(nota, await placaEditorialFallback(nota, base), base);
   }
 }

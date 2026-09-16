@@ -392,7 +392,7 @@ export default function Noticia() {
 
   useEffect(() => {
     if (!data) return;
-    const portada = data.imagenPortada;
+    const portada = data.imagenInstagram || data.imagenPortada;
     const resuelta = portada ? resolverPortada(portada) : "";
     const image = resuelta
       ? resuelta.startsWith("http")
@@ -413,8 +413,9 @@ export default function Noticia() {
 
   if (!match) return null;
 
-  const imagenUrl = data?.imagenPortada
-    ? resolverPortada(data.imagenPortada)
+  const imagenPrincipal = data?.imagenInstagram || data?.imagenPortada;
+  const imagenUrl = imagenPrincipal
+    ? resolverPortada(imagenPrincipal)
     : data
     ? IMAGENES[data.id % IMAGENES.length]
     : IMAGENES[0];
@@ -516,20 +517,6 @@ export default function Noticia() {
               </div>
               <ShareButton titulo={limpiarAsteriscos(data.titulo)} id={data.id} />
             </div>
-
-            {data.imagenInstagram && (
-              <figure className="mb-10">
-                <img
-                  src={data.imagenInstagram.startsWith("https://") ? data.imagenInstagram : `/api/storage${data.imagenInstagram}`}
-                  alt={`Ilustración editorial: ${limpiarAsteriscos(data.titulo)}`}
-                  className="w-full max-w-lg mx-auto h-auto rounded-lg"
-                  loading="lazy"
-                />
-                <figcaption className="text-center text-xs text-gray-500 mt-2">
-                  Ilustración editorial · River Plate Israel
-                </figcaption>
-              </figure>
-            )}
 
             {/* Cuerpo de la nota */}
             <div className="prose-custom space-y-6 text-justify">

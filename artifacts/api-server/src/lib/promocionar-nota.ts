@@ -29,6 +29,13 @@ export interface NotaParaPromocionar {
   tags?: string | null;
 }
 
+interface OpcionesPromocion {
+  /** La única imagen editorial ya persistida para web, Telegram e Instagram. */
+  imagenEditorialUrl?: string;
+  /** Sólo lo usa el worker después de generar y persistir el creativo. */
+  creativoListo?: boolean;
+}
+
 /**
  * Envía la nota al canal público de Telegram. Fire-and-forget:
  * llamar sin await o con .catch(() => {}).
@@ -45,7 +52,19 @@ export function normalizarCanalId(valor: string): string {
   return `@${v}`;
 }
 
-export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise<void> {
+export async function promocionarNotaEnCanal(
+  nota: NotaParaPromocionar,
+  opciones: OpcionesPromocion = {},
+): Promise<boolean> {
+  const distribucionEditorialActiva =
+    nota.categoria === "river" &&
+    process.env.INSTAGRAM_ENABLED === "true" &&
+    process.env.EDITORIAL_TELEGRAM_ENABLED === "true";
+  if (distribucionEditorialActiva && !opciones.creativoListo) {
+    logger.info({ id: nota.id }, "Telegram: promoción diferida hasta que el creativo editorial esté listo");
+    return true;
+  }
+
   const canalCrudo = process.env.TELEGRAM_CANAL_ID;
   const canal = canalCrudo ? normalizarCanalId(canalCrudo) : canalCrudo;
   const token = process.env.TELEGRAM_TOKEN;
@@ -54,7 +73,7 @@ export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise
       { canalConfigurado: Boolean(canal) },
       "promocionarNotaEnCanal: TELEGRAM_CANAL_ID no configurado, no se promociona la nota",
     );
-    return;
+    return false;
   }
 
   const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
@@ -74,10 +93,11 @@ export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise
 
   // Con foto: sendPhoto (caption máx. 1024). Sin foto: sendMessage (máx. 4096).
   let fotoUrl: string | null = null;
-  if (nota.imagenPortada) {
-    if (/^https?:\/\//.test(nota.imagenPortada)) fotoUrl = nota.imagenPortada;
-    else if (nota.imagenPortada.startsWith("/objects/")) fotoUrl = `https://${dominio}/api/storage${nota.imagenPortada}`;
-    else fotoUrl = `https://${dominio}${nota.imagenPortada}`;
+  const imagenElegida = opciones.imagenEditorialUrl ?? nota.imagenPortada;
+  if (imagenElegida) {
+    if (/^https?:\/\//.test(imagenElegida)) fotoUrl = imagenElegida;
+    else if (imagenElegida.startsWith("/objects/")) fotoUrl = `https://${dominio}/api/storage${imagenElegida}`;
+    else fotoUrl = `https://${dominio}${imagenElegida}`;
   }
 
   try {
@@ -106,15 +126,18 @@ export async function promocionarNotaEnCanal(nota: NotaParaPromocionar): Promise
 
     if (await telegramAcepto(res)) {
       logger.info({ id: nota.id, canal }, "promocionarNotaEnCanal: nota promocionada en el canal público");
+      return true;
     } else {
       const data = await res.clone().json().catch(() => null) as { description?: string } | null;
       logger.error(
         { id: nota.id, status: res.status, description: data?.description },
         "promocionarNotaEnCanal: Telegram rechazó el envío",
       );
+      return false;
     }
   } catch (err) {
     logger.error({ err, id: nota.id }, "promocionarNotaEnCanal: error enviando al canal");
+    return false;
   }
 }
 

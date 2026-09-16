@@ -1,8 +1,8 @@
 import { pool } from "@workspace/db";
 import { logger } from "./logger";
-import { credencialesTelegram } from "./telegram-cred";
 import { cuentaInstagram, graphInstagram, idInstagram, resolverEstadoContenedor, siguientePaso } from "./instagram-core";
 import { generarCaptionInstagram, generarPlacaInstagram, type NotaIG } from "./instagram-editorial";
+import { promocionarNotaEnCanal } from "./promocionar-nota";
 
 interface Job {
   noticia_id: number; titulo: string; contenido: string; imagen_portada: string | null; estado: string; caption: string | null; imagen_url: string | null;
@@ -93,21 +93,23 @@ export async function procesarInstagram(): Promise<void> {
         // One stored asset serves web, Telegram and Instagram.
         const current = await client.query("UPDATE noticias SET imagen_instagram = $2 WHERE id = $1 AND publicada = true AND categoria = 'river' RETURNING id", [job.noticia_id, job.imagen_url]);
         if (!current.rows.length) { await save({ estado: "cancelada" }); return; }
-        const telegram = process.env.EDITORIAL_TELEGRAM_ENABLED === "true" ? credencialesTelegram("river") : null;
-        if (telegram && job.telegram_estado === "pendiente") {
+        const telegramEditorialActivo = process.env.EDITORIAL_TELEGRAM_ENABLED === "true";
+        if (telegramEditorialActivo && job.telegram_estado === "pendiente") {
           // Telegram has no idempotency key. Persist intent; never blindly retry an uncertain send.
           await save({ telegram_estado: "enviando" });
           try {
-            const base = new URL(process.env.INSTAGRAM_PUBLIC_BASE_URL!);
-            const response = await fetch(new URL(`https://api.telegram.org/bot${telegram.token}/sendPhoto`), {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ chat_id: telegram.chatId, photo: job.imagen_url,
-                caption: [...job.titulo].slice(0, 250).join("") + "\n\nLeé la nota: " + new URL(`/noticia/${job.noticia_id}`, base.origin).href }),
-              signal: AbortSignal.timeout(30_000), redirect: "error",
+            const enviada = await promocionarNotaEnCanal({
+              id: job.noticia_id,
+              titulo: job.titulo,
+              contenido: job.contenido,
+              categoria: "river",
+              imagenPortada: job.imagen_url,
+            }, {
+              imagenEditorialUrl: job.imagen_url!,
+              creativoListo: true,
             });
-            const result = await response.json() as { ok?: boolean; result?: { message_id?: number } };
-            if (!response.ok || !result.ok || !Number.isSafeInteger(result.result?.message_id)) throw new Error("Telegram no confirmó la entrega");
-            await save({ telegram_estado: "enviada", telegram_message_id: String(result.result!.message_id) });
+            if (!enviada) throw new Error("Telegram no confirmó la entrega editorial");
+            await save({ telegram_estado: "enviada" });
           } catch {
             await save({ telegram_estado: "revision" });
             logger.warn({ noticiaId: job.noticia_id }, "Creativo Telegram: revisar entrega, sin reenvío automático");

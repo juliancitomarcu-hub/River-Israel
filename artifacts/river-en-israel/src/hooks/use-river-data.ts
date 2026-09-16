@@ -37,6 +37,7 @@ interface NoticiaPublicada {
   tags: string;
   fuente: string;
   imagenPortada?: string;
+  imagenInstagram?: string;
   createdAt: string;
 }
 
@@ -109,8 +110,9 @@ function noticiaANewsItem(n: NoticiaPublicada): NewsItem {
     "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=2070&auto=format&fit=crop",
   ];
 
-  const imageUrl = n.imagenPortada
-    ? resolverPortada(n.imagenPortada)
+  const imagenEditorial = n.imagenInstagram || n.imagenPortada;
+  const imageUrl = imagenEditorial
+    ? resolverPortada(imagenEditorial)
     : IMAGENES[n.id % IMAGENES.length];
 
   return {

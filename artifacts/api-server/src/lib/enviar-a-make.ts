@@ -73,6 +73,10 @@ export async function enviarNotaAMakeConfirmado(
 
 /** Keep publication independent of Make, while recording failures explicitly. */
 export function enviarNotaAMake(nota: NotaParaMake): void {
+  if (nota.categoria === "river" && process.env.INSTAGRAM_ENABLED === "true") {
+    logger.info({ notaId: nota.id }, "Make: envío omitido; la publicación oficial unificada está activa");
+    return;
+  }
   if (!process.env.WEBHOOK_REDES_URL?.trim()) {
     logger.warn({ notaId: nota.id }, "Make: WEBHOOK_REDES_URL no configurada, envío omitido");
     return;
