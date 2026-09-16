@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { iniciarScheduler } from "./scheduler";
+import { iniciarInstagram } from "./lib/instagram-worker";
 
 const rawPort = process.env["PORT"];
 
@@ -86,6 +87,7 @@ app.listen(port, (err) => {
 
   if (esProduccion) {
     iniciarScheduler();
+    iniciarInstagram();
   } else {
     logger.info("Modo desarrollo: scheduler automático desactivado (solo corre en producción)");
   }

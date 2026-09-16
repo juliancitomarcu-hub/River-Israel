@@ -133,11 +133,13 @@ export class ObjectStorageService {
     const fullPath = `${privateObjectDir}/${subPath}`;
     const { bucketName, objectName } = parseObjectPath(fullPath);
     const signedUrl = await signObjectURL({ bucketName, objectName, method: "PUT", ttlSec: 900 });
-    await fetch(signedUrl, {
+    const upload = await fetch(signedUrl, {
       method: "PUT",
       headers: { "Content-Type": contentType },
       body: buffer,
+      signal: AbortSignal.timeout(30_000),
     });
+    if (!upload.ok) throw new Error(`Object storage upload failed: HTTP ${upload.status}`);
     return `/objects/${subPath}`;
   }
 

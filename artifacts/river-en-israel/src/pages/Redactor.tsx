@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import InstagramPublicaciones from "@/components/InstagramPublicaciones";
 
 type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "publicaciones-libres-seleccion" | "historia" | "postulantes" | "comentarios" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
 
@@ -2278,6 +2279,7 @@ export default function Redactor() {
         {/* ── MIS PUBLICACIONES ─────────────────────────────────────────── */}
         {tab === "publicaciones" && (
           <div className="space-y-4">
+            <InstagramPublicaciones />
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-display text-xl font-bold text-river-black">Noticias publicadas</h2>
               <button
