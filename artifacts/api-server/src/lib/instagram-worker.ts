@@ -5,7 +5,7 @@ import { cuentaInstagram, graphInstagram, idInstagram, resolverEstadoContenedor,
 import { generarCaptionInstagram, generarPlacaInstagram, type NotaIG } from "./instagram-editorial";
 
 interface Job {
-  noticia_id: number; titulo: string; contenido: string; estado: string; caption: string | null; imagen_url: string | null;
+  noticia_id: number; titulo: string; contenido: string; imagen_portada: string | null; estado: string; caption: string | null; imagen_url: string | null;
   cuenta_id: string | null; container_id: string | null; media_id: string | null;
   intentos: number; publicada: boolean; categoria_actual: string;
   telegram_estado: string;
@@ -66,7 +66,7 @@ export async function procesarInstagram(): Promise<void> {
   try {
     locked = (await client.query("SELECT pg_try_advisory_lock(73191626) AS locked")).rows[0].locked;
     if (!locked) return;
-    const result = await client.query<Job>(`SELECT j.*, n.titulo, n.contenido, n.publicada, n.categoria AS categoria_actual
+    const result = await client.query<Job>(`SELECT j.*, n.titulo, n.contenido, n.imagen_portada, n.publicada, n.categoria AS categoria_actual
       FROM instagram_publicaciones j JOIN noticias n ON n.id = j.noticia_id
       WHERE j.categoria = 'river' AND j.created_at >= $1 AND j.next_attempt_at <= now()
         AND j.estado IN ('pendiente', 'preparada', 'publicando')
@@ -87,7 +87,7 @@ export async function procesarInstagram(): Promise<void> {
         await save({ estado: "cancelada", error: "La nota fue retirada o no pertenece a River" }); return;
       }
       if (siguientePaso(job) === "crear") {
-        const nota: NotaIG = { id: job.noticia_id, titulo: job.titulo, contenido: job.contenido };
+        const nota: NotaIG = { id: job.noticia_id, titulo: job.titulo, contenido: job.contenido, imagenPortada: job.imagen_portada };
         if (!job.caption) await save({ caption: await generarCaptionInstagram(nota) });
         if (!job.imagen_url) await save({ imagen_url: await generarPlacaInstagram(nota) });
         // One stored asset serves web, Telegram and Instagram.
