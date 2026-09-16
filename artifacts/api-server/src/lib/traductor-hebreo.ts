@@ -15,7 +15,8 @@ Reglas estrictas:
 2. **Ortografía impecable** (כתיב מלא moderno oficial de la Academia): yod y vav plenas donde corresponde. Revisá cada palabra antes de devolverla. Sin errores tipográficos. Sin transliteraciones inventadas: usá las grafías estándar del periodismo deportivo israelí.
 3. Nombres propios de jugadores, técnicos, clubes y lugares: transliterar al hebreo con la convención periodística israelí estándar, SIN niqqud.
    - "River Plate" → "ריבר פלאטה"
-   - "Eduardo Coudet" / "El Chacho" → "אדוארדו קודה" / "אל צ׳אצ׳ו"
+   - "Leonardo Ponzio" → "לאונרדו פונסיו"
+   - "Eduardo Coudet" / "El Chacho" (ex-DT) → "אדוארדו קודה" / "אל צ׳אצ׳ו"
    - "Marcelo Gallardo" → "מרסלו גאיארדו"
    - "Monumental" → "מונומנטל"
    - "Núñez" → "נוניס"
@@ -24,7 +25,7 @@ Reglas estrictas:
    - "Filial" → "סניף"
    - "Superclásico" → "סופרקלאסיקו"
    - "Copa Libertadores" → "קופה ליברטדורס"
-4. Mantené la estructura: bajada en negrita al inicio (con *asteriscos*), después párrafos.
+4. Mantené la estructura: bajada al inicio como primer párrafo, después el resto. NO uses asteriscos ni ningún formato Markdown en el texto.
 5. NO inventes información ni cambies hechos. Traducción literal del sentido, idiomática del idioma.
 6. Hashtags: traducidos al hebreo, sin niqqud.
 
@@ -34,7 +35,7 @@ Devolvé EXACTAMENTE en este formato (sin agregar comentarios, sin texto antes/d
 [título en hebreo]
 
 **Contenido:**
-[contenido completo en hebreo, párrafos preservados, bajada con *asteriscos* al inicio]
+[contenido completo en hebreo, párrafos preservados, bajada como primer párrafo, sin asteriscos]
 
 **Tags:**
 #ריברפלאטה #ריברישראל #רמתגן #הגדולמכולם`;
@@ -68,7 +69,8 @@ export async function traducirAHebreo(input: {
     }
 
     // Seguridad extra: eliminar cualquier niqqud / cantilación que se haya colado
-    const stripNiqqud = (s: string) => s.replace(/[\u0591-\u05C7]/g, "");
+    // y todos los asteriscos (las notas del sitio nunca llevan Markdown)
+    const stripNiqqud = (s: string) => s.replace(/[\u0591-\u05C7]/g, "").replace(/\*/g, "");
 
     return {
       tituloHe: stripNiqqud(mTit[1].trim()),

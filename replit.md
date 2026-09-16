@@ -119,11 +119,42 @@ Tabs: Redactor IA | Mis publicaciones | Historia | Postulantes | Fotos de Galer�
 - IST (invierno israelí): noviembre → marzo → UTC+2
 - Promiedos devuelve `start_time` en UTC-4; se suma +4h para obtener UTC, luego offset Israel
 
+### Sin asteriscos en las notas
+- Las notas publicadas nunca contienen `*`: `lib/limpiar-asteriscos.ts` (`limpiarNota`) se aplica en todos los `parsearResultado` (scheduler, publicar, redactor), en publicación libre, en la edición vía Telegram y como guardarraíl SQL al publicar desde el botón del bot; el traductor hebreo también los elimina. El frontend además los quita al renderizar (cubre notas viejas de producción).
+
 ### Prompt IA Redactor
 - Módulo compartido: `artifacts/api-server/src/lib/prompt-maestro.ts`
 - Usado tanto por `scheduler.ts` como por `routes/redactor.ts`
 - 6 secciones obligatorias: EL IMPACTO, ANÁLISIS TÁCTICO, LA MÍSTICA, CITAS Y CONTEXTO, PREGUNTAS, LA SENTENCIA
-- DT actual: Eduardo Coudet. Gallardo solo como referencia histórica.
+- DT interino actual: Leonardo Ponzio (comunicado oficial del 27/08/2026). Coudet, Gallardo y Demichelis solo como referencias históricas.
+
+### Estado persistente en DB (`app_estado`)
+- Tabla `app_estado` (clave PK, valor jsonb): guarda `scheduler_state` (rotación de fuentes, categoriaFlip, urlsProcesadas) y `redactor_settings`. Antes vivían en JSON locales que producción borraba en cada reinicio → la rotación siempre arrancaba en "bolavip" y no se publicaba nada.
+- Helper: `artifacts/api-server/src/lib/app-estado.ts` (`leerEstadoApp`/`guardarEstadoApp`). Redactor settings usa cache en memoria hidratado con `initRedactorSettings()` al boot (antes de arrancar el scheduler).
+- Healthcheck del deployment: `GET /api` responde 200 (handler raíz en `routes/index.ts`); sin él, el server se reiniciaba cada ~40 min.
+- El ciclo del scheduler ahora recorre todas las fuentes (empezando por la del turno) hasta encontrar una noticia nueva; timeouts de scraping no matan el ciclo. Con `fuenteOverride` sigue siendo un solo intento.
+
+### Autopublicación (scheduler)
+- El ciclo periódico (cada 2h, solo en producción) corre en modo automático: publica la nota directamente (`publicada:true`) y el bot de Telegram envía solo un FYI con botón "Editar en Redactor".
+- **La Scaloneta está oculta**: el ciclo periódico publica SOLO categoría "river" (web, Telegram, Instagram). "seleccion" queda solo para disparos manuales desde el panel/trigger. En el frontend, `/scaloneta` y `/mundial/*` redirigen a `/`.
+- Foto de portada: la imagen scrapeada del artículo se descarga (validación SSRF + content-type) y se sube a object storage (`/objects/portadas/...`). **Sin foto real NO hay autopublicación**: la nota se guarda como pendiente y llega a Telegram con botones Publicar/Editar y aviso "sin foto". La foto de respaldo de galería solo aplica en flujo manual/pendiente.
+- Prompt maestro incluye el plantel oficial completo (riverplate.com, julio 2026); arquero titular: Santiago Beltrán. González Pirez nunca debe mencionarse como arquero ni jugador actual.
+- Promoción automática: cada nota publicada (autopublicación, Redactor o botón Publicar del bot) se postea al canal público de Telegram (`TELEGRAM_CANAL_ID`, el bot debe ser admin) con foto, extracto, fuente y botón "Leer en riverplateisrael.com"; si la nota es previa de partido se agrega tarjeta "⏰ Próximo partido" con datos de `/api/partido-proximo` (`src/lib/promocionar-nota.ts`).
+- Open Graph dinámico por nota: `/noticia/:id` se enruta al api-server (paths del artifact.toml) y `src/og-noticia.ts` sirve el shell del SPA con og:title/og:image/og:description de la nota → vista previa correcta en WhatsApp/redes.
+- `resolverPortada()` en `use-river-data.ts` resuelve los 3 formatos de portada: `/objects/` → `/api/storage`, `/images/` → BASE_URL, `http(s)` externas tal cual.
+
+### Dedupe anti-repetidos (scheduler)
+- URL canónica normalizada (`normalizarUrl`: sin hash/utm/fbclid/trailing slash, lowercase) guardada en `noticias.url_fuente` con índice único parcial (`url_fuente <> ''`); insert usa `onConflictDoNothing()`.
+- Chequeos antes de elegir candidata: estado en memoria (`urlsProcesadas`, cap 1000) + `urlYaEnDB()` contra todo el historial + título heurístico (30 días, 2 palabras distintivas coincidentes por raíz, genéricas como "river"/"argentina" excluidas, compara contra título IA y título original scrapeado).
+
+### Instagram vía Make.com
+- `lib/enviar-a-make.ts` → `enviarNotaAMake(nota)`: POST fire-and-forget al webhook de Make (`MAKE_WEBHOOK_URL` env, header `x-make-apikey` desde `MAKE_API_KEY` — el webhook lo exige). Payload: id, titulo, contenido, caption listo para IG (título + primer párrafo + link + tags, cap ~1800), tags, categoria, fuente, urlNota, imagen absoluta (`/objects/` → `/api/storage`, `/images/` → dominio, http externa tal cual).
+- Se dispara en todos los caminos de publicación: dentro de `notificarNotaPublicada` (redactor, edición que publica, publicación libre) + llamada directa en telegram-webhook callback `publicar_` y en la autopublicación del scheduler.
+- Imagen para IG: `GET /api/instagram-imagen/:id` (routes/instagram-imagen.ts) sirve la portada procesada con sharp — recorte 4:5 (1080×1350, `position: attention`), JPEG q80, cache en memoria (50 entradas). Origen: `/objects/` vía object storage, `/images/` vía dominio propio (localhost:80 en dev), http externa con fetch (timeout 15s, valida content-type image/*). `enviarNotaAMake` manda esta URL como `imagen` cuando la nota tiene portada. `sharp` está en `external` del build esbuild.
+
+### Avisos de Telegram al publicar
+- `lib/notificar-publicacion.ts` → `notificarNotaPublicada(nota)`: aviso fire-and-forget con botón "Ver la nota" (`https://{TELEGRAM_WEBHOOK_DOMAIN}/noticia/{id}`), bot según categoría (river/selección), Markdown escapado.
+- Todos los caminos de publicación avisan: redactor (publicar-noticia), edición que publica (noticia-pendiente, solo si pasa a publicada), publicación libre, botón Publicar del bot (edita mensaje o envía fallback) y autopublicación del scheduler (FYI propio con botones Ver/Editar).
 
 ### API (`artifacts/api-server`)
 Rutas relevantes:
@@ -135,6 +166,7 @@ Rutas relevantes:
 - `POST /api/postular-redactor` — enviar postulación (texto + archivo)
 - `POST /api/publicar/:id` — publicar postulación
 - Rutas de scraping, redacción IA, Telegram webhook, etc.
+- `GET/PUT /api/redactor-settings` — configuración del panel (hora resumen, TTL links de resumen en horas, TTL links de edición por nota en minutos `linkEdicionTtlMinutos` 5–1440, secciones del resumen)
 
 ### DB Schema
 - `noticiasTable` — noticias + postulaciones (fuente.startsWith("Postulación"))

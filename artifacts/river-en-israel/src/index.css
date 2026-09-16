@@ -1,38 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Oswald', sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Bebas Neue', Impact, sans-serif;
+  --font-mono: 'DM Mono', 'Courier New', monospace;
 
-  --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(0 0% 9%);
-  
-  --color-river-red: hsl(0 100% 40%);
-  --color-river-red-hover: hsl(0 100% 32%);
-  --color-river-black: hsl(0 0% 10%);
-  --color-river-gray: hsl(0 0% 96%);
+  /* ── Paleta editorial: papel de diario, tinta negra, rojo River ── */
+  --color-papel: #FAFAF8;
+  --color-tinta: #0A0A0A;
+  --color-river-red: #CC0000;
+  --color-river-red-hover: #A30000;
+  --color-gris-borde: #E5E5E3;
+  --color-gris-meta: #666666;
+  --color-gris-suave: #F5F5F3;
 
-  /* ── Paleta Mundial / Selección Argentina ── */
+  /* ── Aliases para uso directo en clases Tailwind ── */
+  --color-river-black: #0A0A0A;
+
+  --color-background: var(--color-papel);
+  --color-foreground: var(--color-tinta);
+  --color-primary: var(--color-river-red);
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: var(--color-tinta);
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: var(--color-gris-suave);
+  --color-muted-foreground: var(--color-gris-meta);
+  --color-border: var(--color-gris-borde);
+  --color-card: #FFFFFF;
+  --color-card-foreground: var(--color-tinta);
+
+  /* ── Paleta Mundial / Selección Argentina (preservada) ── */
   --color-arg-celeste: #74ACDF;
   --color-arg-celeste-hover: #5B95C9;
   --color-arg-celeste-dark: #4A82B7;
   --color-arg-dorado: #F1B82D;
   --color-arg-dorado-hover: #D9A21A;
   --color-arg-azul-noche: #0a1628;
-
-  --color-primary: hsl(0 100% 40%);
-  --color-primary-foreground: hsl(0 0% 100%);
-  
-  --color-secondary: hsl(0 0% 10%);
-  --color-secondary-foreground: hsl(0 0% 100%);
-  
-  --color-muted: hsl(0 0% 96%);
-  --color-muted-foreground: hsl(0 0% 40%);
-  
-  --color-border: hsl(0 0% 90%);
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(0 0% 9%);
 }
 
 html, body {
@@ -41,17 +45,26 @@ html, body {
 }
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 9%;
+  --background: 42 5% 98%;
+  --foreground: 0 0% 4%;
   --primary: 0 100% 40%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 10%;
+  --secondary: 0 0% 4%;
   --secondary-foreground: 0 0% 100%;
-  --muted: 0 0% 96%;
+  --muted: 40 5% 96%;
   --muted-foreground: 0 0% 40%;
-  --border: 0 0% 90%;
+  --border: 40 5% 90%;
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 9%;
+  --card-foreground: 0 0% 4%;
+  --accent: 0 100% 40%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 0 100% 40%;
+  --radius: 0.5rem;
+  --input: 40 5% 90%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 4%;
 }
 
 .dark {
@@ -66,11 +79,19 @@ html, body {
   --border: 0 0% 20%;
   --card: 0 0% 8%;
   --card-foreground: 0 0% 98%;
+  --accent: 0 100% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 0 100% 45%;
+  --input: 0 0% 20%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 98%;
 }
 
 @layer base {
   body {
-    @apply bg-background text-foreground antialiased font-sans;
+    @apply bg-[#FAFAF8] text-tinta antialiased font-sans;
     scroll-behavior: smooth;
   }
 
@@ -87,22 +108,22 @@ html, body {
         #F1B82D 270deg, #F1B82D 360deg);
     box-shadow: 0 0 16px rgba(241, 184, 45, 0.5);
   }
-  html[data-theme="mundial"] .escudo-river::after {
-    content: "🇦🇷";
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    font-size: 14px;
-    line-height: 1;
-    background: #0a1628;
-    border-radius: 9999px;
-    padding: 1px 3px;
-    border: 1px solid #F1B82D;
-  }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    @apply uppercase tracking-tight;
+    @apply uppercase tracking-tight font-normal;
+  }
+
+  /* ── Progreso de lectura (artículos) ── */
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--color-river-red);
+    z-index: 9999;
+    transform-origin: left;
+    transition: transform 0.1s ease-out;
   }
 }
 
@@ -125,22 +146,22 @@ html, body {
     background: linear-gradient(135deg, hsl(0 0% 10%) 40%, rgba(204,0,0,1) 40%, rgba(204,0,0,1) 60%, hsl(0 0% 10%) 60%);
   }
 
-  /* Custom scrollbar for a polished look */
+  /* ── Scrollbar editorial ── */
   ::-webkit-scrollbar {
-    width: 10px;
+    width: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
+    background: #FAFAF8;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground));
-    border-radius: 5px;
+    background: #E5E5E3;
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary));
+    background: #CC0000;
   }
 
-  /* ─── Mundial · animaciones y utilidades cinematográficas ─── */
+  /* ── Mundial · animaciones y utilidades cinematográficas ── */
   @keyframes spin-slow {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
@@ -181,5 +202,48 @@ html, body {
       0 2px 0 rgba(0,0,0,0.35),
       0 10px 30px rgba(116,172,223,0.35),
       0 0 60px rgba(241,184,45,0.25);
+  }
+
+  /* ── Tinta de diario: efecto de impresión ── */
+  .newspaper-texture {
+    position: relative;
+  }
+  .newspaper-texture::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.01) 2px,
+        rgba(0,0,0,0.01) 4px
+      );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── Animación de entrada para las notas ── */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out;
+  }
+
+  /* ── Borde rojo editorial (nota destacada) ── */
+  .border-editorial-red {
+    border-top: 4px solid #CC0000;
   }
 }

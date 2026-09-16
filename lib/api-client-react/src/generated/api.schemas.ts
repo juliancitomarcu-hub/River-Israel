@@ -5,6 +5,36 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type JugadorPlantelPosicion =
+  (typeof JugadorPlantelPosicion)[keyof typeof JugadorPlantelPosicion];
+
+export const JugadorPlantelPosicion = {
+  ARQ: "ARQ",
+  DEF: "DEF",
+  MED: "MED",
+  DEL: "DEL",
+} as const;
+
+export interface JugadorPlantel {
+  /** @nullable */
+  numero: number | null;
+  nombre: string;
+  apellido: string;
+  posicion: JugadorPlantelPosicion;
+  nacionalidad: string;
+  foto: string;
+}
+
+export interface Plantel {
+  jugadores: JugadorPlantel[];
+  actualizadoEn: string;
+  fuente: string;
+}
+
+export interface PlantelUnavailable {
+  error: string;
+}
+
 export interface HealthStatus {
   status: string;
 }

@@ -1,15 +1,28 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
   Send, Search, ExternalLink, RefreshCw, ChevronDown, Globe, Pencil, X, ImageIcon, Upload, Trash2,
-  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock, MessageCircle
+  BookOpen, CalendarDays, AlertTriangle, Wand2, Trophy, Inbox, Mic, Video, Heart, ChevronRight, CheckCircle2, XCircle, Eye, Play, Users, Download, Languages, Clock, MessageCircle, Loader2, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { resolverPortada } from "@/hooks/use-river-data";
 import { Textarea } from "@/components/ui/textarea";
 import InstagramPublicaciones from "@/components/InstagramPublicaciones";
 
 type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "publicaciones-libres-seleccion" | "historia" | "postulantes" | "comentarios" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
+
+function BadgePendientes({ cantidad }: { cantidad?: number }) {
+  if (!cantidad || cantidad <= 0) return null;
+  return (
+    <span
+      aria-label={`${cantidad} pendientes`}
+      className="shrink-0 rounded-full bg-river-red text-white border border-white min-w-5 px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums text-center"
+    >
+      {cantidad}
+    </span>
+  );
+}
 
 interface ComentarioAdmin {
   id: number;
@@ -104,6 +117,37 @@ interface HitoEdit {
 }
 type Estado = "idle" | "procesando" | "listo" | "error";
 type EstadoTelegram = "idle" | "enviando" | "enviado" | "error";
+
+interface EstadoBot {
+  categoria: "river" | "seleccion";
+  marca: string;
+  configurado: boolean;
+  faltaToken: boolean;
+  faltaChat: boolean;
+  chatInvalido: boolean;
+}
+interface EstadoBots {
+  river: EstadoBot;
+  seleccion: EstadoBot;
+}
+interface WebhookEstado {
+  categoria: "river" | "seleccion";
+  consultaOk: boolean;
+  errorConsulta: string | null;
+  registrado: boolean;
+  url: string | null;
+  urlEsperada: string | null;
+  urlCoincide: boolean;
+  pendingUpdateCount: number | null;
+  ultimoError: string | null;
+  ultimoErrorFecha: number | null;
+  registradoConSecret: boolean;
+  protegido: boolean;
+}
+interface WebhookEstados {
+  river: WebhookEstado;
+  seleccion: WebhookEstado;
+}
 type EstadoPublicar = "idle" | "publicando" | "publicado" | "error";
 type FuenteNoticias = "google" | "tyc" | "ole" | "infobae" | "clarin" | "lanacion" | "bolavip" | "as" | "superdeportivo";
 
@@ -938,6 +982,8 @@ export default function Redactor() {
       const nuevoExp = typeof data.expiresAt === "number" ? data.expiresAt : null;
       guardarExpiracion(nuevoExp);
       setNow(Date.now());
+      // La renovación puede cambiar la foto de sesiones vivas → refrescar.
+      cargarSesionesActivas();
     } catch {
       setErrorRenovar("Error de conexión");
     } finally {
@@ -954,8 +1000,164 @@ export default function Redactor() {
       credentials: "same-origin",
     }).catch(() => { /* ignore */ });
   };
+
+  // Cantidad de sesiones admin abiertas (en cualquier dispositivo). Se muestra
+  // al lado del botón "salir de todos" para dar contexto antes de cerrarlas.
+  const [sesionesActivas, setSesionesActivas] = useState<number | null>(null);
+  const cargarSesionesActivas = async () => {
+    try {
+      const res = await fetch("/api/admin/sessions/count", {
+        credentials: "same-origin",
+      });
+      if (!res.ok) return;
+      const data = await res.json() as { count?: number };
+      if (typeof data.count === "number") setSesionesActivas(data.count);
+    } catch { /* ignore — dato informativo */ }
+  };
+
+  useEffect(() => {
+    if (authStatus !== "ok") {
+      setSesionesActivas(null);
+      return;
+    }
+    cargarSesionesActivas();
+    // Refresco periódico mientras el panel está abierto: si alguien abre o
+    // cierra sesión en otro dispositivo, el contador se mantiene al día.
+    const id = window.setInterval(() => cargarSesionesActivas(), 30_000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus]);
+
+  // Detalle de cada sesión admin viva (popover al tocar el contador): creada
+  // hace X, caduca en Y, y si es "esta" sesión. El endpoint nunca expone tokens.
+  type SesionAdmin = { sessionId: string; createdAt: number; expiresAt: number; actual: boolean };
+  const [detalleSesiones, setDetalleSesiones] = useState<SesionAdmin[] | null>(null);
+  const [mostrarSesiones, setMostrarSesiones] = useState(false);
+  const [cargandoSesiones, setCargandoSesiones] = useState(false);
+  const [errorSesiones, setErrorSesiones] = useState("");
+  const [cerrandoSesionId, setCerrandoSesionId] = useState<string | null>(null);
+  const sesionesRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!mostrarSesiones) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (sesionesRef.current && !sesionesRef.current.contains(e.target as Node)) {
+        setMostrarSesiones(false);
+      }
+    };
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMostrarSesiones(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [mostrarSesiones]);
+
+  const cargarDetalleSesiones = useCallback(async () => {
+    setCargandoSesiones(true);
+    setErrorSesiones("");
+    try {
+      const res = await fetch("/api/admin/sessions", {
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        setErrorSesiones("No se pudo cargar el detalle");
+        return;
+      }
+      const data = await res.json() as { sesiones?: SesionAdmin[] };
+      if (Array.isArray(data.sesiones)) {
+        setDetalleSesiones(data.sesiones);
+        setSesionesActivas(data.sesiones.length);
+      }
+    } catch {
+      setErrorSesiones("Error de conexión");
+    } finally {
+      setCargandoSesiones(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mostrarSesiones || authStatus !== "ok") return;
+    const id = window.setInterval(() => { void cargarDetalleSesiones(); }, 30_000);
+    return () => window.clearInterval(id);
+  }, [mostrarSesiones, authStatus, cargarDetalleSesiones]);
+
+  const toggleSesiones = () => {
+    const abrir = !mostrarSesiones;
+    setMostrarSesiones(abrir);
+    if (abrir) cargarDetalleSesiones();
+  };
+
+  const cerrarSesion = async (sessionId: string) => {
+    setCerrandoSesionId(sessionId);
+    try {
+      const res = await fetch(`/api/admin/sessions/${sessionId}/revoke`, {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        const data = await res.json() as { ok: boolean; actual: boolean };
+        if (!data.ok) return;
+        if (data.actual) {
+          limpiarSesion();
+          setAuthStatus("needed");
+          setMostrarSesiones(false);
+          setDetalleSesiones(null);
+          setSesionesActivas(null);
+          return;
+        }
+        // Eliminar del listado local y decrementar el contador.
+        setDetalleSesiones(prev => prev?.filter(s => s.sessionId !== sessionId) ?? null);
+        setSesionesActivas(prev => (prev !== null ? Math.max(0, prev - 1) : null));
+      }
+    } catch { /* ignore */ } finally {
+      setCerrandoSesionId(null);
+    }
+  };
+
+  // "hace 5 min", "hace 2 h", "hace 1 día" — para el popover de sesiones.
+  const tiempoRelativo = (ms: number): string => {
+    const min = Math.max(0, Math.round(ms / 60000));
+    if (min < 1) return "menos de 1 min";
+    if (min < 60) return `${min} min`;
+    const horas = Math.floor(min / 60);
+    if (horas < 24) {
+      const resto = min % 60;
+      return resto > 0 ? `${horas} h ${resto} min` : `${horas} h`;
+    }
+    const dias = Math.floor(horas / 24);
+    return `${dias} día${dias === 1 ? "" : "s"}`;
+  };
+
+  const [cerrandoTodo, setCerrandoTodo] = useState(false);
+  const handleLogoutAll = async () => {
+    if (cerrandoTodo) return;
+    const detalle = sesionesActivas !== null && sesionesActivas > 0
+      ? ` Ahora hay ${sesionesActivas === 1 ? "1 sesión abierta" : `${sesionesActivas} sesiones abiertas`}.`
+      : "";
+    const ok = window.confirm(
+      `Esto cerrará la sesión del panel en TODOS los dispositivos (incluido este).${detalle} Vas a tener que volver a ingresar la contraseña. ¿Continuar?`,
+    );
+    if (!ok) return;
+    setCerrandoTodo(true);
+    try {
+      await fetch("/api/admin/logout-all", {
+        method: "POST",
+        credentials: "same-origin",
+      }).catch(() => { /* best-effort */ });
+    } finally {
+      setCerrandoTodo(false);
+      limpiarSesion();
+      setAuthStatus("needed");
+      setLoginError("Cerraste la sesión en todos los dispositivos. Volvé a ingresar la contraseña.");
+    }
+  };
   const [textoOriginal, setTextoOriginal] = useState("");
   const [resultado, setResultado] = useState("");
+  const [telegramCaption, setTelegramCaption] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
   const [copiado, setCopiado] = useState(false);
   const [telegramEstado, setTelegramEstado] = useState<EstadoTelegram>("idle");
@@ -967,6 +1169,15 @@ export default function Redactor() {
   const [errorBusqueda, setErrorBusqueda] = useState("");
   const [fuente, setFuente] = useState<FuenteNoticias>("tyc");
   const [categoria, setCategoria] = useState<"river" | "seleccion">("river");
+  const [estadoBots, setEstadoBots] = useState<EstadoBots | null>(null);
+  const [probandoBot, setProbandoBot] = useState<"river" | "seleccion" | null>(null);
+  const [probandoBotFoto, setProbandoBotFoto] = useState(false);
+  const [resultadoPrueba, setResultadoPrueba] = useState<Record<"river" | "seleccion", { ok: boolean; msg: string } | undefined>>({ river: undefined, seleccion: undefined });
+  const [webhookEstados, setWebhookEstados] = useState<WebhookEstados | null>(null);
+  const [webhookCargando, setWebhookCargando] = useState(false);
+  const [reRegistrando, setReRegistrando] = useState<"river" | "seleccion" | null>(null);
+  const [descartandoPendientes, setDescartandoPendientes] = useState<"river" | "seleccion" | null>(null);
+  const [reRegistroMsg, setReRegistroMsg] = useState<Record<"river" | "seleccion", { ok: boolean; msg: string } | undefined>>({ river: undefined, seleccion: undefined });
   const resultadoRef = useRef<HTMLDivElement>(null);
   const [editando, setEditando] = useState(false);
   const [resultadoEditado, setResultadoEditado] = useState("");
@@ -1083,6 +1294,40 @@ export default function Redactor() {
   const [resumenHebreoHora, setResumenHebreoHora] = useState<string>("");
   const [guardandoHoraResumen, setGuardandoHoraResumen] = useState(false);
   const [mensajeHoraResumen, setMensajeHoraResumen] = useState("");
+  // Duración (en horas) de los links de los avisos "de resumen" del bot.
+  const [linkResumenTtlHoras, setLinkResumenTtlHoras] = useState<string>("");
+  const [guardandoTtlResumen, setGuardandoTtlResumen] = useState(false);
+  const [mensajeTtlResumen, setMensajeTtlResumen] = useState("");
+  // Último link "de resumen" emitido por el bot (para mostrar cuándo caduca).
+  const [ultimoLinkResumen, setUltimoLinkResumen] = useState<
+    { creadoEn: string; expiraEn: string; usado: boolean } | null
+  >(null);
+  // Tick por minuto para que la cuenta regresiva del link se refresque sola.
+  const [ahoraTick, setAhoraTick] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAhoraTick(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  // Últimos links de edición por nota emitidos (para ver cuáles siguen vigentes).
+  const [ultimosLinksEdicion, setUltimosLinksEdicion] = useState<
+    Array<{ token: string; noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>
+  >([]);
+  // Token que se está anulando en este momento (para deshabilitar el botón).
+  const [anulandoToken, setAnulandoToken] = useState<string | null>(null);
+  const [confirmAnularToken, setConfirmAnularToken] = useState<string | null>(null);
+  const [enviandoLink, setEnviandoLink] = useState<number | null>(null);
+  const envioLinkEnCurso = useRef(false);
+  const [mensajeLink, setMensajeLink] = useState("");
+  // Duración (en minutos) de los links de edición por nota (avisos al crear).
+  const [linkEdicionTtlMinutos, setLinkEdicionTtlMinutos] = useState<string>("");
+  const [guardandoTtlEdicion, setGuardandoTtlEdicion] = useState(false);
+  const [mensajeTtlEdicion, setMensajeTtlEdicion] = useState("");
+  // Interruptores por sección del resumen diario por Telegram.
+  const [resumenSeccionHebreo, setResumenSeccionHebreo] = useState(true);
+  const [resumenSeccionPostulaciones, setResumenSeccionPostulaciones] = useState(true);
+  const [resumenSeccionBorradoresEs, setResumenSeccionBorradoresEs] = useState(true);
+  const [conteosResumen, setConteosResumen] = useState<{ hebreo: number; postulaciones: number; borradoresEs: number } | null>(null);
+  const [guardandoSeccionResumen, setGuardandoSeccionResumen] = useState<string | null>(null);
   const [parrafoActivoIdx, setParrafoActivoIdx] = useState<number | null>(null);
   const esParrafosScrollRef = useRef<HTMLDivElement | null>(null);
   const heParrafosScrollRef = useRef<HTMLDivElement | null>(null);
@@ -1216,10 +1461,129 @@ export default function Redactor() {
       const res = await fetch("/api/redactor-settings", { headers: adminHeaders() });
       if (res.status === 401) { pedirAdminToken(); return; }
       if (res.ok) {
-        const data = await res.json() as { resumenHebreoHora?: number | null };
+        const data = await res.json() as {
+          resumenHebreoHora?: number | null;
+          linkResumenTtlHoras?: number;
+          linkEdicionTtlMinutos?: number;
+          resumenSeccionHebreo?: boolean;
+          resumenSeccionPostulaciones?: boolean;
+          resumenSeccionBorradoresEs?: boolean;
+          ultimoLinkResumen?: { creadoEn: string; expiraEn: string; usado: boolean } | null;
+          ultimosLinksEdicion?: Array<{ token: string; noticiaId: number; titulo: string | null; creadoEn: string; expiraEn: string; usado: boolean }>;
+          conteosResumen?: { hebreo: number; postulaciones: number; borradoresEs: number } | null;
+        };
         setResumenHebreoHora(data.resumenHebreoHora == null ? "" : String(data.resumenHebreoHora));
+        setUltimoLinkResumen(data.ultimoLinkResumen ?? null);
+        setUltimosLinksEdicion(data.ultimosLinksEdicion ?? []);
+        if (typeof data.linkResumenTtlHoras === "number") {
+          setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
+        }
+        if (typeof data.linkEdicionTtlMinutos === "number") {
+          setLinkEdicionTtlMinutos(String(data.linkEdicionTtlMinutos));
+        }
+        if (typeof data.resumenSeccionHebreo === "boolean") setResumenSeccionHebreo(data.resumenSeccionHebreo);
+        if (typeof data.resumenSeccionPostulaciones === "boolean") setResumenSeccionPostulaciones(data.resumenSeccionPostulaciones);
+        if (typeof data.resumenSeccionBorradoresEs === "boolean") setResumenSeccionBorradoresEs(data.resumenSeccionBorradoresEs);
+        setConteosResumen(data.conteosResumen ?? null);
       }
     } catch { /* ignore */ }
+  };
+
+  const guardarSeccionResumen = async (
+    campo: "resumenSeccionHebreo" | "resumenSeccionPostulaciones" | "resumenSeccionBorradoresEs",
+    valor: boolean,
+  ) => {
+    setGuardandoSeccionResumen(campo);
+    // Optimista: reflejar el cambio enseguida y revertir si falla.
+    const setters = {
+      resumenSeccionHebreo: setResumenSeccionHebreo,
+      resumenSeccionPostulaciones: setResumenSeccionPostulaciones,
+      resumenSeccionBorradoresEs: setResumenSeccionBorradoresEs,
+    } as const;
+    setters[campo](valor);
+    try {
+      const res = await fetch("/api/redactor-settings", {
+        method: "PUT",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ [campo]: valor }),
+      });
+      if (res.status === 401) { pedirAdminToken(); setters[campo](!valor); return; }
+      if (res.ok) {
+        const data = await res.json() as Record<string, unknown>;
+        if (typeof data[campo] === "boolean") setters[campo](data[campo] as boolean);
+      } else {
+        setters[campo](!valor);
+      }
+    } catch {
+      setters[campo](!valor);
+    } finally {
+      setGuardandoSeccionResumen(null);
+    }
+  };
+
+  const guardarTtlResumen = async () => {
+    setGuardandoTtlResumen(true);
+    setMensajeTtlResumen("");
+    try {
+      const valor = parseInt(linkResumenTtlHoras.trim(), 10);
+      if (isNaN(valor) || valor < 1 || valor > 168) {
+        setMensajeTtlResumen("Ingresá una cantidad de horas entre 1 y 168 (7 días)");
+        return;
+      }
+      const res = await fetch("/api/redactor-settings", {
+        method: "PUT",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ linkResumenTtlHoras: valor }),
+      });
+      if (res.status === 401) { pedirAdminToken(); return; }
+      if (res.ok) {
+        const data = await res.json() as { linkResumenTtlHoras?: number };
+        if (typeof data.linkResumenTtlHoras === "number") {
+          setLinkResumenTtlHoras(String(data.linkResumenTtlHoras));
+          setMensajeTtlResumen(`Los links del bot ahora duran ${data.linkResumenTtlHoras} ${data.linkResumenTtlHoras === 1 ? "hora" : "horas"}`);
+        }
+        // Refresca la info del último link emitido (el vencimiento del link ya
+        // enviado no cambia, pero así el panel muestra el dato al día).
+        void cargarHoraResumen();
+      } else {
+        setMensajeTtlResumen("No se pudo guardar la duración");
+      }
+    } catch {
+      setMensajeTtlResumen("Error al guardar la duración");
+    } finally {
+      setGuardandoTtlResumen(false);
+    }
+  };
+
+  const guardarTtlEdicion = async () => {
+    setGuardandoTtlEdicion(true);
+    setMensajeTtlEdicion("");
+    try {
+      const valor = parseInt(linkEdicionTtlMinutos.trim(), 10);
+      if (isNaN(valor) || valor < 5 || valor > 1440) {
+        setMensajeTtlEdicion("Ingresá una cantidad de minutos entre 5 y 1440 (24 horas)");
+        return;
+      }
+      const res = await fetch("/api/redactor-settings", {
+        method: "PUT",
+        headers: { ...adminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ linkEdicionTtlMinutos: valor }),
+      });
+      if (res.status === 401) { pedirAdminToken(); return; }
+      if (res.ok) {
+        const data = await res.json() as { linkEdicionTtlMinutos?: number };
+        if (typeof data.linkEdicionTtlMinutos === "number") {
+          setLinkEdicionTtlMinutos(String(data.linkEdicionTtlMinutos));
+          setMensajeTtlEdicion(`Los links de edición ahora duran ${data.linkEdicionTtlMinutos} ${data.linkEdicionTtlMinutos === 1 ? "minuto" : "minutos"}`);
+        }
+      } else {
+        setMensajeTtlEdicion("No se pudo guardar la duración");
+      }
+    } catch {
+      setMensajeTtlEdicion("Error al guardar la duración");
+    } finally {
+      setGuardandoTtlEdicion(false);
+    }
   };
 
   const guardarHoraResumen = async () => {
@@ -1578,7 +1942,7 @@ export default function Redactor() {
     try {
       let blob: Blob;
       if (imagenPortada) {
-        const res = await fetch(`/api/storage${imagenPortada}`);
+        const res = await fetch(resolverPortada(imagenPortada));
         if (!res.ok) throw new Error("No se pudo cargar la imagen desde el servidor");
         blob = await res.blob();
       } else {
@@ -1607,6 +1971,7 @@ export default function Redactor() {
         const n = data.noticia;
         const texto = `**Título:** ${n.titulo}\n\n**Contenido:**\n${n.contenido}\n\n**Tags:** ${n.tags}`;
         setResultado(texto);
+        setTelegramCaption("");
         setEstado("listo");
         setModoEdicionId(n.id);
         setEditando(true);
@@ -1614,7 +1979,7 @@ export default function Redactor() {
         // Cargar imagen existente si la hay
         if (n.imagenPortada) {
           setImagenPortada(n.imagenPortada);
-          setImagenPreview(`/api/storage${n.imagenPortada}`);
+          setImagenPreview(resolverPortada(n.imagenPortada));
         }
       }
     } catch { /* silencioso */ }
@@ -1629,6 +1994,7 @@ export default function Redactor() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           textoResultado: resultadoEditado,
+          telegramCaption,
           ...(imagenPortada ? { imagenPortada } : {}),
         }),
       });
@@ -1659,6 +2025,133 @@ export default function Redactor() {
     }
   }, [authStatus]);
 
+  // Estado de los bots de Telegram (River / Selección): ¿tienen token + chat?
+  const cargarEstadoBots = async () => {
+    try {
+      const res = await fetch("/api/estado-bots", { headers: adminHeaders() });
+      if (!res.ok) return;
+      const data = await res.json() as EstadoBots;
+      setEstadoBots(data);
+    } catch {
+      // Silencioso: el indicador simplemente no se muestra si falla.
+    }
+  };
+  useEffect(() => {
+    if (authStatus !== "ok") return;
+    cargarEstadoBots();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus]);
+
+  // Prueba de envío real de un bot: pega contra Telegram y reporta éxito/fallo.
+  const probarBot = async (cat: "river" | "seleccion", conFoto = false) => {
+    setProbandoBot(cat);
+    setProbandoBotFoto(conFoto);
+    setResultadoPrueba((prev) => ({ ...prev, [cat]: undefined }));
+    try {
+      const res = await fetch("/api/probar-bot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
+        body: JSON.stringify({ categoria: cat, conFoto }),
+      });
+      const data = await res.json() as {
+        ok?: boolean;
+        mensaje?: string;
+        error?: string;
+        foto?: { ok: boolean; error?: string };
+      };
+      if (res.ok && data.ok) {
+        if (data.foto && !data.foto.ok) {
+          // El texto llegó pero la foto falló: mostramos el motivo real diferenciado.
+          setResultadoPrueba((prev) => ({
+            ...prev,
+            [cat]: { ok: false, msg: `El texto llegó, pero la foto falló: ${data.foto?.error ?? "motivo desconocido"}` },
+          }));
+        } else {
+          setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: true, msg: data.mensaje ?? "Mensaje de prueba enviado." } }));
+        }
+      } else {
+        setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: false, msg: data.error ?? "No se pudo enviar la prueba." } }));
+      }
+    } catch {
+      setResultadoPrueba((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al probar el bot." } }));
+    } finally {
+      setProbandoBot(null);
+      setProbandoBotFoto(false);
+    }
+  };
+
+  // Estado en vivo de los webhooks de Telegram (getWebhookInfo + si están protegidos).
+  const cargarWebhookEstados = async () => {
+    setWebhookCargando(true);
+    try {
+      const res = await fetch("/api/webhook-info", { headers: adminHeaders() });
+      if (!res.ok) return;
+      const data = await res.json() as WebhookEstados;
+      setWebhookEstados(data);
+    } catch {
+      // Silencioso: la tarjeta simplemente no se muestra si falla.
+    } finally {
+      setWebhookCargando(false);
+    }
+  };
+  useEffect(() => {
+    if (authStatus !== "ok") return;
+    cargarWebhookEstados();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus]);
+
+  // Re-registra el webhook de un bot con su secret cuando quedó sin proteger.
+  const reRegistrarWebhook = async (cat: "river" | "seleccion") => {
+    setReRegistrando(cat);
+    setReRegistroMsg((prev) => ({ ...prev, [cat]: undefined }));
+    try {
+      const res = await fetch("/api/registrar-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
+        body: JSON.stringify({ categoria: cat }),
+      });
+      const data = await res.json() as { ok?: boolean; estado?: WebhookEstado; error?: string };
+      if (res.ok && data.ok && data.estado) {
+        setWebhookEstados((prev) => (prev ? { ...prev, [cat]: data.estado! } : prev));
+        setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: true, msg: "Webhook re-registrado con secret." } }));
+      } else {
+        setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: data.error ?? "No se pudo re-registrar el webhook." } }));
+      }
+    } catch {
+      setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al re-registrar." } }));
+    } finally {
+      setReRegistrando(null);
+    }
+  };
+
+  // Descarta los updates encolados de un bot re-registrando el webhook con drop_pending_updates.
+  const descartarPendientesWebhook = async (cat: "river" | "seleccion", cuantos: number) => {
+    const confirmado = window.confirm(
+      `Vas a descartar ${cuantos} ${cuantos === 1 ? "update pendiente" : "updates pendientes"} del bot. Esos mensajes se pierden para siempre y no se van a procesar. ¿Continuar?`,
+    );
+    if (!confirmado) return;
+    setDescartandoPendientes(cat);
+    setReRegistroMsg((prev) => ({ ...prev, [cat]: undefined }));
+    try {
+      const res = await fetch("/api/registrar-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
+        body: JSON.stringify({ categoria: cat, descartarPendientes: true }),
+      });
+      const data = await res.json() as { ok?: boolean; estado?: WebhookEstado; error?: string };
+      if (res.ok && data.ok && data.estado) {
+        setWebhookEstados((prev) => (prev ? { ...prev, [cat]: data.estado! } : prev));
+        setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: true, msg: "Updates pendientes descartados." } }));
+      } else {
+        setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: data.error ?? "No se pudieron descartar los pendientes." } }));
+      }
+    } catch {
+      setReRegistroMsg((prev) => ({ ...prev, [cat]: { ok: false, msg: "Error de conexión al descartar pendientes." } }));
+    } finally {
+      setDescartandoPendientes(null);
+    }
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
@@ -1685,6 +2178,19 @@ export default function Redactor() {
     }
   }, []);
 
+  // Los badges se cargan al iniciar sesión, sin abrir ninguna sección,
+  // y se mantienen al día también con cambios realizados desde otros dispositivos.
+  useEffect(() => {
+    if (authStatus !== "ok") {
+      setConteosResumen(null);
+      return;
+    }
+    void cargarHoraResumen();
+    const id = window.setInterval(() => { void cargarHoraResumen(); }, 60_000);
+    return () => window.clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus, tab, postulaciones, noticiasHebreo, misPublicaciones, publicarEstado]);
+
   const buscarNoticias = async () => {
     setBuscando(true);
     setErrorBusqueda("");
@@ -1707,6 +2213,7 @@ export default function Redactor() {
   const seleccionarNoticia = (titulo: string) => {
     setTextoOriginal(titulo);
     setResultado("");
+    setTelegramCaption("");
     setEstado("idle");
     setTelegramEstado("idle");
   };
@@ -1716,6 +2223,7 @@ export default function Redactor() {
 
     setEstado("procesando");
     setResultado("");
+    setTelegramCaption("");
     setTelegramEstado("idle");
 
     try {
@@ -1742,11 +2250,12 @@ export default function Redactor() {
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             try {
-              const data = JSON.parse(line.slice(6)) as { content?: string; done?: boolean; error?: string };
+              const data = JSON.parse(line.slice(6)) as { content?: string; telegram_caption?: string; done?: boolean; error?: string };
               if (data.content) {
                 setResultado((prev) => prev + data.content);
                 resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
               }
+              if (data.telegram_caption) setTelegramCaption(data.telegram_caption);
               if (data.done) setEstado("listo");
               if (data.error) setEstado("error");
             } catch { /* ignore incomplete chunks */ }
@@ -1768,6 +2277,7 @@ export default function Redactor() {
   const reiniciar = () => {
     setTextoOriginal("");
     setResultado("");
+    setTelegramCaption("");
     setEstado("idle");
     setTelegramEstado("idle");
     setTelegramError("");
@@ -1789,6 +2299,8 @@ export default function Redactor() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           textoResultado: resultado,
+          telegramCaption,
+          categoria,
           textoOriginal,
           fuente: noticiaSeleccionada?.fuente ?? fuente,
           imagenPortada,
@@ -1818,6 +2330,7 @@ export default function Redactor() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           texto: resultado,
+          telegramCaption,
           textoOriginal,
           fuente: noticiaSeleccionada?.fuente ?? fuente,
           imagenPortada,
@@ -1975,6 +2488,84 @@ export default function Redactor() {
             >
               salir
             </button>
+            <button
+              type="button"
+              onClick={handleLogoutAll}
+              disabled={cerrandoTodo}
+              className="text-[10px] font-bold underline opacity-70 hover:opacity-100 disabled:opacity-40"
+              title="Cerrar sesión en todos los dispositivos"
+            >
+              {cerrandoTodo ? "cerrando..." : "salir de todos"}
+            </button>
+            {sesionesActivas !== null && (
+              <span className="relative" ref={sesionesRef}>
+                <button
+                  type="button"
+                  onClick={toggleSesiones}
+                  className="text-[10px] font-bold bg-river-red/15 hover:bg-river-red/25 px-1.5 py-0.5 rounded-full"
+                  title="Ver detalle de las sesiones admin abiertas (todos los dispositivos)"
+                >
+                  {sesionesActivas === 1 ? "1 sesión activa" : `${sesionesActivas} sesiones activas`}
+                </button>
+                {mostrarSesiones && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-left normal-case tracking-normal">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold text-gray-700">Sesiones abiertas</span>
+                      <button
+                        type="button"
+                        onClick={() => setMostrarSesiones(false)}
+                        className="text-[10px] font-bold text-gray-400 hover:text-gray-600"
+                      >
+                        cerrar
+                      </button>
+                    </div>
+                    {cargandoSesiones && (
+                      <p className="text-[11px] text-gray-400">Cargando...</p>
+                    )}
+                    {!cargandoSesiones && errorSesiones && (
+                      <p className="text-[11px] text-red-500">{errorSesiones}</p>
+                    )}
+                    {!cargandoSesiones && !errorSesiones && detalleSesiones !== null && (
+                      detalleSesiones.length === 0 ? (
+                        <p className="text-[11px] text-gray-400">No hay sesiones abiertas.</p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {detalleSesiones.map((s, i) => (
+                            <li
+                              key={s.sessionId}
+                              className={`text-[11px] rounded-lg px-2 py-1.5 ${s.actual ? "bg-river-red/10 text-river-red" : "bg-gray-50 text-gray-600"}`}
+                            >
+                              <div className="flex items-start justify-between gap-1">
+                                <div>
+                                  <span className="font-bold">
+                                    {s.actual ? "Esta sesión" : `Sesión ${i + 1}`}
+                                  </span>
+                                  {" · "}abierta hace {tiempoRelativo(Date.now() - s.createdAt)}
+                                  <br />
+                                  caduca en {tiempoRelativo(s.expiresAt - Date.now())}
+                                </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => cerrarSesion(s.sessionId)}
+                                    disabled={cerrandoSesionId === s.sessionId}
+                                    className="shrink-0 text-[10px] font-bold text-red-500 hover:text-red-700 disabled:opacity-50 mt-0.5"
+                                    title={s.actual ? "Cerrar esta sesión y volver a ingresar la contraseña" : "Cerrar esta sesión"}
+                                  >
+                                    {cerrandoSesionId === s.sessionId ? "cerrando…" : "cerrar"}
+                                  </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-2">
+                      Si ves sesiones que no reconocés, cerrá solo esa o usá "salir de todos".
+                    </p>
+                  </div>
+                )}
+              </span>
+            )}
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-river-black mb-3">
             Redactor <span className="text-river-red">IA</span>
@@ -2007,6 +2598,7 @@ export default function Redactor() {
               }`}
             >
               <BookOpen className="w-4 h-4" /> Mis publicaciones
+              <BadgePendientes cantidad={conteosResumen?.borradoresEs} />
             </button>
             <button
               onClick={() => { setTab("publicaciones-seleccion"); cargarPublicacionesSel(); }}
@@ -2078,6 +2670,7 @@ export default function Redactor() {
               }`}
             >
               <Languages className="w-4 h-4" /> Publicaciones en Hebreo
+              <BadgePendientes cantidad={conteosResumen?.hebreo} />
             </button>
           </div>
           {/* Fila 2 */}
@@ -2091,11 +2684,7 @@ export default function Redactor() {
               }`}
             >
               <Inbox className="w-4 h-4" /> Postulantes
-              {postulaciones.filter(p => p.pendiente).length > 0 && tab !== "postulantes" && (
-                <span className="absolute -top-1 -right-1 bg-river-red text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-white">
-                  {postulaciones.filter(p => p.pendiente).length}
-                </span>
-              )}
+              <BadgePendientes cantidad={conteosResumen?.postulaciones} />
             </button>
             <button
               onClick={() => { setTab("comentarios"); cargarComentarios(); }}
@@ -2329,7 +2918,7 @@ export default function Redactor() {
                 <div className="flex gap-4 p-4">
                   {n.imagenPortada && (
                     <img
-                      src={`/api/storage${n.imagenPortada}`}
+                      src={resolverPortada(n.imagenPortada)}
                       alt=""
                       className="w-24 h-16 object-cover rounded-xl shrink-0"
                     />
@@ -2449,7 +3038,7 @@ export default function Redactor() {
                 <div className="flex gap-4 p-4">
                   {n.imagenPortada && (
                     <img
-                      src={`/api/storage${n.imagenPortada}`}
+                      src={resolverPortada(n.imagenPortada)}
                       alt=""
                       className="w-24 h-16 object-cover rounded-xl shrink-0"
                     />
@@ -2575,7 +3164,8 @@ export default function Redactor() {
                     { n: "Era Gallardo I", y: "2014–2022", c: "bg-river-red text-white" },
                     { n: "Era Demichelis", y: "2023–2024", c: "bg-river-red/80 text-white" },
                     { n: "Era Gallardo II", y: "2024–2026", c: "bg-river-red text-white" },
-                    { n: "Era Coudet", y: "2026–Pres.", c: "bg-river-red/60 text-white" },
+                    { n: "Ciclo Coudet", y: "2026", c: "bg-river-red/60 text-white" },
+                    { n: "Interinato Ponzio", y: "2026–Pres.", c: "bg-river-red text-white" },
                   ].map(e => (
                     <span key={e.n} className={`text-xs font-bold px-3 py-1 rounded-full ${e.c}`}>
                       {e.n} · <span className="font-normal opacity-80">{e.y}</span>
@@ -2822,6 +3412,225 @@ export default function Redactor() {
                 ? "La imagen 1:1 para IG saldrá con paleta celeste/dorado, sin marcas FIFA."
                 : "La imagen 1:1 para IG saldrá con paleta River."}
             </p>
+
+            {/* Estado de los bots de Telegram + a cuál llega la categoría elegida */}
+            {estadoBots && (() => {
+              const botActual = categoria === "seleccion" ? estadoBots.seleccion : estadoBots.river;
+              const faltante = (b: EstadoBot): string => {
+                if (b.faltaToken && b.faltaChat) return "falta token y chat";
+                if (b.faltaToken) return "falta token";
+                if (b.faltaChat) return "falta chat";
+                if (b.chatInvalido) return "chat inválido";
+                return "";
+              };
+              const FilaBot = ({ b }: { b: EstadoBot }) => {
+                const prueba = resultadoPrueba[b.categoria];
+                const probando = probandoBot === b.categoria;
+                return (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                        b.configurado
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
+                      }`}
+                      title={b.configurado ? `${b.marca}: listo para enviar` : `${b.marca}: ${faltante(b)}`}
+                    >
+                      <span>{b.categoria === "seleccion" ? "🇦🇷" : "🔴⚪"}</span>
+                      {b.marca}
+                      {b.configurado ? (
+                        <span className="inline-flex items-center gap-0.5"><Check className="w-3 h-3" /> configurado</span>
+                      ) : (
+                        <span>⚠️ {faltante(b)}</span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => probarBot(b.categoria)}
+                      disabled={probando || !b.configurado}
+                      title={b.configurado ? "Enviar un mensaje de prueba a este bot" : "Configurá el bot antes de probarlo"}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-gray-300 bg-white text-gray-600 hover:border-river-red hover:text-river-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {probando && !probandoBotFoto ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Enviando…</>
+                      ) : (
+                        <><Send className="w-3 h-3" /> Enviar prueba</>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => probarBot(b.categoria, true)}
+                      disabled={probando || !b.configurado}
+                      title={b.configurado ? "Enviar mensaje + foto de prueba (verifica que el bot pueda adjuntar imágenes de portada)" : "Configurá el bot antes de probarlo"}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-gray-300 bg-white text-gray-600 hover:border-river-red hover:text-river-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {probando && probandoBotFoto ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Enviando…</>
+                      ) : (
+                        <><ImageIcon className="w-3 h-3" /> Prueba con foto</>
+                      )}
+                    </button>
+                    {prueba && (
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${prueba.ok ? "text-green-700" : "text-red-600"}`}>
+                        {prueba.ok ? <Check className="w-3 h-3" /> : <span>✗</span>}
+                        {prueba.msg}
+                      </span>
+                    )}
+                  </div>
+                );
+              };
+              return (
+                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">
+                    <Send className="w-3 h-3" /> Bots de Telegram
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <FilaBot b={estadoBots.river} />
+                    <FilaBot b={estadoBots.seleccion} />
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    Esta nota se enviará al bot{" "}
+                    <strong className={categoria === "seleccion" ? "text-[#74ACDF]" : "text-river-red"}>
+                      {botActual.marca}
+                    </strong>
+                    {botActual.configurado
+                      ? "."
+                      : ` — pero ${faltante(botActual)}, así que el envío fallará hasta configurarlo.`}
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* Protección de los webhooks de Telegram (secret_token) */}
+            {webhookEstados && (() => {
+              const FilaWebhook = ({ w }: { w: WebhookEstado }) => {
+                const marca = w.categoria === "seleccion" ? "La Scaloneta en Israel" : "River en Israel";
+                const emoji = w.categoria === "seleccion" ? "🇦🇷" : "🔴⚪";
+                const msg = reRegistroMsg[w.categoria];
+                const reReg = reRegistrando === w.categoria;
+                let etiqueta: string;
+                let clases: string;
+                if (!w.consultaOk) {
+                  etiqueta = "no se pudo consultar";
+                  clases = "bg-gray-100 text-gray-500 border-gray-200";
+                } else if (!w.registrado) {
+                  etiqueta = "sin webhook";
+                  clases = "bg-red-50 text-red-700 border-red-200";
+                } else if (w.protegido) {
+                  etiqueta = "protegido";
+                  clases = "bg-green-50 text-green-700 border-green-200";
+                } else {
+                  etiqueta = "sin proteger";
+                  clases = "bg-amber-50 text-amber-700 border-amber-200";
+                }
+                const detalle = !w.consultaOk
+                  ? (w.errorConsulta ?? "Error consultando Telegram")
+                  : !w.registrado
+                    ? "No hay webhook registrado en Telegram."
+                    : w.protegido
+                      ? "Webhook registrado con secret_token."
+                      : !w.urlCoincide
+                        ? "El webhook apunta a otra URL."
+                        : "El webhook no tiene secret_token activo (quedó sin proteger).";
+                return (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${clases}`}
+                        title={detalle}
+                      >
+                        <span>{emoji}</span>
+                        {marca}
+                        {w.protegido ? (
+                          <span className="inline-flex items-center gap-0.5"><Check className="w-3 h-3" /> {etiqueta}</span>
+                        ) : (
+                          <span>⚠️ {etiqueta}</span>
+                        )}
+                      </span>
+                      {w.consultaOk && !w.protegido && (
+                        <button
+                          type="button"
+                          onClick={() => reRegistrarWebhook(w.categoria)}
+                          disabled={reReg}
+                          title="Volver a registrar el webhook con su secret_token"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-gray-300 bg-white text-gray-600 hover:border-river-red hover:text-river-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {reReg ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Re-registrando…</>
+                          ) : (
+                            <><RefreshCw className="w-3 h-3" /> Re-registrar con secret</>
+                          )}
+                        </button>
+                      )}
+                      {msg && (
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${msg.ok ? "text-green-700" : "text-red-600"}`}>
+                          {msg.ok ? <Check className="w-3 h-3" /> : <span>✗</span>}
+                          {msg.msg}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-gray-500 pl-1">{detalle}</span>
+                    {w.consultaOk && (w.pendingUpdateCount ?? 0) > 0 && (
+                      <span className="inline-flex flex-wrap items-center gap-2 pl-1">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                          ⏳ {w.pendingUpdateCount} {w.pendingUpdateCount === 1 ? "update pendiente" : "updates pendientes"} en Telegram sin entregar.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => descartarPendientesWebhook(w.categoria, w.pendingUpdateCount ?? 0)}
+                          disabled={descartandoPendientes === w.categoria || reReg}
+                          title="Re-registra el webhook descartando los updates encolados (se pierden esos mensajes)"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border border-amber-300 bg-white text-amber-700 hover:border-red-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {descartandoPendientes === w.categoria ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Descartando…</>
+                          ) : (
+                            <><Trash2 className="w-3 h-3" /> Descartar pendientes</>
+                          )}
+                        </button>
+                      </span>
+                    )}
+                    {w.consultaOk && w.ultimoError && (() => {
+                      const edadMs = w.ultimoErrorFecha ? Date.now() - w.ultimoErrorFecha * 1000 : null;
+                      const viejo = edadMs !== null && edadMs > 24 * 60 * 60 * 1000;
+                      return (
+                        <span className={`inline-flex items-start gap-1 text-[11px] pl-1 ${viejo ? "font-normal text-gray-400" : "font-semibold text-red-600"}`}>
+                          <span className="shrink-0">{viejo ? "⚠" : "⚠️"}</span>
+                          <span>
+                            Último error de entrega{edadMs !== null && edadMs >= 0 ? ` (hace ${tiempoRelativo(edadMs)})` : ""}: {w.ultimoError}
+                          </span>
+                        </span>
+                      );
+                    })()}
+                    {w.consultaOk && w.registrado && (w.pendingUpdateCount ?? 0) === 0 && !w.ultimoError && (
+                      <span className="text-[11px] text-gray-400 pl-1">Sin updates encolados ni errores de entrega.</span>
+                    )}
+                  </div>
+                );
+              };
+              return (
+                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                      <Shield className="w-3 h-3" /> Protección de webhooks
+                    </p>
+                    <button
+                      type="button"
+                      onClick={cargarWebhookEstados}
+                      disabled={webhookCargando}
+                      title="Volver a consultar el estado en Telegram"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-river-red disabled:opacity-50 transition-colors"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${webhookCargando ? "animate-spin" : ""}`} /> Actualizar
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    <FilaWebhook w={webhookEstados.river} />
+                    <FilaWebhook w={webhookEstados.seleccion} />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="mb-4">
@@ -3516,7 +4325,7 @@ export default function Redactor() {
             </div>
             <div>
               <p className="font-bold text-white mb-1">🇮🇱 Contexto local</p>
-              <p>La IA menciona la Filial Ramat Gan e invita a los hinchas en Israel a unirse.</p>
+              <p>La IA menciona la Filial River Plate Israel Gaby "Tucu" Sajnin e invita a los hinchas en Israel a unirse.</p>
             </div>
             <div>
               <p className="font-bold text-white mb-1">📱 Privacidad total</p>
@@ -3966,6 +4775,282 @@ export default function Redactor() {
               )}
             </div>
 
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <p className="text-sm font-semibold text-river-black">Secciones del resumen diario</p>
+              <p className="text-xs text-gray-400 mb-2">
+                Activá o desactivá cada aviso. Las secciones apagadas no se consultan ni aparecen en el mensaje de Telegram.
+              </p>
+              <div className="space-y-2">
+                {([
+                  { campo: "resumenSeccionHebreo", valor: resumenSeccionHebreo, label: "Traducciones al hebreo pendientes", conteo: conteosResumen?.hebreo, tabDestino: "publicaciones-hebreo" as Tab, irATab: () => { setTab("publicaciones-hebreo"); cargarNoticiasHebreo(); cargarHoraResumen(); } },
+                  { campo: "resumenSeccionPostulaciones", valor: resumenSeccionPostulaciones, label: "Postulaciones de redactores sin revisar", conteo: conteosResumen?.postulaciones, tabDestino: "postulantes" as Tab, irATab: () => { setTab("postulantes"); cargarPostulaciones(); } },
+                  { campo: "resumenSeccionBorradoresEs", valor: resumenSeccionBorradoresEs, label: "Borradores en español sin publicar", conteo: conteosResumen?.borradoresEs, tabDestino: "publicaciones" as Tab, irATab: () => { setTab("publicaciones"); cargarPublicaciones(); } },
+                ] as const).map(({ campo, valor, label, conteo, irATab }) => (
+                  <label key={campo} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={valor}
+                      disabled={guardandoSeccionResumen === campo}
+                      onChange={(e) => guardarSeccionResumen(campo, e.target.checked)}
+                      className="w-4 h-4 accent-river-red disabled:opacity-50"
+                    />
+                    <span className="text-xs font-semibold text-gray-600">{label}</span>
+                    {typeof conteo === "number" && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); irATab(); }}
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full transition-opacity ${
+                          conteo > 0
+                            ? "bg-river-red/10 text-river-red hover:bg-river-red/20 cursor-pointer"
+                            : "bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-pointer"
+                        }`}
+                        title={`${conteo} pendientes · Ir a revisar`}
+                      >
+                        {conteo}
+                      </button>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <div className="flex items-start sm:items-center gap-3 flex-wrap">
+                <Clock className="w-4 h-4 text-gray-400 shrink-0 mt-0.5 sm:mt-0" />
+                <div className="flex-1 min-w-[180px]">
+                  <p className="text-sm font-semibold text-river-black">Duración de los links del bot</p>
+                  <p className="text-xs text-gray-400">
+                    Horas que sigue funcionando el link de "Revisar en /redactor" del resumen diario y del aviso de traducción. Entre 1 y 168 (7 días).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={168}
+                    value={linkResumenTtlHoras}
+                    onChange={(e) => setLinkResumenTtlHoras(e.target.value)}
+                    placeholder="24"
+                    className="w-20 px-3 py-2 rounded-lg border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-river-red/30"
+                  />
+                  <span className="text-xs text-gray-400">hs</span>
+                  <button
+                    onClick={guardarTtlResumen}
+                    disabled={guardandoTtlResumen}
+                    className="px-3 py-2 rounded-lg bg-river-red text-white text-xs font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {guardandoTtlResumen ? "Guardando…" : "Guardar"}
+                  </button>
+                </div>
+              </div>
+              {mensajeTtlResumen && (
+                <p className="text-xs text-gray-500 mt-2">{mensajeTtlResumen}</p>
+              )}
+              <p className="text-xs mt-2 text-gray-500">
+                {ultimoLinkResumen ? (
+                  (() => {
+                    const expira = new Date(ultimoLinkResumen.expiraEn);
+                    const restanteMs = expira.getTime() - ahoraTick;
+                    const fechaStr = expira.toLocaleString("es-AR", {
+                      day: "2-digit", month: "2-digit", year: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                    });
+                    if (ultimoLinkResumen.usado) {
+                      return <span>El link del último aviso ya fue usado (los links son de un solo uso).</span>;
+                    }
+                    if (restanteMs <= 0) {
+                      return <span className="text-red-600">El link del último aviso caducó el {fechaStr}.</span>;
+                    }
+                    const horas = Math.floor(restanteMs / 3600000);
+                    const minutos = Math.floor((restanteMs % 3600000) / 60000);
+                    const restanteStr = horas > 0
+                      ? `${horas} h ${minutos} min`
+                      : `${minutos} min`;
+                    return (
+                      <span className="text-green-700">
+                        El link del último aviso sigue válido hasta el {fechaStr} (quedan {restanteStr}).
+                      </span>
+                    );
+                  })()
+                ) : (
+                  <span>Todavía no hay ningún aviso de resumen enviado (o el último link ya fue depurado).</span>
+                )}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <div className="flex items-start sm:items-center gap-3 flex-wrap">
+                <Clock className="w-4 h-4 text-gray-400 shrink-0 mt-0.5 sm:mt-0" />
+                <div className="flex-1 min-w-[180px]">
+                  <p className="text-sm font-semibold text-river-black">Duración de los links de edición por nota</p>
+                  <p className="text-xs text-gray-400">
+                    Minutos que sigue funcionando el link "Editar en Redactor" que llega al crearse cada nota. Entre 5 y 1440 (24 horas).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={5}
+                    max={1440}
+                    value={linkEdicionTtlMinutos}
+                    onChange={(e) => setLinkEdicionTtlMinutos(e.target.value)}
+                    placeholder="30"
+                    className="w-20 px-3 py-2 rounded-lg border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-river-red/30"
+                  />
+                  <span className="text-xs text-gray-400">min</span>
+                  <button
+                    onClick={guardarTtlEdicion}
+                    disabled={guardandoTtlEdicion}
+                    className="px-3 py-2 rounded-lg bg-river-red text-white text-xs font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {guardandoTtlEdicion ? "Guardando…" : "Guardar"}
+                  </button>
+                </div>
+              </div>
+              {mensajeTtlEdicion && (
+                <p className="text-xs text-gray-500 mt-2">{mensajeTtlEdicion}</p>
+              )}
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-river-black mb-1.5">Últimos links de edición emitidos</p>
+                {mensajeLink && <p role="status" className="text-xs text-gray-600 mb-2">{mensajeLink}</p>}
+                {ultimosLinksEdicion.length === 0 ? (
+                  <p className="text-xs text-gray-500">
+                    Todavía no hay links de edición emitidos (o los últimos ya fueron depurados).
+                  </p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {ultimosLinksEdicion.map((link, idx) => {
+                      const expira = new Date(link.expiraEn);
+                      const emitido = new Date(link.creadoEn);
+                      const restanteMs = expira.getTime() - ahoraTick;
+                      const fmt = (d: Date) => d.toLocaleString("es-AR", {
+                        day: "2-digit", month: "2-digit",
+                        hour: "2-digit", minute: "2-digit",
+                      });
+                      const esVigente = !link.usado && restanteMs > 0;
+                      let estado: React.ReactNode;
+                      if (link.usado) {
+                        estado = (
+                          <span className="text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 shrink-0">
+                            Usado
+                          </span>
+                        );
+                      } else if (restanteMs <= 0) {
+                        estado = (
+                          <span className="text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 shrink-0">
+                            Caducó {fmt(expira)}
+                          </span>
+                        );
+                      } else {
+                        const horas = Math.floor(restanteMs / 3600000);
+                        const minutos = Math.floor((restanteMs % 3600000) / 60000);
+                        const restanteStr = horas > 0 ? `${horas} h ${minutos} min` : `${minutos} min`;
+                        estado = (
+                          <span className="text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5 shrink-0">
+                            Válido — quedan {restanteStr}
+                          </span>
+                        );
+                      }
+                      return (
+                        <li
+                          key={`${link.noticiaId}-${link.creadoEn}-${idx}`}
+                          className="flex items-center gap-2 flex-wrap text-xs bg-white border border-gray-200 rounded-lg px-3 py-1.5"
+                        >
+                          <a
+                            href={`/noticia/${link.noticiaId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 min-w-[140px] text-river-black truncate hover:text-river-red hover:underline transition-colors"
+                          >
+                            {link.titulo || `Nota #${link.noticiaId}`}
+                          </a>
+                          <span className="text-gray-400 shrink-0">emitido {fmt(emitido)}</span>
+                          {estado}
+                          <button
+                            type="button"
+                            disabled={enviandoLink !== null}
+                            onClick={async () => {
+                              if (envioLinkEnCurso.current) return;
+                              envioLinkEnCurso.current = true;
+                              setEnviandoLink(link.noticiaId);
+                              setMensajeLink("");
+                              try {
+                                const res = await fetch(`/api/redactor-settings/links-edicion/${link.noticiaId}`, { method: "POST" });
+                                const data = await res.json() as { error?: string; link?: typeof link };
+                                if (!res.ok || !data.link) throw new Error(data.error || "No se pudo enviar el nuevo link");
+                                const nuevo = data.link;
+                                setUltimosLinksEdicion(prev => [nuevo, ...prev.filter(l => l.token !== nuevo.token)].slice(0, 10));
+                                setMensajeLink("Nuevo link enviado al redactor por Telegram.");
+                              } catch (err) {
+                                setMensajeLink(err instanceof Error ? err.message : "No se pudo enviar el nuevo link");
+                              } finally {
+                                envioLinkEnCurso.current = false;
+                                setEnviandoLink(null);
+                              }
+                            }}
+                            className="shrink-0 text-xs px-2 py-0.5 rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-100 transition-colors disabled:opacity-50"
+                          >
+                            {enviandoLink === link.noticiaId ? "Enviando…" : "Enviar nuevo link"}
+                          </button>
+                          {esVigente && (
+                            confirmAnularToken !== link.token ? (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmAnularToken(link.token)}
+                              disabled={anulandoToken !== null}
+                              className="shrink-0 text-xs px-2 py-0.5 rounded-full border border-orange-300 text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors disabled:opacity-50"
+                            >
+                              Anular
+                            </button>
+                            ) : (
+                            <div className="w-full flex items-center gap-2 flex-wrap border-t border-orange-200 pt-2 pb-1" role="group" aria-label="Confirmar anulación del link">
+                            <span className="text-orange-700">¿Confirmar? Esta acción no se puede deshacer.</span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (anulandoToken !== null) return;
+                                setAnulandoToken(link.token);
+                                try {
+                                  const res = await fetch(
+                                    `/api/redactor-settings/links-edicion/${encodeURIComponent(link.token)}`,
+                                    { method: "DELETE" },
+                                  );
+                                  if (res.ok) {
+                                    setUltimosLinksEdicion(prev =>
+                                      prev.map(l =>
+                                        l.token === link.token ? { ...l, expiraEn: new Date().toISOString() } : l,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  setAnulandoToken(null);
+                                  setConfirmAnularToken(null);
+                                }
+                              }}
+                              disabled={anulandoToken !== null}
+                              className="shrink-0 text-xs px-2 py-0.5 rounded-full border border-orange-300 text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors disabled:opacity-50"
+                            >
+                              {anulandoToken === link.token ? "Anulando…" : "Sí, anular"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmAnularToken(null)}
+                              disabled={anulandoToken !== null}
+                              className="text-xs px-3 py-1 rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            >
+                              No
+                            </button>
+                            </div>
+                            )
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+
             {mensajeMasivo && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-blue-700 text-sm">
                 {mensajeMasivo}
@@ -4007,7 +5092,7 @@ export default function Redactor() {
                 <div className="flex gap-4 p-4">
                   {n.imagenPortada && (
                     <img
-                      src={`/api/storage${n.imagenPortada}`}
+                      src={resolverPortada(n.imagenPortada)}
                       alt=""
                       className="w-24 h-16 object-cover rounded-xl shrink-0"
                     />

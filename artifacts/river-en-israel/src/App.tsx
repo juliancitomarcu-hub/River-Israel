@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,12 +8,12 @@ import Home from "@/pages/Home";
 import Redactor from "@/pages/Redactor";
 import Noticia from "@/pages/Noticia";
 import Fixture from "@/pages/Fixture";
-import MundialFixture from "@/pages/MundialFixture";
-import MundialHome from "@/pages/MundialHome";
 import Equipo from "@/pages/Equipo";
 import Historia from "@/pages/Historia";
 import Postulacion from "@/pages/Postulacion";
+import Galeria from "@/pages/Galeria";
 import NotFound from "@/pages/not-found";
+import { VisitorAnalytics } from "@/components/VisitorAnalytics";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,18 +27,28 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <div className="flex flex-col min-h-screen">
+      <VisitorAnalytics />
       <Navbar />
       <main className="flex-grow">
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/river" component={Home} />
-          <Route path="/scaloneta" component={MundialHome} />
+          {/* La Scaloneta está oculta: el sitio es 100% River en Israel */}
+          <Route path="/scaloneta">
+            <Redirect to="/" />
+          </Route>
+          <Route path="/scaloneta/:rest*">
+            <Redirect to="/" />
+          </Route>
+          <Route path="/mundial/:rest*">
+            <Redirect to="/" />
+          </Route>
           <Route path="/redactor" component={Redactor} />
           <Route path="/noticia/:id" component={Noticia} />
           <Route path="/fixture" component={Fixture} />
-          <Route path="/mundial/fixture" component={MundialFixture} />
           <Route path="/equipo" component={Equipo} />
           <Route path="/historia" component={Historia} />
+          <Route path="/galeria" component={Galeria} />
           <Route path="/postula" component={Postulacion} />
           <Route component={NotFound} />
         </Switch>

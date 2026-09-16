@@ -1,4 +1,3 @@
-import { ai } from "@workspace/integrations-gemini-ai";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
 import { and, desc, eq, sql as sqlRaw } from "drizzle-orm";
@@ -6,14 +5,50 @@ import * as cheerio from "cheerio";
 import { logger } from "./lib/logger";
 import * as fs from "fs";
 import * as path from "path";
-import { PROMPT_MAESTRO } from "./lib/prompt-maestro";
-import { PROMPT_SELECCION } from "./lib/prompt-seleccion";
+import { enviarNotaAMake } from "./lib/enviar-a-make";
+import { limpiarNota } from "./lib/limpiar-asteriscos";
+import { promocionarNotaEnCanal } from "./lib/promocionar-nota";
+import { urlImagenSegura } from "./lib/url-imagen-segura";
+import { leerEstadoApp, guardarEstadoApp } from "./lib/app-estado";
 import { traducirYGuardarHebreo } from "./lib/traductor-hebreo";
 import { createEditToken, createLongEditToken, purgeExpiredEditTokens, purgeExpiredSessions } from "./lib/edit-tokens";
 import { credencialesTelegram } from "./lib/telegram-cred";
 import { leerRedactorSettings, guardarRedactorSettings } from "./lib/redactor-settings";
+import {
+  listarPendientesHebreo,
+  listarPendientesPostulaciones,
+  listarPendientesBorradoresEs,
+} from "./lib/resumen-pendientes";
+import { ObjectStorageService } from "./lib/objectStorage";
+import { extraerFechaDelEvento, generarNotaEstructurada, resolverCaptionTelegram } from "./lib/openai-news";
+import { recordarCaptionPorNota } from "./lib/telegram-caption-cache";
+import { actualizarPlantelProfesional } from "./lib/plantel";
+import { noticiaDuplicadaPorTitulo } from "./lib/noticia-duplicada";
 
 export type Categoria = "river" | "seleccion";
+
+const INTERVALO_ACTUALIZACION_PLANTEL_MS = 6 * 60 * 60 * 1000;
+let actualizadorPlantelIniciado = false;
+
+/**
+ * Refreshes the official roster at startup and periodically. Refresh failures
+ * are isolated from the news scheduler; actualizarPlantelProfesional writes
+ * only after full validation, so app_estado retains the prior good record.
+ */
+export function iniciarActualizadorPlantel(): void {
+  if (actualizadorPlantelIniciado) return;
+  actualizadorPlantelIniciado = true;
+
+  const actualizar = (): void => {
+    actualizarPlantelProfesional().catch((err) => {
+      logger.warn({ err }, "No se pudo actualizar el plantel profesional; se conserva el último plantel validado");
+    });
+  };
+
+  actualizar();
+  setInterval(actualizar, INTERVALO_ACTUALIZACION_PLANTEL_MS);
+  logger.info({ intervaloHoras: 6 }, "Actualizador periódico del plantel profesional iniciado");
+}
 
 // Fuentes en orden de prioridad — La Página Millonaria, sitio oficial y Olé primero
 const FUENTES = [
@@ -42,87 +77,157 @@ interface SchedulerState {
   urlsProcesadas: string[];  // URLs ya enviadas a Telegram (cap 1000)
 }
 
-function leerEstado(): SchedulerState {
+const ESTADO_CLAVE = "scheduler_state";
+
+function normalizarEstado(raw: Partial<SchedulerState> | null): SchedulerState {
+  return {
+    fuenteIndex:    typeof raw?.fuenteIndex === "number" ? raw.fuenteIndex : 0,
+    fuenteIndexSel: typeof raw?.fuenteIndexSel === "number" ? raw.fuenteIndexSel : 0,
+    categoriaFlip:  typeof raw?.categoriaFlip === "number" ? raw.categoriaFlip : 0,
+    urlsProcesadas: Array.isArray(raw?.urlsProcesadas) ? raw.urlsProcesadas : [],
+  };
+}
+
+// El estado vive en la DB (tabla app_estado) para sobrevivir reinicios del
+// server en producción. Antes se guardaba en scheduler_state.json, que se
+// perdía en cada reinicio: la rotación de fuentes arrancaba siempre en la
+// primera fuente y el dedupe descartaba todo → nunca se publicaba nada.
+async function leerEstado(): Promise<SchedulerState> {
+  const desdeDb = await leerEstadoApp<Partial<SchedulerState>>(ESTADO_CLAVE);
+  if (desdeDb) return normalizarEstado(desdeDb);
+  // Migración: si existe el archivo local viejo, usarlo una vez
   try {
     const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf-8")) as Partial<SchedulerState>;
-    return {
-      fuenteIndex:    typeof raw.fuenteIndex === "number" ? raw.fuenteIndex : 0,
-      fuenteIndexSel: typeof raw.fuenteIndexSel === "number" ? raw.fuenteIndexSel : 0,
-      categoriaFlip:  typeof raw.categoriaFlip === "number" ? raw.categoriaFlip : 0,
-      urlsProcesadas: Array.isArray(raw.urlsProcesadas) ? raw.urlsProcesadas : [],
-    };
+    return normalizarEstado(raw);
   } catch {
-    return { fuenteIndex: 0, fuenteIndexSel: 0, categoriaFlip: 0, urlsProcesadas: [] };
+    return normalizarEstado(null);
   }
 }
 
-function guardarEstado(estado: SchedulerState): void {
-  try {
-    // Cap en 1000 URLs para no crecer indefinidamente
-    if (estado.urlsProcesadas.length > 1000) {
-      estado.urlsProcesadas = estado.urlsProcesadas.slice(-1000);
-    }
-    fs.writeFileSync(STATE_FILE, JSON.stringify(estado), "utf-8");
-  } catch (err) {
-    logger.warn({ err }, "Scheduler: no se pudo guardar el estado");
+async function guardarEstado(estado: SchedulerState): Promise<void> {
+  // Cap en 1000 URLs para no crecer indefinidamente
+  if (estado.urlsProcesadas.length > 1000) {
+    estado.urlsProcesadas = estado.urlsProcesadas.slice(-1000);
   }
+  await guardarEstadoApp(ESTADO_CLAVE, estado);
 }
 
 // ─── DEDUPLICACIÓN POR URL ────────────────────────────────────────────────────
+// Normaliza la URL antes de comparar/guardar: sin hash, sin parámetros de
+// tracking (utm_*, fbclid, etc.) y sin barra final. Así la misma nota con
+// distintos parámetros no se procesa dos veces.
+function normalizarUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    u.hash = "";
+    const paramsABorrar: string[] = [];
+    u.searchParams.forEach((_v, k) => {
+      const key = k.toLowerCase();
+      if (key.startsWith("utm_") || ["fbclid", "gclid", "ref", "src", "s", "ncid", "cmpid", "outputtype"].includes(key)) {
+        paramsABorrar.push(k);
+      }
+    });
+    for (const k of paramsABorrar) u.searchParams.delete(k);
+    let s = u.toString();
+    if (s.endsWith("/")) s = s.slice(0, -1);
+    return s.toLowerCase();
+  } catch {
+    return url.trim().toLowerCase();
+  }
+}
+
+// Chequeo permanente en DB: ¿ya existe una noticia con esta URL canónica?
+// Sin ventana de tiempo ni tope de memoria — nunca se repite una URL publicada.
+async function urlYaEnDB(url: string): Promise<boolean> {
+  const normalizada = normalizarUrl(url);
+  if (!normalizada) return false;
+  try {
+    const res = await db.execute(
+      sqlRaw`SELECT 1 FROM noticias WHERE url_fuente = ${normalizada} LIMIT 1`
+    );
+    return res.rows.length > 0;
+  } catch (err) {
+    logger.error({ err }, "Scheduler: error consultando url_fuente en DB");
+    return false;
+  }
+}
+
 function urlYaProcesada(url: string, estado: SchedulerState): boolean {
   if (!url) return false;
-  return estado.urlsProcesadas.includes(url);
+  const normalizada = normalizarUrl(url);
+  return estado.urlsProcesadas.some((u) => normalizarUrl(u) === normalizada);
 }
 
 function marcarUrlProcesada(url: string, estado: SchedulerState): void {
-  if (!url || estado.urlsProcesadas.includes(url)) return;
-  estado.urlsProcesadas.push(url);
+  if (!url) return;
+  const normalizada = normalizarUrl(url);
+  if (estado.urlsProcesadas.some((u) => normalizarUrl(u) === normalizada)) return;
+  estado.urlsProcesadas.push(normalizada);
 }
 
-// ─── FILTRO DE ANTIGÜEDAD POR URL ─────────────────────────────────────────────
-// Muchos sitios incluyen la fecha en la URL: /2026/04/07/ o -2026-04-07-
-// Si detectamos fecha en la URL y es ≥ 3 días, la descartamos.
-function urlDemaisiadoVieja(url: string): boolean {
+// ─── FILTROS DE ACTUALIDAD Y URL ───────────────────────────────────────────────
+// Muchos sitios incluyen la fecha en la URL: /2026/04/07/ o -2026-04-07-.
+// La fecha también sirve como respaldo cuando el HTML no expone datePublished.
+function extraerFechaDeUrl(url: string): Date | null {
+  if (!url) return null;
+  const m = url.match(/[\/\-](20\d{2})[\/\-](\d{2})[\/\-](\d{2})(?:[\/\-]|$)/);
+  if (!m) return null;
+  const anio = Number(m[1]);
+  const mes = Number(m[2]);
+  const dia = Number(m[3]);
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia, 12));
+  return fecha.getUTCFullYear() === anio &&
+    fecha.getUTCMonth() === mes - 1 &&
+    fecha.getUTCDate() === dia
+    ? fecha
+    : null;
+}
+
+// Excluye páginas de autor, etiquetas, búsquedas y secciones: no son artículos
+// aunque algunos scrapers las devuelvan con un título periodístico.
+function pareceUrlDeArticulo(url: string): boolean {
   if (!url) return false;
-  // Patrón /YYYY/MM/DD/ o -YYYY-MM-DD o similar
-  const m = url.match(/[\/\-](20\d{2})[\/\-](\d{2})[\/\-](\d{2})[\/\-]/);
-  if (!m) return false;
-  const [, anio, mes, dia] = m.map(Number);
-  const fechaArticulo = Date.UTC(anio, mes - 1, dia);
-  const ahora = Date.now();
-  const diasAtras = (ahora - fechaArticulo) / (1000 * 60 * 60 * 24);
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    return !/(^|\/)(autor|author|tag|tags|tema|category|categoria|seccion|search|buscar)(\/|$)/.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+// Si detectamos fecha en la URL y es ≥ 3 días, la descartamos incluso antes
+// de descargar el artículo. La autopublicación aplica luego un límite más duro.
+function urlDemaisiadoVieja(url: string): boolean {
+  const fechaArticulo = extraerFechaDeUrl(url);
+  if (!fechaArticulo) return false;
+  const diasAtras = (Date.now() - fechaArticulo.getTime()) / (1000 * 60 * 60 * 24);
   return diasAtras >= 3;
 }
 
 // ─── DEDUPLICACIÓN POR DB ─────────────────────────────────────────────────────
-// Compara el título candidato con las noticias de los últimos 7 días.
-// Si 4 o más palabras significativas (≥5 chars) coinciden → mismo tema → saltar.
-// Umbral = 4 palabras (antes 3) para evitar falsos positivos en noticias distintas.
-
-async function tituloYaProcesado(titulo: string): Promise<boolean> {
+// Compara contra títulos de la misma categoría creados recientemente. El
+// original scrapeado es la señal prioritaria; el título reescrito por la IA
+// queda como respaldo. La ventana es deliberadamente corta: no reemplaza la
+// deduplicación permanente por URL ni el control factual de 48 horas.
+async function tituloYaProcesado(titulo: string, categoria: Categoria): Promise<boolean> {
   try {
     const res = await db.execute(sqlRaw`
-      SELECT titulo FROM noticias
-      WHERE created_at > NOW() - INTERVAL '7 days'
+      SELECT titulo, texto_original FROM noticias
+      WHERE categoria = ${categoria}
+        AND created_at > NOW() - INTERVAL '7 days'
     `);
 
-    const palabras = titulo
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z\s]/g, "")
-      .split(/\s+/)
-      .filter(p => p.length >= 5);  // palabras más largas = más significativas
-
-    if (palabras.length === 0) return false;
-
-    for (const row of res.rows as { titulo: string }[]) {
-      const existente = row.titulo
-        .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z\s]/g, "");
-      const coincidencias = palabras.filter(p => existente.includes(p));
-      if (coincidencias.length >= 4) {
-        logger.info({ candidato: titulo, existente: row.titulo, coincidencias }, "Scheduler: tema repetido, saltando");
+    for (const row of res.rows as { titulo: string; texto_original: string | null }[]) {
+      // Título original scrapeado = primera línea de texto_original
+      const tituloOriginal = (row.texto_original ?? "").split("\n")[0] ?? "";
+      if (noticiaDuplicadaPorTitulo(titulo, {
+        original: tituloOriginal,
+        reescrito: row.titulo,
+      })) {
+        logger.info(
+          { candidato: titulo, original: tituloOriginal, reescrito: row.titulo },
+          "Scheduler: tema repetido, saltando",
+        );
         return true;
       }
     }
@@ -159,6 +264,12 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
       if (m) { titulo = m[1].trim(); tituloLineIdx = i; break; }
     }
   }
+
+  // Guardarraíl: nunca dejar el título "firmado" por el medio de origen
+  // (ej: "River ganó - Olé"). La nota se presenta como redacción propia.
+  titulo = titulo
+    .replace(/\s+[-–—|]\s+(Olé|Ole|TyC Sports|Clarín|Clarin|La Nación|La Nacion|Infobae|ESPN|DeporTV|LA17|Doble Amarilla|cariverplate\.com\.ar|riverplate\.com)\s*$/i, "")
+    .trim();
 
   // ── Extraer bajada ─────────────────────────────────────────────────────────
   let bajada = "";
@@ -201,12 +312,12 @@ function parsearResultado(texto: string): { titulo: string; contenido: string; t
 
   let contenido = bodyLines.join("\n").trim();
 
-  // Si la bajada es valiosa, la prepend como cursiva
+  // Si la bajada es valiosa, la prepend como primer párrafo
   if (bajada) {
-    contenido = `*${bajada}*\n\n${contenido}`;
+    contenido = `${bajada}\n\n${contenido}`;
   }
 
-  return { titulo, contenido, tags };
+  return limpiarNota({ titulo, contenido, tags });
 }
 
 // ─── LIMPIEZA DE TEXTO ────────────────────────────────────────────────────────
@@ -233,47 +344,26 @@ function limpiarTexto(texto: string): string {
     .trim();
 }
 
-// Extrae la fecha de publicación del artículo leyendo metadatos del HTML.
-// Devuelve un Date o null si no se pudo determinar.
-function extraerFechaDeHtml($: ReturnType<typeof cheerio.load>): Date | null {
-  // 1. Open Graph / article:published_time
-  const ogDate = $('meta[property="article:published_time"]').attr("content")
-    ?? $('meta[name="article:published_time"]').attr("content")
-    ?? $('meta[property="article:modified_time"]').attr("content");
-  if (ogDate) {
-    const d = new Date(ogDate);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  // 2. <time> con datetime
-  const timeEl = $("time[datetime]").first().attr("datetime");
-  if (timeEl) {
-    const d = new Date(timeEl);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  // 3. JSON-LD datePublished
-  let ldDate: string | null = null;
-  $('script[type="application/ld+json"]').each((_, el) => {
-    if (ldDate) return;
-    try {
-      const obj = JSON.parse($(el).text()) as Record<string, unknown>;
-      const dp = obj["datePublished"] ?? obj["dateModified"];
-      if (typeof dp === "string") ldDate = dp;
-    } catch { /* skip */ }
-  });
-  if (ldDate) {
-    const d = new Date(ldDate);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  return null;
-}
-
 interface TextoArticulo {
   texto: string;
   fechaPublicacion: Date | null;
   imagenUrl: string | null;
+  esArticulo: boolean;
+}
+
+function resolverUrlDocumento(raw: unknown, base: string): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  try {
+    return new URL(raw, base).toString();
+  } catch {
+    return null;
+  }
+}
+
+function fechaValida(raw: unknown): Date | null {
+  if (typeof raw !== "string") return null;
+  const fecha = new Date(raw);
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
 }
 
 async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
@@ -282,11 +372,83 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
       headers: { "User-Agent": UA, "Accept-Language": "es-AR,es;q=0.9" },
       signal: AbortSignal.timeout(12000),
     });
-    if (!res.ok) return { texto: "", fechaPublicacion: null, imagenUrl: null };
+    if (!res.ok) return { texto: "", fechaPublicacion: null, imagenUrl: null, esArticulo: false };
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    const fechaPublicacion = extraerFechaDeHtml($);
+    const urlFinal = res.url || url;
+    const canonical = resolverUrlDocumento(
+      $('link[rel="canonical"]').attr("href") ??
+        $('meta[property="og:url"]').attr("content"),
+      urlFinal,
+    );
+    const urlPagina = canonical ?? urlFinal;
+    const paginaCoincideConRespuesta =
+      normalizarUrl(urlPagina) === normalizarUrl(urlFinal);
+    const tipoOg = ($('meta[property="og:type"]').attr("content") ?? "").toLowerCase();
+
+    // Reunir únicamente nodos Article/NewsArticle. Luego exigimos que su URL
+    // corresponda al documento canónico solicitado, no a una tarjeta/listado.
+    const nodosArticulo: Record<string, unknown>[] = [];
+    const buscarNodosArticulo = (value: unknown): void => {
+      if (value === null || typeof value !== "object") return;
+      if (Array.isArray(value)) {
+        for (const item of value) buscarNodosArticulo(item);
+        return;
+      }
+      const obj = value as Record<string, unknown>;
+      const tipo = obj["@type"];
+      const tipos = Array.isArray(tipo) ? tipo : [tipo];
+      if (tipos.some((t) => typeof t === "string" && /^(news)?article$/i.test(t))) {
+        nodosArticulo.push(obj);
+      }
+      for (const child of Object.values(obj)) buscarNodosArticulo(child);
+    };
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        buscarNodosArticulo(JSON.parse($(el).text()) as unknown);
+      } catch { /* skip */ }
+    });
+
+    const urlsDeNodo = (nodo: Record<string, unknown>): string[] => {
+      const main = nodo["mainEntityOfPage"];
+      const candidatos: unknown[] = [
+        nodo["url"],
+        nodo["@id"],
+        typeof main === "object" && main !== null
+          ? (main as Record<string, unknown>)["@id"] ?? (main as Record<string, unknown>)["url"]
+          : main,
+      ];
+      return candidatos
+        .map((valor) => resolverUrlDocumento(valor, urlPagina))
+        .filter((valor): valor is string => Boolean(valor));
+    };
+
+    let nodoArticulo = nodosArticulo.find((nodo) =>
+      urlsDeNodo(nodo).some((urlNodo) => normalizarUrl(urlNodo) === normalizarUrl(urlPagina)),
+    );
+    // Algunos medios omiten url/mainEntityOfPage en su único NewsArticle.
+    // Solo lo aceptamos cuando el propio documento declara og:type=article.
+    if (!nodoArticulo && nodosArticulo.length === 1 && tipoOg === "article") {
+      nodoArticulo = nodosArticulo[0];
+    }
+
+    const esArticulo =
+      paginaCoincideConRespuesta &&
+      (Boolean(nodoArticulo) || tipoOg === "article");
+
+    // La fecha debe pertenecer al nodo Article que coincide con la URL. Si no
+    // hay JSON-LD, aceptamos metadata/tiempo solo en una página og:type=article.
+    let fechaPublicacion = nodoArticulo
+      ? fechaValida(nodoArticulo["datePublished"])
+      : null;
+    if (!fechaPublicacion && esArticulo && tipoOg === "article") {
+      fechaPublicacion = fechaValida(
+        $('meta[property="article:published_time"]').attr("content") ??
+          $('meta[name="article:published_time"]').attr("content") ??
+          $("article time[datetime]").first().attr("datetime"),
+      );
+    }
 
     // Extraer imagen principal del artículo
     const imagenUrl =
@@ -296,7 +458,11 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
       $('meta[name="og:image"]').attr("content") ??
       null;
 
-    // Selectores en orden de prioridad; incluye cariverplate.com.ar (#wrappertext) y otros sitios
+    // Primero usamos articleBody del nodo canónico. Si no existe, extraemos
+    // párrafos solo de contenedores de contenido del artículo confirmado.
+    const articleBodyLd = nodoArticulo && typeof nodoArticulo["articleBody"] === "string"
+      ? limpiarTexto(nodoArticulo["articleBody"])
+      : "";
     const SELECTORES = [
       "article p",
       ".article-body p",
@@ -309,12 +475,15 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
       ".desarrollada p",       // cariverplate.com.ar (fallback)
     ].join(", ");
 
-    let parrafos = $(SELECTORES)
-      .map((_idx, el) => limpiarTexto($(el).text().trim()))
-      .get()
-      .filter((t: string) => t.length > 50);
+    let parrafos: string[] = esArticulo
+      ? $(SELECTORES)
+          .map((_idx, el) => limpiarTexto($(el).text().trim()))
+          .get()
+          .filter((t: string) => t.length > 50)
+      : [];
 
-    // Fallback: si ningún selector especializado funcionó, buscar todos los <p> con texto
+    // Fallback solo para extracción manual. No convierte por sí mismo una
+    // portada/sección en artículo: esArticulo conserva la evidencia positiva.
     if (parrafos.length === 0) {
       parrafos = $("p")
         .map((_idx, el) => limpiarTexto($(el).text().trim()))
@@ -322,10 +491,17 @@ async function obtenerTextoArticulo(url: string): Promise<TextoArticulo> {
         .filter((t: string) => t.length > 80);
     }
 
-    const texto = parrafos.slice(0, 20).join("\n\n");
-    return { texto: texto.length > 200 ? texto : "", fechaPublicacion, imagenUrl };
+    const texto = articleBodyLd.length > 200
+      ? articleBodyLd
+      : parrafos.slice(0, 20).join("\n\n");
+    return {
+      texto: texto.length > 200 ? texto : "",
+      fechaPublicacion,
+      imagenUrl,
+      esArticulo,
+    };
   } catch {
-    return { texto: "", fechaPublicacion: null, imagenUrl: null };
+    return { texto: "", fechaPublicacion: null, imagenUrl: null, esArticulo: false };
   }
 }
 
@@ -336,9 +512,60 @@ export type EjecucionResultado =
   | { tipo: "sin_noticias"; fuente: string }
   | { tipo: "todas_procesadas"; fuente: string }
   | { tipo: "ia_sin_contenido" }
+ | { tipo: "sin_portada"; fuente: string }
   | { tipo: "telegram_error"; fuente: string }
   | { tipo: "ok"; titulo: string; id: number; fuente: string }
   | { tipo: "error"; mensaje: string };
+
+// ─── PORTADA GARANTIZADA ──────────────────────────────────────────────────────
+// Toda nota publicada debe tener foto de portada:
+// 1. Se descarga la imagen scrapeada del artículo y se guarda en object storage
+//    (URL /objects/... que el frontend ya sabe resolver).
+// 2. Si no hay imagen o falla la descarga, se usa una foto de respaldo de la
+//    galería del sitio (estáticas en /images/galeria/).
+const PORTADAS_FALLBACK = Array.from({ length: 12 }, (_, i) =>
+  `/images/galeria/foto-${String(i + 1).padStart(2, "0")}.jpeg`,
+);
+
+function portadaFallback(): string {
+  return PORTADAS_FALLBACK[Math.floor(Math.random() * PORTADAS_FALLBACK.length)];
+}
+
+const EXT_POR_MIME: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/avif": "avif",
+};
+
+// Protección SSRF compartida (ver lib/url-imagen-segura.ts)
+
+async function guardarPortadaEnStorage(imagenUrl: string): Promise<string | null> {
+  if (!urlImagenSegura(imagenUrl)) {
+    logger.warn({ imagenUrl }, "Scheduler: URL de imagen rechazada por seguridad");
+    return null;
+  }
+  try {
+    const res = await fetch(imagenUrl, {
+      headers: { "User-Agent": UA },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return null;
+    const contentType = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    const ext = EXT_POR_MIME[contentType];
+    if (!ext) return null;
+    const buffer = Buffer.from(await res.arrayBuffer());
+    // Sanidad: entre 1KB y 15MB
+    if (buffer.length < 1024 || buffer.length > 15 * 1024 * 1024) return null;
+    const storage = new ObjectStorageService();
+    const subPath = `portadas/portada-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    return await storage.uploadBuffer(subPath, buffer, contentType);
+  } catch (err) {
+    logger.warn({ err, imagenUrl }, "Scheduler: no se pudo guardar la portada en storage");
+    return null;
+  }
+}
 
 // ─── FLAG ANTI-CONCURRENCIA ───────────────────────────────────────────────────
 let enEjecucion = false;
@@ -351,7 +578,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
   enEjecucion = true;
 
   try {
-    const estado = leerEstado();
+    const estado = await leerEstado();
 
     // Elegir categoría: override > alternancia automática
     let categoria: Categoria;
@@ -366,62 +593,140 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
 
     const fuentesList = categoria === "seleccion" ? FUENTES_SELECCION : FUENTES;
     const indexKey = categoria === "seleccion" ? "fuenteIndexSel" : "fuenteIndex";
-    const fuente = fuenteOverride ?? fuentesList[estado[indexKey] % fuentesList.length];
-
-    if (!fuenteOverride) {
-      estado[indexKey] += 1;
-      guardarEstado(estado);
-    } else if (categoriaOverride && esAutomatico === false) {
-      // Si vino override con categoria, persistimos el flip igual
-      guardarEstado(estado);
-    }
-
-    logger.info({ categoria, fuente, siguiente: fuentesList[estado[indexKey] % fuentesList.length] }, "Scheduler: iniciando ciclo");
+    const indiceInicial = estado[indexKey] % fuentesList.length;
 
     const port = process.env.PORT;
     const endpoint = categoria === "seleccion" ? "noticias-seleccion" : "noticias-river";
-    const noticiasRes = await fetch(`http://localhost:${port}/api/${endpoint}?fuente=${fuente}`, {
-      signal: AbortSignal.timeout(35000),
-    });
 
-    if (!noticiasRes.ok) {
-      logger.warn({ fuente, status: noticiasRes.status }, "Scheduler: scraping falló");
-      return { tipo: "scraping_fallido", fuente };
-    }
+    // Con override probamos solo esa fuente; sin override recorremos la lista
+    // completa empezando por la que toca según la rotación. Antes, si la
+    // fuente del turno no tenía nada nuevo, el ciclo entero se perdía.
+    const maxIntentos = fuenteOverride ? 1 : fuentesList.length;
 
-    const data = await noticiasRes.json() as { noticias?: { titulo: string; url: string; fuente: string }[] };
-    const noticias = data.noticias ?? [];
+    let fuente: string = fuenteOverride ?? fuentesList[indiceInicial];
+    let noticiaElegida: { titulo: string; url: string; fuente: string } | null = null;
+    let articuloElegido: TextoArticulo | null = null;
+    let huboScrapingOk = false;
 
-    if (!noticias.length) {
-      logger.warn({ fuente }, "Scheduler: no se encontraron noticias");
-      return { tipo: "sin_noticias", fuente };
-    }
+    for (let intento = 0; intento < maxIntentos; intento++) {
+      fuente = fuenteOverride ?? fuentesList[(indiceInicial + intento) % fuentesList.length];
 
-    // ── DEDUPLICACIÓN TRIPLE: URL procesada + antigüedad + título ────────
-    let noticiaElegida: typeof noticias[0] | null = null;
+      if (!fuenteOverride) {
+        estado[indexKey] = indiceInicial + intento + 1;
+        await guardarEstado(estado);
+      } else if (categoriaOverride && esAutomatico === false) {
+        // Si vino override con categoria, persistimos el flip igual
+        await guardarEstado(estado);
+      }
 
-    for (const candidata of noticias) {
-      // 1. Descartar si la URL ya fue procesada (igual artículo, distinto ciclo)
-      if (candidata.url && urlYaProcesada(candidata.url, estado)) {
-        logger.info({ url: candidata.url }, "Scheduler: URL ya procesada, saltando");
+      logger.info({ categoria, fuente, intento: intento + 1, siguiente: fuentesList[estado[indexKey] % fuentesList.length] }, "Scheduler: iniciando ciclo");
+
+      let noticias: { titulo: string; url: string; fuente: string }[] = [];
+      try {
+        const noticiasRes = await fetch(`http://localhost:${port}/api/${endpoint}?fuente=${fuente}`, {
+          signal: AbortSignal.timeout(35000),
+        });
+
+        if (!noticiasRes.ok) {
+          logger.warn({ fuente, status: noticiasRes.status }, "Scheduler: scraping falló");
+          if (fuenteOverride) return { tipo: "scraping_fallido", fuente };
+          continue;
+        }
+
+        const data = await noticiasRes.json() as { noticias?: { titulo: string; url: string; fuente: string }[] };
+        noticias = data.noticias ?? [];
+      } catch (err) {
+        logger.warn({ err, fuente }, "Scheduler: error/timeout scrapeando la fuente");
+        if (fuenteOverride) return { tipo: "scraping_fallido", fuente };
         continue;
       }
-      // 2. Descartar si la URL tiene fecha y es ≥3 días antigua
-      if (candidata.url && urlDemaisiadoVieja(candidata.url)) {
-        logger.info({ url: candidata.url, titulo: candidata.titulo }, "Scheduler: artículo demasiado viejo, saltando");
+      huboScrapingOk = true;
+
+      if (!noticias.length) {
+        logger.warn({ fuente }, "Scheduler: no se encontraron noticias");
+        if (fuenteOverride) return { tipo: "sin_noticias", fuente };
         continue;
       }
-      // 3. Descartar si el tema (por título) ya fue cubierto esta semana
-      const yaExistePorTitulo = await tituloYaProcesado(candidata.titulo);
-      if (yaExistePorTitulo) continue;
 
-      noticiaElegida = candidata;
-      break;
+      // ── DEDUPLICACIÓN TRIPLE: URL procesada + antigüedad + título ────────
+      for (const candidata of noticias) {
+        // 0. Exigir una URL de artículo real; páginas de autor/sección generan
+        // notas falsas o desactualizadas al mezclar varios contenidos.
+        if (!pareceUrlDeArticulo(candidata.url)) {
+          logger.info({ url: candidata.url, titulo: candidata.titulo }, "Scheduler: URL no corresponde a un artículo, saltando");
+          continue;
+        }
+        // 1. Descartar si la URL ya fue procesada (igual artículo, distinto ciclo)
+        if (candidata.url && urlYaProcesada(candidata.url, estado)) {
+          logger.info({ url: candidata.url }, "Scheduler: URL ya procesada, saltando");
+          continue;
+        }
+        // 1b. Chequeo permanente en DB (sin ventana de tiempo ni tope de memoria)
+        if (candidata.url && (await urlYaEnDB(candidata.url))) {
+          logger.info({ url: candidata.url }, "Scheduler: URL ya publicada en DB, saltando");
+          continue;
+        }
+        // 2. Descartar si la URL tiene fecha y es ≥3 días antigua
+        if (candidata.url && urlDemaisiadoVieja(candidata.url)) {
+          logger.info({ url: candidata.url, titulo: candidata.titulo }, "Scheduler: artículo demasiado viejo, saltando");
+          continue;
+        }
+        // 3. Descartar si el tema (por título) ya fue cubierto esta semana
+        const yaExistePorTitulo = await tituloYaProcesado(candidata.titulo, categoria);
+        if (yaExistePorTitulo) continue;
+
+        // 4. En automático, validar el documento real ANTES de elegirlo. Si
+        // falla, seguimos con la próxima noticia/fuente en este mismo ciclo.
+        if (esAutomatico) {
+          const articulo = await obtenerTextoArticulo(candidata.url);
+          const fecha = articulo.fechaPublicacion ?? extraerFechaDeUrl(candidata.url);
+          const diasAtras = fecha
+            ? (Date.now() - fecha.getTime()) / (1000 * 60 * 60 * 24)
+            : null;
+          const motivoBloqueo =
+            !articulo.esArticulo
+              ? "la página no tiene evidencia de ser un artículo"
+              : !articulo.texto
+                ? "no se pudo extraer un cuerpo periodístico"
+                : !fecha
+                  ? "no tiene fecha de publicación verificable"
+                  : diasAtras! < -0.5
+                    ? "la fecha de publicación es futura o anómala"
+                    : diasAtras! >= 2
+                      ? "supera las 48 horas de antigüedad"
+                      : null;
+
+          if (motivoBloqueo) {
+            logger.warn(
+              {
+                url: candidata.url,
+                titulo: candidata.titulo,
+                fecha: fecha?.toISOString() ?? null,
+                diasAtras: diasAtras?.toFixed(1) ?? null,
+                motivo: motivoBloqueo,
+              },
+              "Scheduler: candidato bloqueado por control de actualidad",
+            );
+            marcarUrlProcesada(candidata.url, estado);
+            await guardarEstado(estado);
+            continue;
+          }
+
+          articuloElegido = { ...articulo, fechaPublicacion: fecha };
+        }
+
+        noticiaElegida = candidata;
+        break;
+      }
+
+      if (noticiaElegida) break;
+
+      logger.warn({ fuente }, "Scheduler: todas las noticias de esta fuente ya fueron procesadas o son antiguas, probando la siguiente");
     }
 
     if (!noticiaElegida) {
-      logger.warn({ fuente }, "Scheduler: todas las noticias disponibles ya fueron procesadas o son antiguas");
-      return { tipo: "todas_procesadas", fuente };
+      logger.warn({ fuente }, "Scheduler: ninguna fuente tuvo noticias nuevas en este ciclo");
+      return huboScrapingOk ? { tipo: "todas_procesadas", fuente } : { tipo: "scraping_fallido", fuente };
     }
 
     logger.info({ titulo: noticiaElegida.titulo, url: noticiaElegida.url }, "Scheduler: noticia seleccionada");
@@ -429,99 +734,97 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     // ── EXTRAER TEXTO DEL ARTÍCULO + VALIDAR FECHA ────────────────────────
     let textoParaIA = noticiaElegida.titulo;
     let imagenAutoUrl: string | null = null;
+    let fechaPublicacionVerificada: Date | null = null;
+    let fechaEventoVerificada: Date | null = null;
     if (noticiaElegida.url) {
-      const { texto, fechaPublicacion, imagenUrl } = await obtenerTextoArticulo(noticiaElegida.url);
+      const { texto, fechaPublicacion: fechaHtml, imagenUrl } =
+        articuloElegido ?? await obtenerTextoArticulo(noticiaElegida.url);
+      const fechaPublicacion = fechaHtml ?? extraerFechaDeUrl(noticiaElegida.url);
+      fechaPublicacionVerificada = fechaPublicacion;
       imagenAutoUrl = imagenUrl;
 
-      // Si la fecha del artículo es detectable y tiene más de 3 días, descartar
+      // Rechazar fechas futuras anómalas y artículos de más de 48 horas en el
+      // flujo automático. Los pedidos manuales mantienen el máximo de 3 días.
       if (fechaPublicacion) {
         const diasAtras = (Date.now() - fechaPublicacion.getTime()) / (1000 * 60 * 60 * 24);
-        if (diasAtras >= 3) {
+        const limiteDias = esAutomatico ? 2 : 3;
+        if (diasAtras < -0.5 || diasAtras >= limiteDias) {
           logger.warn(
-            { url: noticiaElegida.url, titulo: noticiaElegida.titulo, diasAtras: diasAtras.toFixed(1), fecha: fechaPublicacion.toISOString() },
-            "Scheduler: artículo viejo detectado por fecha del HTML, descartando"
+            { url: noticiaElegida.url, titulo: noticiaElegida.titulo, diasAtras: diasAtras.toFixed(1), limiteDias, fecha: fechaPublicacion.toISOString() },
+            "Scheduler: fecha fuera de la ventana de actualidad, descartando"
           );
           // Marcar como procesada para no volver a intentarlo
           marcarUrlProcesada(noticiaElegida.url, estado);
-          guardarEstado(estado);
+          await guardarEstado(estado);
           return { tipo: "todas_procesadas", fuente };
         }
-        logger.info({ fechaPublicacion: fechaPublicacion.toISOString(), diasAtras: diasAtras.toFixed(1) }, "Scheduler: artículo dentro del rango de fechas");
+        logger.info({ fechaPublicacion: fechaPublicacion.toISOString(), diasAtras: diasAtras.toFixed(1), limiteDias }, "Scheduler: artículo dentro del rango de actualidad");
       }
 
       if (texto) {
         textoParaIA = `${noticiaElegida.titulo}\n\n${texto}`;
       }
+      // La fecha de publicación sólo sirve para el filtro de actualidad. Para
+      // convertir una hora argentina a Israel hay que usar la fecha explícita
+      // del partido/evento, porque las reglas de horario de verano pueden
+      // cambiar entre la publicación y el encuentro.
+      fechaEventoVerificada = extraerFechaDelEvento(
+        textoParaIA,
+        fechaPublicacionVerificada?.getUTCFullYear(),
+      );
     }
 
-    // ── GENERAR CON IA (Gemini Flash) ─────────────────────────────────────
-    const promptSistema = categoria === "seleccion" ? PROMPT_SELECCION : PROMPT_MAESTRO;
-    const contextoSitio = categoria === "seleccion"
-      ? "Transformá esta noticia para el sitio La Scaloneta en Israel"
-      : "Transformá esta noticia para el sitio River en Israel";
-    const tagsFallback = categoria === "seleccion"
-      ? "#Argentina #Scaloneta #Mundial2026 #LaScaloneta"
-      : "#RiverPlate #RiverIsrael #RamatGan #ElMasGrande";
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: `${contextoSitio}:\n\n${textoParaIA}` }] }],
-      config: {
-        systemInstruction: promptSistema,
-        maxOutputTokens: 8000,
-      },
+    // ── GENERAR PAQUETE ESTRUCTURADO (OpenAI gpt-4o-mini) ──────────────────
+    // La generación y la validación de web_content + telegram_caption ocurren
+    // antes del insert. Un error o salida inválida deja el artículo sin guardar.
+    const paquete = await generarNotaEstructurada({
+      sourceText: textoParaIA,
+      sourceUrl: noticiaElegida.url,
+      eventDate: fechaEventoVerificada,
+      categoria,
     });
-
-    let resultado = response.text ?? "";
-    if (!resultado || resultado.length < 50) {
-      logger.error("Scheduler: la IA no generó contenido");
-      return { tipo: "ia_sin_contenido" };
+    const titulo = paquete.titulo;
+    const contenido = `${paquete.bajada}\n\n${paquete.web_content}`.trim();
+    const telegramCaption = paquete.telegram_caption;
+    // Cinturón de seguridad editorial: aunque una fuente reciente conserve
+    // contexto viejo o la IA ignore el prompt, una nota automática no puede
+    // presentar nuevamente a Coudet como parte de la actualidad de River.
+    // Las menciones históricas pueden revisarse mediante el flujo manual.
+    if (
+      esAutomatico &&
+      categoria === "river" &&
+      /\b(coudet|chacho|eduardo\s+ponzio)\b/i.test(`${titulo}\n${contenido}`)
+    ) {
+      logger.error(
+        { url: noticiaElegida.url, titulo },
+        "Scheduler: nota bloqueada por contexto técnico desactualizado",
+      );
+      marcarUrlProcesada(noticiaElegida.url, estado);
+      await guardarEstado(estado);
+      return { tipo: "todas_procesadas", fuente };
     }
-
-    logger.info({
-      chars: resultado.length,
-      preview: resultado.slice(0, 200).replace(/\n/g, "↵"),
-    }, "Scheduler: output AI inicial");
-
-    // ── CONTROL DE CALIDAD PRE-GUARDADO ───────────────────────────────────
-    let parsed = parsearResultado(resultado);
-    const MINIMO_CHARS = 1400;
-    const cortada = /[…\.]{3,}\s*$/.test(parsed.contenido.trimEnd());
-    const corta   = parsed.contenido.length < MINIMO_CHARS;
-
-    if (corta || cortada) {
-      logger.warn({
-        chars: parsed.contenido.length,
-        cortada,
-      }, "Scheduler: nota insuficiente, solicitando expansión a la IA");
-      const expansion = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [
-          { role: "user",  parts: [{ text: `${contextoSitio}:\n\n${textoParaIA}` }] },
-          { role: "model", parts: [{ text: resultado }] },
-          { role: "user",  parts: [{ text: "La nota está incompleta o es demasiado corta (mínimo 1400 caracteres). Continuá y expandí: desarrollá el análisis, el contexto histórico y las preguntas que quedan abiertas. Cerrá siempre con un párrafo contundente desde la perspectiva de la Filial Ramat Gan. La última palabra debe ser punto final, nunca puntos suspensivos ni cortes abruptos." }] },
-        ],
-        config: { systemInstruction: promptSistema, maxOutputTokens: 8000 },
-      });
-      const resultadoExpandido = expansion.text ?? "";
-      if (resultadoExpandido && resultadoExpandido.length > resultado.length) {
-        resultado = resultadoExpandido;
-        parsed = parsearResultado(resultado);
-        logger.info({ chars: parsed.contenido.length }, "Scheduler: expansión aplicada");
-      }
-    }
-
-    const { titulo, contenido } = parsed;
-    // Si la IA dejó el fallback de River para una nota de Selección (raro pero posible),
-    // sustituimos por los tags correctos de la categoría.
-    let { tags } = parsed;
-    if (categoria === "seleccion" && /^#RiverPlate/.test(tags.trim())) {
-      tags = tagsFallback;
-    }
+    const tags = paquete.tags;
     const fuenteNombre = noticiaElegida.fuente ?? fuente;
 
+    // ── PORTADA GARANTIZADA ───────────────────────────────────────────────
+    // Descargamos la imagen del artículo al object storage; si no hay o falla,
+    // usamos una foto de respaldo de la galería. Nunca se publica sin foto.
+    let imagenPortadaFinal: string | null = null;
+    if (imagenAutoUrl) {
+      imagenPortadaFinal = await guardarPortadaEnStorage(imagenAutoUrl);
+    }
+    // Regla (pedido del usuario, ago 2026): en modo automático la nota SIEMPRE
+    // se autopublica en el sitio. Si el artículo no traía foto (o falló la
+    // descarga), se usa una foto de respaldo de la galería y se avisa en la
+    // notificación de Telegram para que puedan cambiarla desde el Redactor.
+    const autopublicar = esAutomatico;
+    const usoFallback = !imagenPortadaFinal;
+    if (!imagenPortadaFinal) {
+      imagenPortadaFinal = portadaFallback();
+      logger.info({ portada: imagenPortadaFinal }, "Scheduler: usando foto de portada de respaldo");
+    }
+
     // ── GUARDAR EN DB ─────────────────────────────────────────────────────
-    // Siempre guardamos la imagen extraída automáticamente.
     // Modo automático: autopublicación directa.
     // Modo manual (/buscar, /noticia): pendiente de aprobación.
     const [savedNoticia] = await db
@@ -533,17 +836,34 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         textoOriginal: textoParaIA.slice(0, 3000),
         fuente: fuenteNombre,
         categoria,
-        publicada: esAutomatico,
-        pendiente: !esAutomatico,
-        imagenPortada: imagenAutoUrl ?? "",
+        publicada: autopublicar,
+        pendiente: !autopublicar,
+        imagenPortada: imagenPortadaFinal,
+        urlFuente: noticiaElegida.url ? normalizarUrl(noticiaElegida.url) : "",
       })
+      // Índice único parcial en url_fuente: si otro proceso ya guardó esta URL,
+      // no insertamos un duplicado.
+      .onConflictDoNothing()
       .returning();
+
+    if (!savedNoticia) {
+      logger.warn({ url: noticiaElegida.url }, "Scheduler: URL ya insertada por otro proceso, saltando duplicado");
+      if (noticiaElegida.url) {
+        marcarUrlProcesada(noticiaElegida.url, estado);
+        await guardarEstado(estado);
+      }
+      return { tipo: "todas_procesadas", fuente };
+    }
+    recordarCaptionPorNota(savedNoticia.id, telegramCaption);
 
     // Marcar URL como procesada para no volver a enviarla
     if (noticiaElegida.url) {
       marcarUrlProcesada(noticiaElegida.url, estado);
-      guardarEstado(estado);
+      await guardarEstado(estado);
     }
+
+    // Redes no depende de que el bot de Telegram esté configurado.
+    if (autopublicar) enviarNotaAMake(savedNoticia);
 
     // ── ENVIAR A TELEGRAM ─────────────────────────────────────────────────
     // Las notas de Selección van al bot de la Scaloneta; las de River al de River.
@@ -556,19 +876,65 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     const { token, chatId } = cred;
 
     const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
-    const TELEGRAM_MAX = 4096;
 
     // 🌐 Si se publicó automáticamente, lanzar traducción al hebreo en background
-    if (esAutomatico && savedNoticia) {
+    if (autopublicar && savedNoticia) {
       traducirYGuardarHebreo(savedNoticia.id).catch(() => {});
     }
 
-    if (esAutomatico) {
-      // ── MODO AUTOMÁTICO: FYI solo, ya está publicada ──────────────────
-      const fotoTexto = imagenAutoUrl ? "\n🖼 _Foto de portada incluida_" : "\n📷 _Sin foto (podés agregar desde el Redactor)_";
-      const etiquetaCat = categoria === "seleccion" ? "🇦🇷 _Categoría: Selección Argentina_\n" : "⚪️🔴 _Categoría: River_\n";
-      const mensajeFIY = `✅ *Nota autopublicada en el sitio*\n\n📰 *${titulo}*\n\n${etiquetaCat}📡 _Fuente: ${fuenteNombre}_${fotoTexto}`;
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    // Foto de portada para Telegram: la del artículo si existe (solo URLs
+    // absolutas http/https), o la de respaldo (absolutizada al dominio del sitio).
+    const imagenAutoAbsoluta = imagenAutoUrl?.startsWith("//")
+      ? `https:${imagenAutoUrl}`
+      : imagenAutoUrl?.startsWith("http")
+        ? imagenAutoUrl
+        : null;
+    const fotoParaTelegram =
+      imagenAutoAbsoluta ??
+      (imagenPortadaFinal?.startsWith("/objects/")
+        ? `https://${dominioTelegram}/api/storage${imagenPortadaFinal}`
+        : imagenPortadaFinal
+          ? `https://${dominioTelegram}${imagenPortadaFinal}`
+          : null);
+    const capFotoBase = usoFallback
+      ? `🖼 _Foto de respaldo (el artículo no traía foto; podés cambiarla desde el Redactor) — ${titulo.replace(/[*_`[\]]/g, "")}_`
+      : `🖼 _Foto de portada — ${titulo.replace(/[*_`[\]]/g, "")}_`;
+    // Telegram limita los captions a 1024 caracteres
+    const capFoto = capFotoBase.length > 1024 ? capFotoBase.slice(0, 1023) + "_" : capFotoBase;
+    if (fotoParaTelegram) {
+      const fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          photo: fotoParaTelegram,
+          caption: capFoto,
+          parse_mode: "Markdown",
+        }),
+      }).catch((err) => {
+        logger.warn({ err, id: savedNoticia.id }, "Scheduler: error de red enviando foto a Telegram");
+        return null;
+      });
+      if (fotoRes) {
+        const fotoData = await fotoRes.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+        if (!fotoRes.ok || fotoData?.ok === false) {
+          logger.warn(
+            { status: fotoRes.status, description: fotoData?.description, id: savedNoticia.id },
+            "Scheduler: Telegram rechazó la foto",
+          );
+        }
+      }
+    }
+
+    if (autopublicar) {
+      // ── MODO AUTOMÁTICO: Telegram recibe solamente el teaser generado,
+      // nunca el artículo completo.
+      const mensajeFIY = resolverCaptionTelegram(telegramCaption, {
+        titulo,
+        contenido,
+        url: `https://${dominioTelegram}/noticia/${savedNoticia.id}`,
+      });
+      const resFYI = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -577,29 +943,21 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
           parse_mode: "Markdown",
           reply_markup: {
             inline_keyboard: [[
+              { text: "🌐 Ver la nota", url: `https://${dominioTelegram}/noticia/${savedNoticia.id}` },
               { text: "✏️ Editar en Redactor", url: `https://${dominioTelegram}/redactor?editar=${savedNoticia.id}&edit_token=${await createEditToken(savedNoticia.id)}` },
             ]],
           },
         }),
       });
-      logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl }, "Scheduler: nota autopublicada con foto automática");
-    } else {
-      // ── MODO MANUAL: artículo completo + 2 botones ────────────────────
-      // Si hay imagen scrapeada, la enviamos primero como sendPhoto
-      if (imagenAutoUrl) {
-        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            photo: imagenAutoUrl,
-            caption: `🖼 _Foto de portada — ${titulo}_`,
-            parse_mode: "Markdown",
-          }),
-        }).catch(() => { /* no bloquear si falla la foto */ });
+      const dataFYI = await resFYI.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+      if (!resFYI.ok || !dataFYI?.ok) {
+        logger.error({ status: resFYI.status, dataFYI }, "Scheduler: la nota se autopublicó pero falló la notificación de Telegram");
       }
-
-      // Artículo completo — sin truncar. El contenido redactado cabe dentro de 4096 chars.
+      logger.info({ titulo, id: savedNoticia.id, fuente, imagenAutoUrl, usoFallback }, "Scheduler: nota autopublicada");
+      // 📣 Promoción automática en el canal público (fire-and-forget)
+      promocionarNotaEnCanal({ ...savedNoticia, telegramCaption }).catch(() => {});
+    } else {
+      // ── MODO MANUAL / PENDIENTE: teaser + 2 botones ─────────────────────
       const replyMarkup = {
         inline_keyboard: [[
           { text: "✅ Publicar", callback_data: `publicar_${savedNoticia.id}` },
@@ -607,14 +965,11 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
         ]],
       };
 
-      const etiquetaCatMan = categoria === "seleccion" ? "🇦🇷 _Selección Argentina_\n\n" : "";
-      const encabezado = `${etiquetaCatMan}📰 *${titulo}*\n\n`;
-      const pie        = `\n\n${tags}\n\n📡 _Fuente: ${fuenteNombre}_`;
-      const textoCompleto = encabezado + contenido + pie;
-      // Salvaguarda: si supera 4096 cortamos en oración completa
-      const texto = textoCompleto.length > TELEGRAM_MAX
-        ? textoCompleto.slice(0, TELEGRAM_MAX - 1).replace(/[^.!?…]*$/, "") + "."
-        : textoCompleto;
+      const texto = resolverCaptionTelegram(telegramCaption, {
+        titulo,
+        contenido,
+        url: `https://${dominioTelegram}/noticia/${savedNoticia.id}`,
+      });
 
       const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
@@ -700,33 +1055,35 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
   const MAX_LISTADO = 15;
   const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
 
+  // Interruptores por sección (panel /redactor; env como fallback default).
+  const settings = leerRedactorSettings();
+  const hebreoActivo = settings.resumenSeccionHebreo;
+  const postulacionesActivas = settings.resumenSeccionPostulaciones;
+  const borradoresEsActivos = settings.resumenSeccionBorradoresEs;
+
   // ── Traducciones al hebreo en borrador ──────────────────────────────────
-  const pendientesHebreo = await db
-    .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
-    .from(noticiasTable)
-    .where(and(
-      eq(noticiasTable.hebreoPublicada, false),
-      sqlRaw`char_length(coalesce(${noticiasTable.contenidoHe}, '')) > 0`,
-    ))
-    .orderBy(desc(noticiasTable.id));
+  // Desactivable desde el panel (o RESUMEN_HEBREO_DIARIO=0 como fallback).
+  // Queries compartidas con el panel /redactor en lib/resumen-pendientes.ts.
+  const pendientesHebreo = hebreoActivo ? await listarPendientesHebreo() : [];
 
   // ── Postulaciones de redactores sin revisar ─────────────────────────────
-  // Se identifican por `pendiente=true` y `fuente` que arranca con "Postulación".
-  // Desactivable con RESUMEN_POSTULACIONES_DIARIO=0.
-  const postulacionesActivas = process.env.RESUMEN_POSTULACIONES_DIARIO !== "0";
+  // Desactivable desde el panel (o RESUMEN_POSTULACIONES_DIARIO=0 como fallback).
   const pendientesPostulaciones = postulacionesActivas
-    ? await db
-        .select({ id: noticiasTable.id, titulo: noticiasTable.titulo })
-        .from(noticiasTable)
-        .where(and(
-          eq(noticiasTable.pendiente, true),
-          sqlRaw`${noticiasTable.fuente} LIKE 'Postulación%'`,
-        ))
-        .orderBy(desc(noticiasTable.id))
+    ? await listarPendientesPostulaciones()
     : [];
 
-  if (pendientesHebreo.length === 0 && pendientesPostulaciones.length === 0) {
-    logger.info("Resumen diario: no hay traducciones ni postulaciones pendientes, no se envía mensaje");
+  // ── Borradores en español sin publicar (modo manual, esperando aprobación) ─
+  // Desactivable desde el panel (o RESUMEN_BORRADORES_ES_DIARIO=0 como fallback).
+  const pendientesBorradoresEs = borradoresEsActivos
+    ? await listarPendientesBorradoresEs()
+    : [];
+
+  if (
+    pendientesHebreo.length === 0 &&
+    pendientesPostulaciones.length === 0 &&
+    pendientesBorradoresEs.length === 0
+  ) {
+    logger.info("Resumen diario: no hay traducciones, postulaciones ni borradores pendientes, no se envía mensaje");
     return;
   }
 
@@ -769,6 +1126,21 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
     );
   }
 
+  if (pendientesBorradoresEs.length > 0) {
+    const link = `https://${dominio}/redactor?tab=publicaciones&edit_token=${editToken}`;
+    const listado = pendientesBorradoresEs.slice(0, MAX_LISTADO)
+      .map((n) => `• ${escape(n.titulo)}`)
+      .join("\n");
+    const resto = pendientesBorradoresEs.length - MAX_LISTADO;
+    const sufijo = resto > 0 ? `\n_…y ${resto} más_` : "";
+    secciones.push(
+      `📝 *Borradores en español sin publicar*\n\n` +
+      `Hay *${pendientesBorradoresEs.length}* ${pendientesBorradoresEs.length === 1 ? "nota" : "notas"} esperando aprobación:\n\n` +
+      `${listado}${sufijo}\n\n` +
+      `[Revisar y publicar en /redactor](${link})`,
+    );
+  }
+
   const cuerpo = secciones.join("\n\n━━━━━━━━━━\n\n");
 
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -787,7 +1159,11 @@ export async function enviarResumenHebreoDiario(): Promise<void> {
     return;
   }
   logger.info(
-    { hebreo: pendientesHebreo.length, postulaciones: pendientesPostulaciones.length },
+    {
+      hebreo: pendientesHebreo.length,
+      postulaciones: pendientesPostulaciones.length,
+      borradoresEs: pendientesBorradoresEs.length,
+    },
     "Resumen diario enviado",
   );
 }
@@ -825,20 +1201,14 @@ function iniciarResumenHebreoDiario(): void {
 const INTERVALO_MS   = 2 * 60 * 60 * 1000; // 2 horas
 const PRIMER_CICLO_MS =  2 * 60 * 1000; // 2 minutos tras arrancar
 
-// Alterna River ↔ Selección en cada ciclo periódico para que el bot envíe
-// constantemente noticias de ambas categorías. El flip se persiste en el estado.
-function siguienteCategoriaPeriodica(): Categoria {
-  const estado = leerEstado();
-  const categoria: Categoria = estado.categoriaFlip % 2 === 0 ? "river" : "seleccion";
-  estado.categoriaFlip += 1;
-  guardarEstado(estado);
-  return categoria;
-}
-
+// La Scaloneta está oculta: el ciclo periódico publica SOLO noticias de River
+// (web, Telegram e Instagram). La categoría "seleccion" queda disponible solo
+// para disparos manuales desde el panel/trigger.
 function ejecutarCicloPeriodico(): void {
-  const categoria = siguienteCategoriaPeriodica();
-  ejecutarCiclo(undefined, false, categoria).catch((err) =>
-    logger.error({ err, categoria }, "Scheduler: error no capturado en ciclo periódico"),
+  // Modo automático: la nota se publica directamente en el sitio (con foto de
+  // portada garantizada) y el bot de Telegram avisa con un link de edición.
+  ejecutarCiclo(undefined, true, "river").catch((err) =>
+    logger.error({ err }, "Scheduler: error no capturado en ciclo periódico"),
   );
 }
 

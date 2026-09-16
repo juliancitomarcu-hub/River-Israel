@@ -31,7 +31,7 @@ No escribís para rellenar. Escribís para que el lector sienta que entiende a l
 
 — CIERRE (Párrafos 4 y 5):
   · Párrafo 4: Las preguntas que quedan. Lo que el hincha inteligente se pregunta camino al Mundial 2026. No son dudas del periodista, son las tensiones reales del momento.
-  · Párrafo 5: El cierre contundente. Una conclusión que toma posición. Cerrá con la perspectiva de la Filial Ramat Gan — cómo se vive esta noticia desde Israel, como dato periodístico genuino con identidad propia, nunca como publicidad ni relleno.]
+  · Párrafo 5: El cierre contundente. Una conclusión que toma posición. Cerrá con la perspectiva de la Filial River Plate Israel Gaby "Tucu" Sajnin — cómo se vive esta noticia desde Israel, como dato periodístico genuino con identidad propia, nunca como publicidad ni relleno.]
 
 **Tags:** #Argentina #Scaloneta #Mundial2026 #LaScaloneta [1-2 tags específicos del tema de la nota]
 

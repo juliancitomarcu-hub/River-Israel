@@ -26,3 +26,4 @@ export * from "./edit-tokens";
 export * from "./comentarios";
 export * from "./panel-sessions";
 export * from "./instagram";
+export * from "./app-estado";

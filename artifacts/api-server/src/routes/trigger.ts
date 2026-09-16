@@ -38,12 +38,21 @@ router.post("/scheduler/audit", async (req, res) => {
   let noticiasTotal = 0;
   let visitasTotal = 0;
 
-  // CHECK 1: Gemini API Key
+  // CHECK 1: OpenAI is the provider used for news generation.
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey?.trim()) {
+    errores.push("OPENAI_API_KEY no configurada");
+  } else {
+    correcciones.push("OpenAI API Key ✅ (configurada)");
+  }
+
+  // Gemini remains a separate dependency for translations and applicant
+  // proofreading, but it must not be reported as the news-generation key.
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey || geminiKey.length < 30) {
-    errores.push("GEMINI_API_KEY no configurada");
+    errores.push("GEMINI_API_KEY no configurada (traducciones/postulaciones)");
   } else {
-    correcciones.push("Gemini API Key ✅ (configurada, " + geminiKey.length + " chars)");
+    correcciones.push("Gemini API Key ✅ (traducciones/postulaciones)");
   }
 
   // CHECK 2: Telegram configurado
@@ -101,7 +110,7 @@ router.post("/scheduler/audit", async (req, res) => {
   }
 
   // CHECK 5: Filtros anti-duplicado y hashtags
-  correcciones.push("Anti-duplicados ✅ (DB 7 días)");
+  correcciones.push("Anti-duplicados ✅ (título por categoría: 7 días · URL: permanente)");
   correcciones.push("Hashtags ✅ (#RiverPlate #RiverIsrael #RamatGan #ElMasGrande)");
   correcciones.push("Filtro antihumo ✅ (Boca, Racing, etc. bloqueados)");
   correcciones.push("✅ Publicar: idempotente (no permite doble publicación)");
@@ -111,7 +120,7 @@ router.post("/scheduler/audit", async (req, res) => {
   correcciones.push("Control de calidad ✅ (mín. 1848 chars · sin puntos suspensivos)");
   correcciones.push("maxOutputTokens ✅ (3000 — expansión automática si falla)");
   correcciones.push("Limpieza HTML ✅ (&amp; &nbsp; y entidades saneadas)");
-  correcciones.push("Scheduler ✅ (cada 15 min, La Página Millonaria prioritaria)");
+  correcciones.push("Scheduler configurado (cada 2 h, La Página Millonaria prioritaria; ejecución no verificada por esta auditoría)");
 
   if (!token || !chatId) {
     logger.info({ correcciones, errores }, "Auditoría completada (Telegram no disponible en dev)");
@@ -131,7 +140,7 @@ router.post("/scheduler/audit", async (req, res) => {
     `*Sistema ${estado}*\n\n` +
     `📋 *Componentes verificados:*\n${resumenCorrecciones}` +
     resumenErrores +
-    `\n\n⏱ _15 min entre ciclos · La Página Millonaria prioritaria_\n` +
+    `\n\n⏱ _2 h entre ciclos · La Página Millonaria prioritaria_\n` +
     `📊 _${noticiasTotal} notas en DB · ${visitasTotal} visitas al sitio_\n\n` +
     `🤖 _Estilo Varsky 70% / Azzaro 30% activo_ 🇦🇷`;
 

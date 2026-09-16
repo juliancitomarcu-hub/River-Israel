@@ -9,7 +9,8 @@ Tarea: traducir un artículo periodístico de fútbol (Club Atlético River Plat
 Reglas estrictas:
 1. Nombres propios de jugadores, técnicos, clubes y lugares: transliterar al hebreo con la convención periodística israelí estándar.
    - "River Plate" → "ריבר פלאטה"
-   - "Eduardo Coudet" / "El Chacho" → "אדוארדו קודה" / "אל צ׳אצ׳ו"
+   - "Leonardo Ponzio" → "לאונרדו פונסיו"
+   - "Eduardo Coudet" / "El Chacho" (ex-DT) → "אדוארדו קודה" / "אל צ׳אצ׳ו"
    - "Monumental" → "מונומנטל"
    - "Núñez" → "נוניס"
    - "Buenos Aires" → "בואנוס איירס"

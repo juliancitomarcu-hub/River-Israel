@@ -1,13 +1,34 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { noticiasTable } from "@workspace/db";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { ejecutarCiclo, type EjecucionResultado, type Categoria } from "../scheduler";
-import { createEditToken } from "../lib/edit-tokens";
+import { createEditToken, descripcionTtlEdicion } from "../lib/edit-tokens";
 import { traducirYGuardarHebreo } from "../lib/traductor-hebreo";
+import { enviarNotaAMake } from "../lib/enviar-a-make";
+import { promocionarNotaEnCanal } from "../lib/promocionar-nota";
+import { generarNotaEstructurada, resolverCaptionTelegram } from "../lib/openai-news";
+import { obtenerCaptionPorNota, recordarCaptionPorNota } from "../lib/telegram-caption-cache";
+import { webhookSecretParaToken } from "../lib/telegram-webhook-secret";
 
 const router: IRouter = Router();
+
+// ─── VALIDACIÓN DE SECRET TOKEN ───────────────────────────────────────────────
+// Telegram envía el secret_token registrado en setWebhook en este header. Si no
+// coincide con el derivado del token del bot, rechazamos el request (no viene de
+// Telegram). Devuelve true si la request es válida; si no, responde 401 y false.
+function validarSecretToken(req: { header(name: string): string | undefined }, res: { status(code: number): { json(body: unknown): void } }, botToken: string | undefined): boolean {
+  const esperado = webhookSecretParaToken(botToken);
+  // Si el bot no está configurado no podemos validar; las rutas ya cortan abajo.
+  if (!esperado) return true;
+  const recibido = req.header("X-Telegram-Bot-Api-Secret-Token");
+  if (recibido !== esperado) {
+    res.status(401).json({ ok: false });
+    return false;
+  }
+  return true;
+}
 
 // ─── ESTADO EN MEMORIA ────────────────────────────────────────────────────────
 // Map<clave, noticiaId> donde clave = `${categoria}:${chatId}`. Se namespacea por
@@ -24,11 +45,15 @@ function claveEstado(categoria: Categoria, chatId: string): string {
 
 async function enviarMensajeTelegram(token: string, chatId: string, text: string, options?: Record<string, unknown>) {
   try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown", ...options }),
     });
+    const data = await res.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+    if (!res.ok || data?.ok === false) {
+      logger.warn({ status: res.status, description: data?.description }, "Telegram: sendMessage rechazado");
+    }
   } catch (err) {
     logger.warn({ err }, "Telegram: error enviando mensaje");
   }
@@ -48,7 +73,7 @@ async function responderCallback(token: string, callbackQueryId: string, text: s
 
 async function editarMensajeTelegram(token: string, chatId: string, messageId: string, nuevoTexto: string, teclado?: object) {
   try {
-    await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+    const res = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -59,6 +84,10 @@ async function editarMensajeTelegram(token: string, chatId: string, messageId: s
         reply_markup: teclado ?? { inline_keyboard: [] },
       }),
     });
+    const data = await res.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+    if (!res.ok || data?.ok === false) {
+      logger.warn({ status: res.status, description: data?.description }, "Telegram: editMessageText rechazado");
+    }
   } catch (err) {
     logger.warn({ err }, "Telegram: error editando mensaje");
   }
@@ -108,6 +137,8 @@ function mensajeDeResultado(r: EjecucionResultado): string {
       return `⚠️ _Fuente ${r.fuente}: el sitio no respondió correctamente._`;
     case "concurrente":
       return `⏳ _Ya hay una búsqueda en curso. Esperá unos segundos y volvé a intentar._`;
+    case "sin_portada":
+      return `🖼 _Fuente ${r.fuente}: la nota se descartó porque el artículo no tenía foto de portada._`;
     case "ia_sin_contenido":
       return `🤖 _La IA no pudo generar contenido. Intentá de nuevo en un momento._`;
     case "telegram_error":
@@ -199,10 +230,10 @@ async function handleComandoNoticia(token: string, chatId: string, categoria: Ca
       .limit(1);
 
     if (notaPendiente) {
-      // Mostrar nota pendiente con artículo completo + 2 botones
+      // Mostrar un teaser con botones; web_content queda en la web/panel.
       // Si tiene foto de portada, enviarla primero
       if (notaPendiente.imagenPortada) {
-        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        const fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -211,27 +242,22 @@ async function handleComandoNoticia(token: string, chatId: string, categoria: Ca
             caption: `🖼 _Foto de portada — ${notaPendiente.titulo}_`,
             parse_mode: "Markdown",
           }),
-        }).catch(() => {});
+        });
+        const fotoData = await fotoRes.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+        if (!fotoRes.ok || fotoData?.ok === false) {
+          logger.warn({ status: fotoRes.status, description: fotoData?.description }, "Telegram: foto de pendiente rechazada");
+        }
       }
 
-      const fuenteTag = notaPendiente.fuente ? `\n\n📡 _Fuente: ${notaPendiente.fuente}_` : "";
-      const tagsTag = notaPendiente.tags ? `\n${notaPendiente.tags}` : "";
-      const encabezado = `📰 *${notaPendiente.titulo}*\n\n`;
-      const textoCompleto = encabezado + notaPendiente.contenido + tagsTag + fuenteTag;
-      const TELE_MAX = 4096;
-      const texto = textoCompleto.length > TELE_MAX
-        ? textoCompleto.slice(0, TELE_MAX - 1).replace(/[^.!?…]*$/, "") + "."
-        : textoCompleto;
+      const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+      const texto = resolverCaptionTelegram(obtenerCaptionPorNota(notaPendiente.id), {
+        titulo: notaPendiente.titulo,
+        contenido: notaPendiente.contenido,
+        url: `https://${dominio}/noticia/${notaPendiente.id}`,
+      });
 
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: texto,
-          parse_mode: "Markdown",
-          reply_markup: botonesAprobacion(notaPendiente.id),
-        }),
+      await enviarMensajeTelegram(token, chatId, texto, {
+        reply_markup: botonesAprobacion(notaPendiente.id),
       });
       return;
     }
@@ -315,6 +341,7 @@ async function procesarFotoEntrante(
 async function procesarTextoEditado(
   token: string,
   chatId: string,
+  categoria: Categoria,
   noticiaId: number,
   nuevoTexto: string
 ) {
@@ -327,10 +354,17 @@ async function procesarTextoEditado(
     const tituloDetectado = primerLinea.length < 120 && lineas.length > 1 ? primerLinea.replace(/\*/g, "").trim() : null;
     const contenidoFinal = tituloDetectado ? lineas.slice(1).join("\n\n") : nuevoTexto;
 
+    // Regenerate the teaser from the edited text before writing it. Reusing the
+    // old note teaser here would advertise facts from the previous version.
+    const paquete = await generarNotaEstructurada({
+      sourceText: `${tituloDetectado ?? ""}\n\n${contenidoFinal}`,
+      categoria: categoria === "seleccion" ? "seleccion" : "river",
+    });
+
     const [nota] = await db
       .update(noticiasTable)
       .set({
-        contenido: contenidoFinal.trim(),
+        contenido: contenidoFinal.replace(/\*/g, "").trim(),
         ...(tituloDetectado ? { titulo: tituloDetectado } : {}),
         pendiente: true,
         publicada: false,
@@ -342,6 +376,7 @@ async function procesarTextoEditado(
       await enviarMensajeTelegram(token, chatId, "❌ No encontré la nota para guardar la edición.");
       return;
     }
+    recordarCaptionPorNota(noticiaId, paquete.telegram_caption);
 
     logger.info({ noticiaId, tituloDetectado }, "Telegram: texto editado guardado como Versión Final");
 
@@ -386,22 +421,51 @@ async function procesarCallback(
 
       const [noticia] = await db
         .update(noticiasTable)
-        .set({ publicada: true, pendiente: false })
+        .set({
+          publicada: true,
+          pendiente: false,
+          // Guardarraíl: al publicar, la nota nunca debe quedar con asteriscos
+          titulo: sql`replace(${noticiasTable.titulo}, '*', '')`,
+          contenido: sql`replace(${noticiasTable.contenido}, '*', '')`,
+        })
         .where(and(eq(noticiasTable.id, noticiaId), eq(noticiasTable.categoria, categoria)))
         .returning();
 
       // 🌐 Traducir al hebreo en background
       traducirYGuardarHebreo(noticiaId).catch(() => {});
 
+      // 📸 Instagram vía Make.com (fire-and-forget)
+      if (noticia) enviarNotaAMake(noticia);
+
+      // 📣 Promoción automática en el canal público (fire-and-forget)
+      if (noticia) {
+        promocionarNotaEnCanal({
+          ...noticia,
+          telegramCaption: obtenerCaptionPorNota(noticia.id),
+        }).catch(() => {});
+      }
+
       const dominioTelegram = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
       const fotoTexto = noticia?.imagenPortada ? "\n🖼 _Publicada con foto de portada._" : "";
-      const linkSitio = `\n\n🌐 [Ver en el sitio](https://${dominioTelegram}/actualidad)`;
+      const linkSitio = `\n\n🌐 [Ver la nota](https://${dominioTelegram}/noticia/${noticiaId})`;
 
+      const textoPublicada = `✅ *PUBLICADA* — ${noticia?.titulo ?? "Nota publicada"}${fotoTexto}${linkSitio}`;
       if (messageId) {
-        await editarMensajeTelegram(
-          token, chatId, messageId,
-          `✅ *PUBLICADA* — ${noticia?.titulo ?? "Nota publicada"}${fotoTexto}${linkSitio}`
-        );
+        await editarMensajeTelegram(token, chatId, messageId, textoPublicada, {
+          inline_keyboard: [[
+            { text: "🌐 Ver la nota", url: `https://${dominioTelegram}/noticia/${noticiaId}` },
+          ]],
+        });
+      } else {
+        // Fallback: sin messageId no se puede editar — enviamos aviso nuevo
+        // para que la publicación siempre quede notificada.
+        await enviarMensajeTelegram(token, chatId, textoPublicada, {
+          reply_markup: {
+            inline_keyboard: [[
+              { text: "🌐 Ver la nota", url: `https://${dominioTelegram}/noticia/${noticiaId}` },
+            ]],
+          },
+        });
       }
 
     } else if (data.startsWith("editar_")) {
@@ -417,32 +481,22 @@ async function procesarCallback(
         return;
       }
 
-      // Enviar el texto completo (copyable) para que el user lo edite.
-      // Mandamos en DOS mensajes para evitar el límite de 4096 chars de Telegram:
-      // Msg 1: encabezado + título (copyable)
-      // Msg 2: cuerpo + tags (el texto largo)
-
-      const encabezadoEdicion = `📝 *TEXTO ACTUAL — Nota #${noticiaId}*\n\n*Título:* ${nota.titulo}`;
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: encabezadoEdicion, parse_mode: "Markdown" }),
+      // Nunca enviamos web_content al chat. Para editar está el link seguro
+      // del Redactor y el modo de edición por texto conserva el artículo sólo
+      // en el panel autenticado.
+      const dominioEdicion = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+      const teaser = resolverCaptionTelegram(obtenerCaptionPorNota(noticiaId), {
+        titulo: nota.titulo,
+        contenido: nota.contenido,
+        url: `https://${dominioEdicion}/noticia/${noticiaId}`,
       });
-
-      // Cuerpo + tags — si aún supera 4096 cortamos en el límite
-      const TELE_MAX = 4096;
-      const cuerpoCompleto = `${nota.contenido}\n\n${nota.tags ?? ""}`.trim();
-      const partes: string[] = [];
-      for (let i = 0; i < cuerpoCompleto.length; i += TELE_MAX) {
-        partes.push(cuerpoCompleto.slice(i, i + TELE_MAX));
-      }
-      for (const parte of partes) {
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, text: parte, parse_mode: "Markdown" }),
-        });
-      }
+      await enviarMensajeTelegram(token, chatId, teaser, {
+        reply_markup: {
+          inline_keyboard: [[
+            { text: "🌐 Ver la nota", url: `https://${dominioEdicion}/noticia/${noticiaId}` },
+          ]],
+        },
+      });
 
       // Entrar en modo esperando edición
       const claveEdicion = claveEstado(categoria, chatId);
@@ -458,11 +512,18 @@ async function procesarCallback(
       // Instrucciones para el usuario — token de un solo uso para entrar directo al redactor
       const dominioEdit = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
       const editToken = await createEditToken(noticiaId);
-      const editUrl = `\n\n🌐 O editá con foto en: https://${dominioEdit}/redactor?editar=${noticiaId}&edit_token=${editToken}`;
+      const editUrl = `\n\n🌐 O editá con foto en: https://${dominioEdit}/redactor?editar=${noticiaId}&edit_token=${editToken}\n⏱ El link dura ${descripcionTtlEdicion()}`;
 
-      await enviarMensajeTelegram(
+       await enviarMensajeTelegram(
         token, chatId,
-        `✏️ *Modo edición activo* (10 min)\n\nCopiá el texto de arriba, modificalo y envialo acá.\nEl sistema lo guardará como Versión Final y te mostrará los botones para publicar.${editUrl}`
+          `✏️ *Modo edición activo* (10 min)\n\nEditá la nota desde el Redactor o enviá tu propia versión en este chat.\nEl sistema guardará la Versión Final y te mostrará los botones para publicar.${editUrl}`,
+          {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: "✏️ Abrir Redactor", url: `https://${dominioEdit}/redactor?editar=${noticiaId}&edit_token=${editToken}` },
+              ]],
+            },
+          },
       );
 
     } else if (data.startsWith("foto_")) {
@@ -616,7 +677,7 @@ function procesarUpdate(
         esperandoEdicion.delete(claveMsg);
 
         setImmediate(() => {
-          procesarTextoEditado(token, fromChatId, noticiaId, texto).catch((err) =>
+          procesarTextoEditado(token, fromChatId, categoria, noticiaId, texto).catch((err) =>
             logger.error({ err }, "Telegram: error procesando texto editado")
           );
         });
@@ -650,9 +711,11 @@ function procesarUpdate(
 
 // Bot de River — bot principal.
 router.post("/telegram-webhook", (req, res) => {
+  const token = process.env.TELEGRAM_TOKEN;
+  if (!validarSecretToken(req, res, token)) return;
+
   res.status(200).json({ ok: true });
 
-  const token = process.env.TELEGRAM_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
 
@@ -661,9 +724,11 @@ router.post("/telegram-webhook", (req, res) => {
 
 // Bot de la Selección ("La Scaloneta en Israel") — bot dedicado.
 router.post("/telegram-webhook-seleccion", (req, res) => {
+  const token = process.env.TELEGRAM_TOKEN_SELECCION;
+  if (!validarSecretToken(req, res, token)) return;
+
   res.status(200).json({ ok: true });
 
-  const token = process.env.TELEGRAM_TOKEN_SELECCION;
   const chatId = process.env.TELEGRAM_CHAT_SELECCION;
   if (!token || !chatId) return;
 

@@ -13,7 +13,7 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type { HealthStatus, Plantel, PlantelUnavailable } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -23,6 +23,79 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary Last validated River Plate professional roster
+ */
+export const getGetPlantelUrl = () => {
+  return `/api/plantel`;
+};
+
+export const getPlantel = async (options?: RequestInit): Promise<Plantel> => {
+  return customFetch<Plantel>(getGetPlantelUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlantelQueryKey = () => {
+  return [`/api/plantel`] as const;
+};
+
+export const getGetPlantelQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlantel>>,
+  TError = ErrorType<PlantelUnavailable>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPlantel>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlantelQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlantel>>> = ({
+    signal,
+  }) => getPlantel({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlantel>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlantelQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlantel>>
+>;
+export type GetPlantelQueryError = ErrorType<PlantelUnavailable>;
+
+/**
+ * @summary Last validated River Plate professional roster
+ */
+
+export function useGetPlantel<
+  TData = Awaited<ReturnType<typeof getPlantel>>,
+  TError = ErrorType<PlantelUnavailable>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPlantel>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlantelQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * Returns server health status

@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -28,9 +28,32 @@ if (!process.env.BASE_PATH && !isBuild) {
   );
 }
 
+// Inyecta Google Analytics (GA4) en el <head> del HTML construido.
+// Measurement ID por defecto G-PJ83KTTX5D (sobreescribible con GOOGLE_ANALYTICS_ID).
+// Sólo se inyecta en el build de producción para no contar el tráfico del preview
+// de desarrollo en las métricas.
+function googleAnalyticsPlugin(): Plugin {
+  const gaId = process.env.GOOGLE_ANALYTICS_ID ?? "G-PJ83KTTX5D";
+  return {
+    name: "inject-google-analytics",
+    transformIndexHtml(html) {
+      if (!gaId || !isBuild) return html;
+      const snippet = `    <script async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${gaId}');
+    </script>`;
+      return html.replace("</head>", `${snippet}\n  </head>`);
+    },
+  };
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
+    googleAnalyticsPlugin(),
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),

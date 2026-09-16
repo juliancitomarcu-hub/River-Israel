@@ -9,7 +9,11 @@ import {
   extendNoticiaSession,
   getAdminSession,
   getNoticiaSession,
+  countActiveAdminSessions,
+  listActiveAdminSessions,
   revokeAdminSession,
+  revokeAdminSessionById,
+  revokeAllAdminSessions,
 } from "../lib/edit-tokens";
 
 const router: IRouter = Router();
@@ -121,6 +125,79 @@ router.post("/admin/logout", async (req, res) => {
   res.json({ ok: true });
 });
 
+// Cierra la sesión en TODOS los dispositivos: borra todas las sesiones admin
+// de la DB (incluida la del que pide) y limpia la cookie de este navegador.
+// Requiere una sesión/credencial admin válida; las sesiones scoped a una
+// noticia (links de Telegram) no alcanzan.
+router.post("/admin/logout-all", async (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const provided = extractToken(req);
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const autorizado = provided === expected || (await getAdminSession(provided)) !== null;
+  if (!autorizado) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const revocadas = await revokeAllAdminSessions();
+  clearSessionCookie(res);
+  res.json({ ok: true, revocadas });
+});
+
+// Cantidad de sesiones admin vivas (no caducadas) en la DB. El panel lo
+// muestra al lado del botón "salir de todos" para dar contexto antes de
+// cerrarlas todas. Requiere credencial admin válida; las sesiones scoped a
+// una noticia no alcanzan.
+router.get("/admin/sessions/count", async (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const provided = extractToken(req);
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const autorizado = provided === expected || (await getAdminSession(provided)) !== null;
+  if (!autorizado) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const count = await countActiveAdminSessions();
+  res.json({ ok: true, count });
+});
+
+// Lista las sesiones admin vivas: creada, expira y un flag "actual" (la del
+// que pregunta). Nunca expone tokens. Sirve para el popover del contador
+// "N sesiones activas" del Redactor, para decidir si vale la pena apretar
+// "salir de todos". Requiere credencial admin válida.
+router.get("/admin/sessions", async (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const provided = extractToken(req);
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const autorizado = provided === expected || (await getAdminSession(provided)) !== null;
+  if (!autorizado) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const sesiones = await listActiveAdminSessions(provided);
+  res.json({ ok: true, sesiones });
+});
+
 // Renueva la sesión actual sin pedir la contraseña: empuja el expiresAt
 // hasta ahora + TTL completo. Sirve para el botón "Seguir conectado" del
 // aviso amarillo en el Redactor, así el editor no pierde lo que está
@@ -199,6 +276,40 @@ router.post("/admin/exchange-edit-token", async (req, res) => {
     expiresAt: session.expiresAt,
     noticiaId: consumed.noticiaId,
   });
+});
+
+// Revoca una sola sesión admin por su id opaco (hash del token). Si la sesión
+// revocada resulta ser la del que pide, limpiamos también su cookie para que
+// el navegador no quede con una cookie huérfana.
+// Requiere credencial admin válida; las sesiones scoped a una noticia no alcanzan.
+router.post("/admin/sessions/:id/revoke", async (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(503).json({ error: "Auth admin no configurada en el servidor" });
+    return;
+  }
+  const provided = extractToken(req);
+  if (!provided) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const autorizado = provided === expected || (await getAdminSession(provided)) !== null;
+  if (!autorizado) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+  const { id } = req.params;
+  if (!id) {
+    res.status(400).json({ error: "Falta id de sesión" });
+    return;
+  }
+  const revocada = await revokeAdminSessionById(id, provided);
+  if (!revocada) {
+    res.status(404).json({ error: "Sesión no encontrada o ya expirada" });
+    return;
+  }
+  if (revocada.actual) clearSessionCookie(res);
+  res.json({ ok: true, actual: revocada.actual });
 });
 
 export default router;

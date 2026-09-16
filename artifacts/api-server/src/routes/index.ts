@@ -24,8 +24,16 @@ import adminRouter from "./admin";
 import propuestaEventoRouter from "./propuesta-evento";
 import comentariosRouter from "./comentarios";
 import instagramRouter from "./instagram";
+import instagramImagenRouter from "./instagram-imagen";
+import plantelRouter from "./plantel";
 
 const router: IRouter = Router();
+
+// Healthcheck del deployment: GET /api debe responder 200 (sin este handler
+// devolvía error y la plataforma reiniciaba el server una y otra vez).
+router.get("/", (_req, res) => {
+  res.json({ ok: true, servicio: "river-en-israel-api" });
+});
 
 router.use(healthRouter);
 router.use(storageRouter);
@@ -52,5 +60,7 @@ router.use(adminRouter);
 router.use(propuestaEventoRouter);
 router.use(comentariosRouter);
 router.use(instagramRouter);
+router.use(instagramImagenRouter);
+router.use(plantelRouter);
 
 export default router;

@@ -1,278 +1,239 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Mic, Video, Heart, Send, CheckCircle2, AlertCircle, Paperclip, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-
-const schema = z.object({
-  nombre: z.string().min(2, "Ingresá tu nombre"),
-  ciudad: z.string().min(2, "Ingresá tu ciudad"),
-  tipo: z.enum(["Periodista", "Creador", "Fanático"], { required_error: "Elegí un perfil" }),
-  texto: z.string().optional(),
-  link: z.string().url("URL inválida").or(z.literal("")).optional(),
-});
-
-type FormData = z.infer<typeof schema>;
-
-const TIPOS = [
-  {
-    value: "Periodista" as const,
-    icon: Mic,
-    titulo: "Periodista",
-    desc: "Un espacio para difundir tu trabajo con alcance local en Israel.",
-  },
-  {
-    value: "Creador" as const,
-    icon: Video,
-    titulo: "Creador de Contenido",
-    desc: "Compartí tus videos o hilos de análisis. Embebemos tu canal.",
-  },
-  {
-    value: "Fanático" as const,
-    icon: Heart,
-    titulo: "Fanático",
-    desc: "Contanos cómo vivís la pasión millonaria a miles de kilómetros.",
-  },
-];
+import { motion } from "framer-motion";
+import { Send, User, Mail, Phone, MapPin, MessageSquare, CheckCircle2, AlertCircle } from "lucide-react";
+import { Link } from "wouter";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Postulacion() {
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [ciudad, setCiudad] = useState("");
+  const [mensaje, setMensaje] = useState("");
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [archivo, setArchivo] = useState<File | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  });
-
-  const tipoSeleccionado = watch("tipo");
-
-  async function onSubmit(data: FormData) {
-    const textoValido = data.texto && data.texto.trim().length >= 50;
-    if (!textoValido && !archivo) {
-      setErrorMsg("Escribí tu nota (mínimo 50 caracteres) o adjuntá un archivo PDF/Word");
+  const enviar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nombre.trim() || !email.trim()) {
+      setErrorMsg("Nombre y email son obligatorios.");
       setEstado("error");
       return;
     }
     setEstado("enviando");
     setErrorMsg("");
     try {
-      const fd = new FormData();
-      fd.append("nombre", data.nombre);
-      fd.append("ciudad", data.ciudad);
-      fd.append("tipo", data.tipo);
-      if (data.texto?.trim()) fd.append("texto", data.texto.trim());
-      if (data.link) fd.append("link", data.link);
-      if (archivo) fd.append("archivo", archivo);
-
-      const res = await fetch("/api/postular-redactor", { method: "POST", body: fd });
+      const res = await fetch(`${import.meta.env.BASE_URL}api/suscribir`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, email, telefono, ciudad, mensaje }),
+      });
       const json = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok || !json.ok) {
-        setErrorMsg(json.error ?? "Error al enviar. Intentá de nuevo.");
+        setErrorMsg(json.error ?? "Error al enviar");
         setEstado("error");
       } else {
         setEstado("ok");
+        trackEvent("membership_application_submitted", { page: "postula" });
+        setNombre("");
+        setEmail("");
+        setTelefono("");
+        setCiudad("");
+        setMensaje("");
       }
     } catch {
-      setErrorMsg("Error de conexión. Intentá de nuevo.");
+      setErrorMsg("Error de conexión");
       setEstado("error");
     }
-  }
+  };
+
+  const fadeIn = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } }
+  };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-
-      {/* Hero */}
-      <div className="relative bg-gradient-to-b from-river-red/20 via-black/60 to-[#0a0a0a] border-b border-white/5 py-20 px-4 text-center overflow-hidden">
-        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_50%_50%,_#cc0000_0%,_transparent_70%)]" />
-        <div className="relative max-w-2xl mx-auto">
-          <span className="inline-block text-river-red font-bold text-xs uppercase tracking-[0.3em] mb-5">
-            🎙️ Comunidad · River en Israel
-          </span>
-          <h1 className="font-display font-black text-4xl md:text-6xl text-white leading-tight mb-5">
-            ESCRIBÍ EN<br />
-            <span className="text-river-red">RIVER EN ISRAEL</span>
+    <div className="min-h-screen bg-[#FAFAF8] newspaper-texture pt-24 pb-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Header */}
+        <div className="text-center mb-12 pb-8 border-b-4 border-tinta">
+          <Link href="/">
+            <span className="inline-block text-xs text-gris-meta hover:text-river-red font-bold uppercase tracking-wider mb-4 cursor-pointer transition-colors">
+              ← Volver a la portada
+            </span>
+          </Link>
+          <h1 className="font-display text-5xl md:text-7xl text-tinta mb-4">
+            SUMATE A LA FILIAL
           </h1>
-          <p className="text-gray-300 text-lg leading-relaxed max-w-xl mx-auto">
-            Buscamos voces millonarias en la Tierra Santa. ¿Sos periodista, creador de
-            contenido o simplemente un fanático con mucho para decir? Este es tu espacio.
+          <p className="text-gris-meta text-lg max-w-2xl mx-auto leading-relaxed">
+            Completá el formulario y formá parte de la comunidad de River en Israel. 
+            Partidos, eventos, asados millonarios y mucho más.
           </p>
         </div>
-      </div>
 
-      {/* Perfiles */}
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16">
-          {TIPOS.map((t) => {
-            const Icon = t.icon;
-            const activo = tipoSeleccionado === t.value;
-            return (
-              <button
-                key={t.value}
-                type="button"
-                onClick={() => setValue("tipo", t.value, { shouldValidate: true })}
-                className={cn(
-                  "rounded-2xl p-6 text-left border transition-all duration-200 cursor-pointer",
-                  activo
-                    ? "bg-river-red/15 border-river-red shadow-[0_0_20px_rgba(204,0,0,0.15)]"
-                    : "bg-white/3 border-white/8 hover:border-white/20 hover:bg-white/5"
-                )}
-              >
-                <Icon className={cn("w-7 h-7 mb-3", activo ? "text-river-red" : "text-gray-400")} />
-                <p className={cn("font-display font-bold text-lg mb-1", activo ? "text-white" : "text-gray-300")}>
-                  {t.titulo}
-                </p>
-                <p className="text-gray-500 text-sm leading-relaxed">{t.desc}</p>
-              </button>
-            );
-          })}
-        </div>
-        {errors.tipo && (
-          <p className="text-red-400 text-sm -mt-10 mb-8 text-center">{errors.tipo.message}</p>
-        )}
+        {/* Imagen de identidad */}
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          variants={fadeIn}
+          className="mb-12"
+        >
+          <div className="relative h-64 border-4 border-tinta overflow-hidden">
+            <img
+              src={`${import.meta.env.BASE_URL}filial-logo.jpeg`}
+              alt="Filial River Plate Israel"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-tinta/70 to-transparent flex items-end p-6">
+              <p className="font-display text-3xl text-white">
+                FILIAL RAMAT GAN "EL TUCU SAJNIN"
+              </p>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Formulario */}
-        {estado === "ok" ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center gap-5">
-            <CheckCircle2 className="w-16 h-16 text-green-400" />
-            <h2 className="font-display font-bold text-3xl">¡Postulación enviada!</h2>
-            <p className="text-gray-400 max-w-md">
-              Recibimos tu nota. La revisamos y te contactamos. ¡Gracias por querer ser parte de la redacción!
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-300">Nombre y apellido *</label>
-                <Input
-                  {...register("nombre")}
-                  placeholder="Ej: Ariel Sánchez"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-river-red"
-                />
-                {errors.nombre && <p className="text-red-400 text-xs">{errors.nombre.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-300">Ciudad *</label>
-                <Input
-                  {...register("ciudad")}
-                  placeholder="Ej: Tel Aviv"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-river-red"
-                />
-                {errors.ciudad && <p className="text-red-400 text-xs">{errors.ciudad.message}</p>}
-              </div>
-            </div>
-
-            {/* Textarea */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-300">
-                Tu nota, análisis o propuesta
-              </label>
-              <p className="text-xs text-gray-600">
-                Escribí con tu voz, tu estilo. Solo corregimos la ortografía, nunca cambiamos tus palabras.
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          variants={fadeIn}
+          className="bg-white border-4 border-tinta p-8"
+        >
+          {estado === "ok" ? (
+            <div className="text-center py-12">
+              <CheckCircle2 className="w-20 h-20 text-green-600 mx-auto mb-6" />
+              <h2 className="font-display text-4xl text-tinta mb-4">¡BIENVENIDO!</h2>
+              <p className="text-gris-meta text-lg mb-8">
+                Recibimos tu postulación. Pronto nos pondremos en contacto para sumarte a los eventos y el grupo de WhatsApp.
               </p>
-              <Textarea
-                {...register("texto")}
-                placeholder="Contá lo que viviste, tu análisis del partido, tu crónica... lo que quieras compartir con la comunidad."
-                rows={10}
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-river-red resize-y font-normal text-sm leading-relaxed"
-              />
+              <button
+                onClick={() => setEstado("idle")}
+                className="bg-river-red hover:bg-river-red-hover text-white font-bold px-8 py-3 uppercase tracking-wide transition-colors"
+              >
+                Enviar otra postulación
+              </button>
             </div>
-
-            {/* Separador */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-xs text-gray-600 font-semibold uppercase tracking-widest">O adjuntá un archivo</span>
-              <div className="flex-1 h-px bg-white/10" />
-            </div>
-
-            {/* Upload */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-300">
-                Adjuntar nota <span className="text-gray-600 font-normal">(PDF o Word — opcional)</span>
-              </label>
-              {archivo ? (
-                <div className="flex items-center gap-3 bg-river-red/10 border border-river-red/30 rounded-xl px-4 py-3">
-                  <Paperclip className="w-4 h-4 text-river-red shrink-0" />
-                  <span className="text-sm text-white font-medium flex-1 truncate">{archivo.name}</span>
-                  <button type="button" onClick={() => setArchivo(null)} className="text-gray-500 hover:text-white transition-colors">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex items-center gap-3 border-2 border-dashed border-white/10 rounded-xl px-5 py-4 cursor-pointer hover:border-river-red/40 hover:bg-river-red/5 transition-colors">
-                  <Paperclip className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="text-sm text-gray-400 font-medium">Seleccionar PDF o Word (.docx)</p>
-                    <p className="text-xs text-gray-600 mt-0.5">Máximo 10 MB · La IA extrae el texto y corrige solo la ortografía</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    className="hidden"
-                    onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
-                  />
+          ) : (
+            <form onSubmit={enviar} className="space-y-6">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-tinta uppercase tracking-wider mb-2">
+                  <User className="w-4 h-4 text-river-red" />
+                  Nombre completo *
                 </label>
-              )}
-            </div>
-
-            {/* Link */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-300">
-                Link a tu canal o redes <span className="text-gray-600 font-normal">(opcional)</span>
-              </label>
-              <p className="text-xs text-gray-600">
-                Si tenés un canal de YouTube, TikTok o hilo de Twitter, lo podemos embeber en tu nota.
-              </p>
-              <Input
-                {...register("link")}
-                placeholder="https://youtube.com/@tucanal"
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-river-red"
-              />
-              {errors.link && <p className="text-red-400 text-xs">{errors.link.message}</p>}
-            </div>
-
-            {estado === "error" && (
-              <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {errorMsg}
+                <input
+                  type="text"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  required
+                  maxLength={100}
+                  placeholder="Tu nombre"
+                  className="w-full bg-gris-suave border-2 border-gris-borde focus:border-river-red px-4 py-3 text-tinta placeholder:text-gris-meta transition-colors outline-none"
+                />
               </div>
-            )}
 
-            <div className="flex justify-end">
-              <Button
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-tinta uppercase tracking-wider mb-2">
+                  <Mail className="w-4 h-4 text-river-red" />
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  maxLength={100}
+                  placeholder="tu@email.com"
+                  className="w-full bg-gris-suave border-2 border-gris-borde focus:border-river-red px-4 py-3 text-tinta placeholder:text-gris-meta transition-colors outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-tinta uppercase tracking-wider mb-2">
+                  <Phone className="w-4 h-4 text-river-red" />
+                  Teléfono (opcional)
+                </label>
+                <input
+                  type="tel"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  maxLength={50}
+                  placeholder="+972..."
+                  className="w-full bg-gris-suave border-2 border-gris-borde focus:border-river-red px-4 py-3 text-tinta placeholder:text-gris-meta transition-colors outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-tinta uppercase tracking-wider mb-2">
+                  <MapPin className="w-4 h-4 text-river-red" />
+                  Ciudad (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={ciudad}
+                  onChange={(e) => setCiudad(e.target.value)}
+                  maxLength={100}
+                  placeholder="Ramat Gan, Tel Aviv, Jerusalén..."
+                  className="w-full bg-gris-suave border-2 border-gris-borde focus:border-river-red px-4 py-3 text-tinta placeholder:text-gris-meta transition-colors outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-tinta uppercase tracking-wider mb-2">
+                  <MessageSquare className="w-4 h-4 text-river-red" />
+                  Mensaje (opcional)
+                </label>
+                <textarea
+                  value={mensaje}
+                  onChange={(e) => setMensaje(e.target.value)}
+                  maxLength={500}
+                  rows={4}
+                  placeholder="Contanos por qué querés sumarte a la filial, cuánto hace que sos de River, etc."
+                  className="w-full bg-gris-suave border-2 border-gris-borde focus:border-river-red px-4 py-3 text-tinta placeholder:text-gris-meta transition-colors outline-none resize-y"
+                />
+              </div>
+
+              {estado === "error" && (
+                <div className="flex items-start gap-2 bg-red-50 border-2 border-red-600 p-4 text-red-700">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm font-semibold">{errorMsg || "No se pudo enviar. Probá de nuevo."}</p>
+                </div>
+              )}
+
+              <button
                 type="submit"
                 disabled={estado === "enviando"}
-                className="bg-river-red hover:bg-river-red/90 text-white font-bold px-8 py-3 rounded-xl text-base flex items-center gap-2 disabled:opacity-60"
+                className="w-full inline-flex items-center justify-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold py-4 text-lg uppercase tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {estado === "enviando" ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Enviar postulación
-                  </>
-                )}
-              </Button>
-            </div>
+                <Send className="w-5 h-5" />
+                {estado === "enviando" ? "Enviando..." : "Enviar postulación"}
+              </button>
 
-            <p className="text-center text-xs text-gray-600">
-              Sumate a la redacción de la Filial Ramat Gan y hacé que tu voz llegue a toda la comunidad de Israel.
-            </p>
-          </form>
-        )}
+              <p className="text-xs text-gris-meta text-center font-mono">
+                * Campos obligatorios
+              </p>
+            </form>
+          )}
+        </motion.div>
+
+        {/* CTA WhatsApp */}
+        <div className="mt-12 bg-tinta border-4 border-river-red p-8 text-center text-white">
+          <p className="font-display text-2xl mb-2">¿PREFERÍS SUMARTE DIRECTO?</p>
+          <p className="text-white/80 mb-6 text-sm">
+            Unite al canal de WhatsApp para recibir las novedades al instante.
+          </p>
+          <a
+            href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-river-red hover:bg-river-red-hover text-white font-bold px-8 py-3 transition-colors uppercase tracking-wide"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Canal de WhatsApp
+          </a>
+        </div>
       </div>
     </div>
   );

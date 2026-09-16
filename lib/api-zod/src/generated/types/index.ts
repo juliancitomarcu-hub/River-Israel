@@ -7,3 +7,7 @@
  */
 
 export * from "./healthStatus";
+export * from "./jugadorPlantel";
+export * from "./jugadorPlantelPosicion";
+export * from "./plantel";
+export * from "./plantelUnavailable";

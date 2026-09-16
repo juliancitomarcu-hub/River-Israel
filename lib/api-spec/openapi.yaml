@@ -11,6 +11,24 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /plantel:
+    get:
+      operationId: getPlantel
+      tags: [plantel]
+      summary: Last validated River Plate professional roster
+      responses:
+        "200":
+          description: Roster persisted from the official River Plate source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plantel"
+        "503":
+          description: No validated roster has been stored yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantelUnavailable"
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +44,47 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    JugadorPlantel:
+      type: object
+      additionalProperties: false
+      required: [numero, nombre, apellido, posicion, nacionalidad, foto]
+      properties:
+        numero:
+          type: [integer, "null"]
+        nombre:
+          type: string
+        apellido:
+          type: string
+        posicion:
+          type: string
+          enum: [ARQ, DEF, MED, DEL]
+        nacionalidad:
+          type: string
+        foto:
+          type: string
+          format: uri
+    Plantel:
+      type: object
+      additionalProperties: false
+      required: [jugadores, actualizadoEn, fuente]
+      properties:
+        jugadores:
+          type: array
+          items:
+            $ref: "#/components/schemas/JugadorPlantel"
+        actualizadoEn:
+          type: string
+          format: date-time
+        fuente:
+          type: string
+          format: uri
+    PlantelUnavailable:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
     HealthStatus:
       type: object
       properties:
