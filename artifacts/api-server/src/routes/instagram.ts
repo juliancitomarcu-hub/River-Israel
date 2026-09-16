@@ -21,7 +21,8 @@ router.post("/instagram/publicaciones/:id/reintentar", requireAdmin, async (req,
     const result = await pool.query(`UPDATE instagram_publicaciones SET
       estado = CASE WHEN container_id IS NULL THEN 'pendiente' ELSE 'preparada' END,
       intentos = 0, error = NULL, next_attempt_at = now(), updated_at = now()
-      WHERE noticia_id = $1 AND categoria = 'river' AND estado = 'fallida' AND media_id IS NULL
+      WHERE noticia_id = $1 AND categoria = 'river' AND media_id IS NULL
+      AND (estado = 'fallida' OR (estado = 'pendiente' AND error IS NOT NULL))
       AND EXISTS (SELECT 1 FROM noticias WHERE id = $1 AND publicada AND categoria = 'river')
       RETURNING noticia_id`, [id]);
     if (!result.rowCount) { res.status(409).json({ error: "Solo se pueden reintentar fallos previos a publicar; las respuestas inciertas requieren revisión" }); return; }
