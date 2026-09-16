@@ -11,6 +11,18 @@ import { Textarea } from "@/components/ui/textarea";
 
 type Tab = "redactor" | "publicaciones" | "publicaciones-seleccion" | "publicaciones-libres" | "publicaciones-libres-seleccion" | "historia" | "postulantes" | "comentarios" | "galeria" | "galeria-seleccion" | "videos" | "videos-seleccion" | "analytics" | "suscriptores" | "publicaciones-hebreo";
 
+function BadgePendientes({ cantidad }: { cantidad?: number }) {
+  if (!cantidad || cantidad <= 0) return null;
+  return (
+    <span
+      aria-label={`${cantidad} pendientes`}
+      className="shrink-0 rounded-full bg-river-red text-white border border-white min-w-5 px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums text-center"
+    >
+      {cantidad}
+    </span>
+  );
+}
+
 interface ComentarioAdmin {
   id: number;
   noticiaId: number;
@@ -2151,15 +2163,18 @@ export default function Redactor() {
     }
   }, []);
 
-  // Refresca los conteos de pendientes cada 60 s mientras la pestaña
-  // "Mis publicaciones (hebreo)" está abierta. Al cambiar de pestaña o
-  // desmontar el componente se cancela el intervalo.
+  // Los badges se cargan al iniciar sesión, sin abrir ninguna sección,
+  // y se mantienen al día también con cambios realizados desde otros dispositivos.
   useEffect(() => {
-    if (tab !== "publicaciones-hebreo") return;
+    if (authStatus !== "ok") {
+      setConteosResumen(null);
+      return;
+    }
+    void cargarHoraResumen();
     const id = window.setInterval(() => { void cargarHoraResumen(); }, 60_000);
     return () => window.clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [authStatus, tab, postulaciones, noticiasHebreo, misPublicaciones, publicarEstado]);
 
   const buscarNoticias = async () => {
     setBuscando(true);
@@ -2570,6 +2585,7 @@ export default function Redactor() {
               }`}
             >
               <BookOpen className="w-4 h-4" /> Mis publicaciones
+              <BadgePendientes cantidad={conteosResumen?.borradoresEs} />
             </button>
             <button
               onClick={() => { setTab("publicaciones-seleccion"); cargarPublicacionesSel(); }}
@@ -2641,6 +2657,7 @@ export default function Redactor() {
               }`}
             >
               <Languages className="w-4 h-4" /> Publicaciones en Hebreo
+              <BadgePendientes cantidad={conteosResumen?.hebreo} />
             </button>
           </div>
           {/* Fila 2 */}
@@ -2654,11 +2671,7 @@ export default function Redactor() {
               }`}
             >
               <Inbox className="w-4 h-4" /> Postulantes
-              {postulaciones.filter(p => p.pendiente).length > 0 && tab !== "postulantes" && (
-                <span className="absolute -top-1 -right-1 bg-river-red text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-white">
-                  {postulaciones.filter(p => p.pendiente).length}
-                </span>
-              )}
+              <BadgePendientes cantidad={conteosResumen?.postulaciones} />
             </button>
             <button
               onClick={() => { setTab("comentarios"); cargarComentarios(); }}
