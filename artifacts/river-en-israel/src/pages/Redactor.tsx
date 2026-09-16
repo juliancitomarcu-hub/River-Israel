@@ -1098,6 +1098,16 @@ export default function Redactor() {
         credentials: "same-origin",
       });
       if (res.ok) {
+        const data = await res.json() as { ok: boolean; actual: boolean };
+        if (!data.ok) return;
+        if (data.actual) {
+          limpiarSesion();
+          setAuthStatus("needed");
+          setMostrarSesiones(false);
+          setDetalleSesiones(null);
+          setSesionesActivas(null);
+          return;
+        }
         // Eliminar del listado local y decrementar el contador.
         setDetalleSesiones(prev => prev?.filter(s => s.sessionId !== sessionId) ?? null);
         setSesionesActivas(prev => (prev !== null ? Math.max(0, prev - 1) : null));
@@ -2533,17 +2543,15 @@ export default function Redactor() {
                                   <br />
                                   caduca en {tiempoRelativo(s.expiresAt - Date.now())}
                                 </div>
-                                {!s.actual && (
                                   <button
                                     type="button"
                                     onClick={() => cerrarSesion(s.sessionId)}
                                     disabled={cerrandoSesionId === s.sessionId}
                                     className="shrink-0 text-[10px] font-bold text-red-500 hover:text-red-700 disabled:opacity-50 mt-0.5"
-                                    title="Cerrar esta sesión"
+                                    title={s.actual ? "Cerrar esta sesión y volver a ingresar la contraseña" : "Cerrar esta sesión"}
                                   >
                                     {cerrandoSesionId === s.sessionId ? "cerrando…" : "cerrar"}
                                   </button>
-                                )}
                               </div>
                             </li>
                           ))}

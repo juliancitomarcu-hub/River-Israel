@@ -303,15 +303,13 @@ router.post("/admin/sessions/:id/revoke", async (req, res) => {
     res.status(400).json({ error: "Falta id de sesión" });
     return;
   }
-  const revocada = await revokeAdminSessionById(id);
+  const revocada = await revokeAdminSessionById(id, provided);
   if (!revocada) {
     res.status(404).json({ error: "Sesión no encontrada o ya expirada" });
     return;
   }
-  // Si el que pidió la revocación era la misma sesión que acabamos de borrar,
-  // limpiamos su cookie para no dejar un estado inconsistente.
-  // (No forzamos logout: quien hace la petición sabe lo que hace.)
-  res.json({ ok: true });
+  if (revocada.actual) clearSessionCookie(res);
+  res.json({ ok: true, actual: revocada.actual });
 });
 
 export default router;

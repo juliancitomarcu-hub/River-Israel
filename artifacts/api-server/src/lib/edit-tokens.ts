@@ -241,8 +241,11 @@ export async function listActiveAdminSessions(
 }
 
 // Revoca una sola sesión admin buscándola por su id opaco (hash del token).
-// Devuelve true si se encontró y borró, false si no existía o ya caducó.
-export async function revokeAdminSessionById(sessionId: string): Promise<boolean> {
+// Devuelve si era la sesión del solicitante, o null si no existía o ya caducó.
+export async function revokeAdminSessionById(
+  sessionId: string,
+  currentToken: string,
+): Promise<{ actual: boolean } | null> {
   const now = new Date();
   // Traemos todas las sesiones admin vivas y buscamos cuál matchea el hash.
   const rows = await db
@@ -255,9 +258,9 @@ export async function revokeAdminSessionById(sessionId: string): Promise<boolean
       ),
     );
   const match = rows.find((r) => sessionIdFromToken(r.token) === sessionId);
-  if (!match) return false;
+  if (!match) return null;
   await db.delete(panelSessionsTable).where(eq(panelSessionsTable.token, match.token));
-  return true;
+  return { actual: match.token === currentToken };
 }
 
 export async function revokeAdminSession(token: string): Promise<void> {
