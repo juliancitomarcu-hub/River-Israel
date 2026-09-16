@@ -1303,6 +1303,7 @@ export default function Redactor() {
   >([]);
   // Token que se está anulando en este momento (para deshabilitar el botón).
   const [anulandoToken, setAnulandoToken] = useState<string | null>(null);
+  const [confirmAnularToken, setConfirmAnularToken] = useState<string | null>(null);
   const [enviandoLink, setEnviandoLink] = useState<number | null>(null);
   const envioLinkEnCurso = useRef(false);
   const [mensajeLink, setMensajeLink] = useState("");
@@ -4982,8 +4983,22 @@ export default function Redactor() {
                             {enviandoLink === link.noticiaId ? "Enviando…" : "Enviar nuevo link"}
                           </button>
                           {esVigente && (
+                            confirmAnularToken !== link.token ? (
                             <button
+                              type="button"
+                              onClick={() => setConfirmAnularToken(link.token)}
+                              disabled={anulandoToken !== null}
+                              className="shrink-0 text-xs px-2 py-0.5 rounded-full border border-orange-300 text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors disabled:opacity-50"
+                            >
+                              Anular
+                            </button>
+                            ) : (
+                            <div className="w-full flex items-center gap-2 flex-wrap border-t border-orange-200 pt-2 pb-1" role="group" aria-label="Confirmar anulación del link">
+                            <span className="text-orange-700">¿Confirmar? Esta acción no se puede deshacer.</span>
+                            <button
+                              type="button"
                               onClick={async () => {
+                                if (anulandoToken !== null) return;
                                 setAnulandoToken(link.token);
                                 try {
                                   const res = await fetch(
@@ -4999,13 +5014,24 @@ export default function Redactor() {
                                   }
                                 } finally {
                                   setAnulandoToken(null);
+                                  setConfirmAnularToken(null);
                                 }
                               }}
-                              disabled={anulandoToken === link.token}
+                              disabled={anulandoToken !== null}
                               className="shrink-0 text-xs px-2 py-0.5 rounded-full border border-orange-300 text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors disabled:opacity-50"
                             >
-                              {anulandoToken === link.token ? "Anulando…" : "Anular"}
+                              {anulandoToken === link.token ? "Anulando…" : "Sí, anular"}
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmAnularToken(null)}
+                              disabled={anulandoToken !== null}
+                              className="text-xs px-3 py-1 rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            >
+                              No
+                            </button>
+                            </div>
+                            )
                           )}
                         </li>
                       );
