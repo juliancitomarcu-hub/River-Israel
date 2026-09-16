@@ -1303,6 +1303,9 @@ export default function Redactor() {
   >([]);
   // Token que se está anulando en este momento (para deshabilitar el botón).
   const [anulandoToken, setAnulandoToken] = useState<string | null>(null);
+  const [enviandoLink, setEnviandoLink] = useState<number | null>(null);
+  const envioLinkEnCurso = useRef(false);
+  const [mensajeLink, setMensajeLink] = useState("");
   // Duración (en minutos) de los links de edición por nota (avisos al crear).
   const [linkEdicionTtlMinutos, setLinkEdicionTtlMinutos] = useState<string>("");
   const [guardandoTtlEdicion, setGuardandoTtlEdicion] = useState(false);
@@ -4898,6 +4901,7 @@ export default function Redactor() {
               )}
               <div className="mt-3">
                 <p className="text-xs font-semibold text-river-black mb-1.5">Últimos links de edición emitidos</p>
+                {mensajeLink && <p role="status" className="text-xs text-gray-600 mb-2">{mensajeLink}</p>}
                 {ultimosLinksEdicion.length === 0 ? (
                   <p className="text-xs text-gray-500">
                     Todavía no hay links de edición emitidos (o los últimos ya fueron depurados).
@@ -4951,6 +4955,32 @@ export default function Redactor() {
                           </a>
                           <span className="text-gray-400 shrink-0">emitido {fmt(emitido)}</span>
                           {estado}
+                          <button
+                            type="button"
+                            disabled={enviandoLink !== null}
+                            onClick={async () => {
+                              if (envioLinkEnCurso.current) return;
+                              envioLinkEnCurso.current = true;
+                              setEnviandoLink(link.noticiaId);
+                              setMensajeLink("");
+                              try {
+                                const res = await fetch(`/api/redactor-settings/links-edicion/${link.noticiaId}`, { method: "POST" });
+                                const data = await res.json() as { error?: string; link?: typeof link };
+                                if (!res.ok || !data.link) throw new Error(data.error || "No se pudo enviar el nuevo link");
+                                const nuevo = data.link;
+                                setUltimosLinksEdicion(prev => [nuevo, ...prev.filter(l => l.token !== nuevo.token)].slice(0, 10));
+                                setMensajeLink("Nuevo link enviado al redactor por Telegram.");
+                              } catch (err) {
+                                setMensajeLink(err instanceof Error ? err.message : "No se pudo enviar el nuevo link");
+                              } finally {
+                                envioLinkEnCurso.current = false;
+                                setEnviandoLink(null);
+                              }
+                            }}
+                            className="shrink-0 text-xs px-2 py-0.5 rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-100 transition-colors disabled:opacity-50"
+                          >
+                            {enviandoLink === link.noticiaId ? "Enviando…" : "Enviar nuevo link"}
+                          </button>
                           {esVigente && (
                             <button
                               onClick={async () => {
@@ -4963,7 +4993,7 @@ export default function Redactor() {
                                   if (res.ok) {
                                     setUltimosLinksEdicion(prev =>
                                       prev.map(l =>
-                                        l.token === link.token ? { ...l, usado: true } : l,
+                                        l.token === link.token ? { ...l, expiraEn: new Date().toISOString() } : l,
                                       ),
                                     );
                                   }
