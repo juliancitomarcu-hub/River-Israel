@@ -125,6 +125,7 @@ interface NoticiaCompleta {
   fuente: string;
   textoOriginal: string;
   imagenPortada?: string;
+  imagenInstagram?: string;
   createdAt: string;
   categoria?: "river" | "seleccion";
 }
@@ -314,6 +315,11 @@ export default function Noticia() {
 
           {/* Contenido */}
           <div className="max-w-3xl mx-auto px-6 py-12">
+            {data.imagenInstagram && <figure className="mb-10">
+              <img src={data.imagenInstagram.startsWith("https://") ? data.imagenInstagram : `/api/storage${data.imagenInstagram}`}
+                alt={`Ilustración editorial: ${data.titulo}`} className="w-full max-w-lg mx-auto h-auto rounded-lg" loading="lazy" />
+              <figcaption className="text-center text-xs text-gray-500 mt-2">Ilustración editorial · River Plate Israel</figcaption>
+            </figure>}
             <div className="prose-custom space-y-4">
               {renderContenido(data.contenido)}
             </div>

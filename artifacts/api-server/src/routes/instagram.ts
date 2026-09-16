@@ -8,7 +8,7 @@ router.get("/instagram/publicaciones", requireAdmin, async (_req, res) => {
   try {
     const cuenta = cuentaInstagram("river");
     const result = await pool.query(`SELECT j.noticia_id, n.titulo, j.estado, j.caption, j.imagen_url,
-      j.media_id, j.error, j.intentos, j.created_at FROM instagram_publicaciones j
+      j.media_id, j.error, j.intentos, j.created_at, j.telegram_estado, j.telegram_message_id FROM instagram_publicaciones j
       JOIN noticias n ON n.id = j.noticia_id WHERE j.categoria = 'river'
       ORDER BY j.created_at DESC LIMIT 50`);
     res.json({ cuenta: "@riverplateisrael", configurada: !!cuenta, desde: cuenta?.desde ?? null, publicaciones: result.rows });

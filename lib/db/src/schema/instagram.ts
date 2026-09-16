@@ -9,6 +9,8 @@ export const instagramPublicacionesTable = pgTable("instagram_publicaciones", {
   caption: text("caption"), imagenUrl: text("imagen_url"), cuentaId: text("cuenta_id"),
   containerId: text("container_id"), mediaId: text("media_id"), error: text("error"),
   intentos: integer("intentos").notNull().default(0),
+  telegramEstado: text("telegram_estado").notNull().default("pendiente"),
+  telegramMessageId: text("telegram_message_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),

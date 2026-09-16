@@ -9,10 +9,10 @@ const { build } = require('esbuild');
 
 test('worker delivers once, isolates account, cancels withdrawn news and reconciles timeouts', async () => {
   const db = new PGlite(), previousFetch = globalThis.fetch;
-  const config = { INSTAGRAM_ENABLED: 'true', INSTAGRAM_API_VERSION: 'v25.0', INSTAGRAM_RIVER_USER_ID: '123', INSTAGRAM_RIVER_ACCESS_TOKEN: 'test-only', INSTAGRAM_RIVER_START_AT: '2026-01-01T00:00:00Z' };
+  const config = { INSTAGRAM_ENABLED: 'true', INSTAGRAM_API_VERSION: 'v25.0', INSTAGRAM_RIVER_USER_ID: '123', INSTAGRAM_RIVER_ACCESS_TOKEN: 'test-only', INSTAGRAM_RIVER_START_AT: '2026-01-01T00:00:00Z', EDITORIAL_TELEGRAM_ENABLED: 'true', TELEGRAM_TOKEN: 'test-only', TELEGRAM_CHAT_ID: '-123', INSTAGRAM_PUBLIC_BASE_URL: 'https://example.org' };
   const previousEnv = Object.fromEntries(Object.keys(config).map(k => [k, process.env[k]]));
   Object.assign(process.env, config);
-  let locked = false, creates = 0, publishes = 0, captions = 0, images = 0;
+  let locked = false, creates = 0, publishes = 0, captions = 0, images = 0, telegrams = 0, timeoutTelegram = false;
   let username = 'riverplateisrael', status = 'FINISHED', timeoutPublish = false;
   globalThis.__instagramTest = {
     pool: { connect: async () => ({
@@ -26,6 +26,15 @@ test('worker delivers once, isolates account, cancels withdrawn news and reconci
     image: async () => { images++; return 'https://example.org/card.jpg'; },
   };
   globalThis.fetch = async (url, opts) => {
+    if (url.hostname === 'api.telegram.org') {
+      telegrams++;
+      const body = JSON.parse(opts.body);
+      assert.equal(body.photo, 'https://example.org/card.jpg');
+      assert.equal(body.chat_id, '-123');
+      assert.match(body.caption, /https:\/\/example.org\/noticia\//);
+      if (timeoutTelegram) throw new Error('timeout');
+      return Response.json({ ok: true, result: { message_id: 42 } });
+    }
     assert.equal(url.hostname, 'graph.instagram.com');
     if (url.pathname.endsWith('/123') && opts.method === 'GET') return Response.json({ id: '123', username });
     if (url.pathname.endsWith('/media')) { creates++; return Response.json({ id: '456' }); }
@@ -34,8 +43,10 @@ test('worker delivers once, isolates account, cancels withdrawn news and reconci
     throw new Error('Unexpected request');
   };
   try {
-    await db.exec("CREATE TABLE noticias (id serial PRIMARY KEY, titulo text DEFAULT 'River', contenido text DEFAULT 'Contenido', publicada boolean NOT NULL DEFAULT false, categoria text NOT NULL DEFAULT 'river');");
+    await db.exec("CREATE TABLE noticias (id serial PRIMARY KEY, titulo text DEFAULT 'River', contenido text DEFAULT 'Contenido', imagen_instagram text, publicada boolean NOT NULL DEFAULT false, categoria text NOT NULL DEFAULT 'river');");
     await db.exec(await readFile(new URL('../../../lib/db/migrations/20260916_instagram.sql', import.meta.url), 'utf8'));
+    const migration = await readFile(new URL('../../../lib/db/migrations/20260916_editorial.sql', import.meta.url), 'utf8');
+    await db.exec(migration); await db.exec(migration);
     const bundle = await build({ entryPoints: [fileURLToPath(new URL('../src/lib/instagram-worker.ts', import.meta.url))], bundle: true, write: false, platform: 'node', format: 'esm', plugins: [{ name: 'isolated-services', setup(b) {
       b.onResolve({ filter: /^(@workspace\/db|\.\/logger|\.\/instagram-editorial)$/ }, args => ({ path: args.path, namespace: 'test' }));
       b.onLoad({ filter: /.*/, namespace: 'test' }, args => ({ contents: args.path === '@workspace/db' ? 'export const pool = globalThis.__instagramTest.pool'
@@ -49,6 +60,8 @@ test('worker delivers once, isolates account, cancels withdrawn news and reconci
     const id1 = await add();
     await Promise.all([procesarInstagram(), procesarInstagram()]);
     assert.equal((await job(id1)).estado, 'publicada'); assert.equal((await job(id1)).media_id, '789');
+    assert.equal((await job(id1)).telegram_estado, 'enviada'); assert.equal(telegrams, 1);
+    assert.equal((await db.query('SELECT imagen_instagram FROM noticias WHERE id = $1', [id1])).rows[0].imagen_instagram, 'https://example.org/card.jpg');
     await procesarInstagram(); assert.equal(publishes, 1); assert.equal(creates, 1);
     const id2 = await add(); timeoutPublish = true; await procesarInstagram();
     assert.equal((await job(id2)).estado, 'publicando');
@@ -67,6 +80,11 @@ test('worker delivers once, isolates account, cancels withdrawn news and reconci
     await procesarInstagram(); assert.equal((await job(id6)).estado, 'pendiente'); assert.equal(publishes, 3);
     await db.exec("INSERT INTO noticias(publicada, categoria) VALUES (true, 'seleccion')");
     await procesarInstagram(); assert.equal(publishes, 3);
+    const before = telegrams; timeoutTelegram = true;
+    const id7 = await add(); await procesarInstagram();
+    assert.equal((await job(id7)).estado, 'publicada');
+    assert.equal((await job(id7)).telegram_estado, 'revision');
+    await procesarInstagram(); assert.equal(telegrams, before + 1);
   } finally {
     globalThis.fetch = previousFetch; delete globalThis.__instagramTest;
     for (const [k, v] of Object.entries(previousEnv)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
