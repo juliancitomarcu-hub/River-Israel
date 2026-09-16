@@ -10,6 +10,53 @@ interface Job {
   intentos: number; publicada: boolean; categoria_actual: string;
   telegram_estado: string;
 }
+
+async function prepararInstagramDB(desde: string): Promise<void> {
+  // Replit genera las migraciones de producción comparando el esquema y no
+  // conserva funciones/triggers personalizados. Reconciliarlos al arrancar
+  // mantiene la captura atómica también después de un deploy nuevo.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS instagram_publicaciones (
+      noticia_id integer PRIMARY KEY REFERENCES noticias(id) ON DELETE CASCADE,
+      categoria text NOT NULL,
+      estado text NOT NULL DEFAULT 'pendiente',
+      caption text,
+      imagen_url text,
+      cuenta_id text,
+      container_id text,
+      media_id text,
+      error text,
+      intentos integer NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      next_attempt_at timestamptz NOT NULL DEFAULT now(),
+      telegram_estado text NOT NULL DEFAULT 'pendiente',
+      telegram_message_id text
+    );
+    ALTER TABLE instagram_publicaciones
+      ADD COLUMN IF NOT EXISTS telegram_estado text NOT NULL DEFAULT 'pendiente';
+    ALTER TABLE instagram_publicaciones
+      ADD COLUMN IF NOT EXISTS telegram_message_id text;
+    CREATE OR REPLACE FUNCTION enqueue_instagram_publicacion() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.categoria = 'river' AND NEW.publicada AND (TG_OP = 'INSERT' OR NOT OLD.publicada) THEN
+        INSERT INTO instagram_publicaciones(noticia_id, categoria)
+        VALUES (NEW.id, NEW.categoria) ON CONFLICT (noticia_id) DO NOTHING;
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    DROP TRIGGER IF EXISTS noticia_instagram_publicada ON noticias;
+    CREATE TRIGGER noticia_instagram_publicada AFTER INSERT OR UPDATE OF publicada
+    ON noticias FOR EACH ROW EXECUTE FUNCTION enqueue_instagram_publicacion();
+  `);
+  // Recupera publicaciones hechas durante la ventana entre migración y
+  // arranque. El corte explícito impide encolar el archivo histórico.
+  await pool.query(`INSERT INTO instagram_publicaciones(noticia_id, categoria, created_at)
+    SELECT id, categoria, created_at FROM noticias
+    WHERE publicada = true AND categoria = 'river' AND created_at >= $1
+    ON CONFLICT (noticia_id) DO NOTHING`, [desde]);
+}
 // User-authorized destination: only @riverplateisrael and River articles.
 export async function procesarInstagram(): Promise<void> {
   const cuenta = cuentaInstagram("river");
@@ -103,9 +150,16 @@ export async function procesarInstagram(): Promise<void> {
     client.release();
   }
 }
-export function iniciarInstagram(): void {
+export async function iniciarInstagram(): Promise<void> {
   if (process.env.INSTAGRAM_ENABLED !== "true") return;
-  if (!cuentaInstagram("river")) { logger.error("Instagram: falta configuración de River; worker desactivado"); return; }
+  const cuenta = cuentaInstagram("river");
+  if (!cuenta) { logger.error("Instagram: falta configuración de River; worker desactivado"); return; }
+  try {
+    await prepararInstagramDB(cuenta.desde);
+  } catch {
+    logger.error("Instagram: no se pudo reconciliar tabla y trigger; worker desactivado");
+    return;
+  }
   let running = false;
   const tick = async () => {
     if (running) return;

@@ -189,7 +189,7 @@ app.listen(port, (err) => {
     .finally(() => {
       if (esProduccion) {
         iniciarScheduler();
-        iniciarInstagram();
+        void iniciarInstagram();
       } else {
         logger.info("Modo desarrollo: scheduler automático desactivado (solo corre en producción)");
       }
