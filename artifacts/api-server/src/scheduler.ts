@@ -23,6 +23,7 @@ import { ObjectStorageService } from "./lib/objectStorage";
 import { extraerFechaDelEvento, generarNotaEstructurada, resolverCaptionTelegram } from "./lib/openai-news";
 import { recordarCaptionPorNota } from "./lib/telegram-caption-cache";
 import { actualizarPlantelProfesional } from "./lib/plantel";
+import { noticiaDuplicadaPorTitulo } from "./lib/noticia-duplicada";
 
 export type Categoria = "river" | "seleccion";
 
@@ -204,62 +205,30 @@ function urlDemaisiadoVieja(url: string): boolean {
 }
 
 // ─── DEDUPLICACIÓN POR DB ─────────────────────────────────────────────────────
-// Compara el título candidato (scrapeado) con las noticias de los últimos 30 días,
-// tanto contra el título publicado (reescrito por la IA) como contra el título
-// original scrapeado (primera línea de texto_original). Esto evita repetidos
-// aunque la IA haya reescrito el título con otras palabras.
-// Umbral estricto: 2 palabras distintivas coincidentes (sin contar genéricas
-// como "river" o "argentina") → se considera el mismo tema y se salta.
-
-// Palabras que aparecen en casi todos los títulos y no distinguen una nota de
-// otra — no cuentan para el umbral de coincidencias.
-const PALABRAS_GENERICAS = new Set([
-  "river", "plate", "millonario", "millonarios", "nunez", "monumental",
-  "seleccion", "argentina", "argentino", "argentinos", "scaloneta", "mundial",
-  "futbol", "partido", "equipo", "jugador", "jugadores", "tecnico", "entrenador",
-]);
-
-function palabrasSignificativas(texto: string): string[] {
-  return texto
-    .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z\s]/g, "")
-    .split(/\s+/)
-    .filter(p => p.length >= 5 && !PALABRAS_GENERICAS.has(p));
-}
-
-async function tituloYaProcesado(titulo: string): Promise<boolean> {
+// Compara contra títulos de la misma categoría creados recientemente. El
+// original scrapeado es la señal prioritaria; el título reescrito por la IA
+// queda como respaldo. La ventana es deliberadamente corta: no reemplaza la
+// deduplicación permanente por URL ni el control factual de 48 horas.
+async function tituloYaProcesado(titulo: string, categoria: Categoria): Promise<boolean> {
   try {
     const res = await db.execute(sqlRaw`
       SELECT titulo, texto_original FROM noticias
-      WHERE created_at > NOW() - INTERVAL '30 days'
+      WHERE categoria = ${categoria}
+        AND created_at > NOW() - INTERVAL '7 days'
     `);
-
-    const palabras = palabrasSignificativas(titulo);
-    // Con menos de 2 palabras distintivas no se puede comparar con confianza;
-    // en ese caso la deduplicación por URL sigue actuando.
-    if (palabras.length < 2) return false;
-    // Umbral estricto: 2 palabras distintivas coincidentes (las genéricas como
-    // "river" o "argentina" no cuentan) → mismo tema → no repetir.
-    const umbral = 2;
 
     for (const row of res.rows as { titulo: string; texto_original: string | null }[]) {
       // Título original scrapeado = primera línea de texto_original
       const tituloOriginal = (row.texto_original ?? "").split("\n")[0] ?? "";
-      const textosExistentes = [row.titulo, tituloOriginal].filter(Boolean);
-
-      for (const textoExistente of textosExistentes) {
-        const existente = textoExistente
-          .toLowerCase()
-          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z\s]/g, "");
-        // Comparación por raíz (primeros 6 caracteres) para atrapar variaciones
-        // de la misma palabra: "convocado" / "convocatoria", "goleada" / "goleó".
-        const coincidencias = palabras.filter(p => existente.includes(p.slice(0, 6)));
-        if (coincidencias.length >= umbral) {
-          logger.info({ candidato: titulo, existente: textoExistente, coincidencias, umbral }, "Scheduler: tema repetido, saltando");
-          return true;
-        }
+      if (noticiaDuplicadaPorTitulo(titulo, {
+        original: tituloOriginal,
+        reescrito: row.titulo,
+      })) {
+        logger.info(
+          { candidato: titulo, original: tituloOriginal, reescrito: row.titulo },
+          "Scheduler: tema repetido, saltando",
+        );
+        return true;
       }
     }
     return false;
@@ -703,7 +672,7 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
           continue;
         }
         // 3. Descartar si el tema (por título) ya fue cubierto esta semana
-        const yaExistePorTitulo = await tituloYaProcesado(candidata.titulo);
+        const yaExistePorTitulo = await tituloYaProcesado(candidata.titulo, categoria);
         if (yaExistePorTitulo) continue;
 
         // 4. En automático, validar el documento real ANTES de elegirlo. Si

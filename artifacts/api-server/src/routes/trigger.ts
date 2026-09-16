@@ -110,7 +110,7 @@ router.post("/scheduler/audit", async (req, res) => {
   }
 
   // CHECK 5: Filtros anti-duplicado y hashtags
-  correcciones.push("Anti-duplicados ✅ (DB 7 días)");
+  correcciones.push("Anti-duplicados ✅ (título por categoría: 7 días · URL: permanente)");
   correcciones.push("Hashtags ✅ (#RiverPlate #RiverIsrael #RamatGan #ElMasGrande)");
   correcciones.push("Filtro antihumo ✅ (Boca, Racing, etc. bloqueados)");
   correcciones.push("✅ Publicar: idempotente (no permite doble publicación)");
@@ -120,7 +120,7 @@ router.post("/scheduler/audit", async (req, res) => {
   correcciones.push("Control de calidad ✅ (mín. 1848 chars · sin puntos suspensivos)");
   correcciones.push("maxOutputTokens ✅ (3000 — expansión automática si falla)");
   correcciones.push("Limpieza HTML ✅ (&amp; &nbsp; y entidades saneadas)");
-  correcciones.push("Scheduler ✅ (cada 2 h, La Página Millonaria prioritaria)");
+  correcciones.push("Scheduler configurado (cada 2 h, La Página Millonaria prioritaria; ejecución no verificada por esta auditoría)");
 
   if (!token || !chatId) {
     logger.info({ correcciones, errores }, "Auditoría completada (Telegram no disponible en dev)");
