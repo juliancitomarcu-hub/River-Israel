@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Copy, Check, RotateCcw, Newspaper,
@@ -1043,7 +1043,7 @@ export default function Redactor() {
     };
   }, [mostrarSesiones]);
 
-  const cargarDetalleSesiones = async () => {
+  const cargarDetalleSesiones = useCallback(async () => {
     setCargandoSesiones(true);
     setErrorSesiones("");
     try {
@@ -1064,7 +1064,13 @@ export default function Redactor() {
     } finally {
       setCargandoSesiones(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!mostrarSesiones || authStatus !== "ok") return;
+    const id = window.setInterval(() => { void cargarDetalleSesiones(); }, 30_000);
+    return () => window.clearInterval(id);
+  }, [mostrarSesiones, authStatus, cargarDetalleSesiones]);
 
   const toggleSesiones = () => {
     const abrir = !mostrarSesiones;
