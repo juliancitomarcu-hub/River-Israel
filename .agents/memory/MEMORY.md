@@ -4,3 +4,4 @@
 - [Telegram webhook secret no legible](telegram-webhook-secret.md) — getWebhookInfo NO devuelve secret_token; protección se infiere con URL en vivo + registro en memoria del proceso.
 - [Actualidad editorial](actualidad-editorial.md) — la autopublicación exige artículo canónico, fecha publicada ≤48 h y cuerpo real; nunca usar cuerpo técnico fijo sin verificar.
 - [Validación del plantel](official-roster-validation.md) — exigir total coherente y tamaño mínimo independiente antes de reemplazar el último plantel válido.
+- [Entrega a Make](redes-delivery.md) — recepción del webhook no confirma publicación final; evitar duplicados al reintentar resultados ambiguos.

@@ -1,12 +1,6 @@
-/**
- * Envío de notas publicadas al webhook de Make.com para automatizar
- * la publicación en Instagram (y otras redes).
- *
- * Fire-and-forget: nunca bloquea ni rompe el flujo de publicación.
- * Si MAKE_WEBHOOK_URL no está configurada, no hace nada.
- */
-
+/** Publicación en redes: placa persistente antes de avisar a Make. */
 import { logger } from "./logger";
+import { generarPlacaRedes } from "./generar-placa-redes";
 
 export interface NotaParaMake {
   id: number;
@@ -18,70 +12,73 @@ export interface NotaParaMake {
   imagenPortada?: string | null;
 }
 
-/** Resuelve la imagen de portada a una URL pública absoluta. */
-function imagenAbsoluta(imagenPortada: string | null | undefined, dominio: string): string {
-  if (!imagenPortada) return "";
-  if (imagenPortada.startsWith("http")) return imagenPortada;
-  if (imagenPortada.startsWith("/objects/")) return `https://${dominio}/api/storage${imagenPortada}`;
-  if (imagenPortada.startsWith("/images/")) return `https://${dominio}${imagenPortada}`;
-  return `https://${dominio}/api/storage${imagenPortada}`;
+export interface PayloadRedes {
+  titulo: string;
+  url_nota: string;
+  url_imagen: string;
+  caption: string;
 }
 
-export function enviarNotaAMake(nota: NotaParaMake): void {
-  const webhookUrl = process.env.MAKE_WEBHOOK_URL;
-  if (!webhookUrl) {
-    logger.warn({ notaId: nota.id }, "enviarNotaAMake: MAKE_WEBHOOK_URL no configurada, se omite");
-    return;
+export function crearCaptionRedes(nota: NotaParaMake): string {
+  const titulo = nota.titulo.replace(/<[^>]*>/g, "").replace(/[*_`]/g, "").trim();
+  const hashtags = Array.from(new Set([
+    "#RiverPlate", "#ElMasGrande",
+    ...((nota.tags ?? "").match(/#[\p{L}\p{N}_]+/gu) ?? []),
+  ])).slice(0, 6);
+  return `${titulo.slice(0, 240)}\n\nConocé los detalles en la nota completa.\n\n${hashtags.join(" ")}`;
+}
+
+/** Awaitable for controlled tests; throws on failure instead of claiming delivery. */
+export async function enviarNotaAMakeConfirmado(
+  nota: NotaParaMake,
+  baseUrl = `https://${process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com"}`,
+): Promise<{ status: number; payload: PayloadRedes; filePath: string }> {
+  const webhook = process.env.WEBHOOK_REDES_URL?.trim();
+  if (!webhook) throw new Error("WEBHOOK_REDES_URL no configurada");
+  // Do not include the webhook URL (a secret) in errors, redirects or logs.
+  let endpoint: URL;
+  try { endpoint = new URL(webhook); } catch { throw new Error("WEBHOOK_REDES_URL inválida"); }
+  if (endpoint.protocol !== "https:" || endpoint.username || endpoint.password) {
+    throw new Error("WEBHOOK_REDES_URL debe ser una URL HTTPS");
   }
-
-  const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
-  const urlNota = `https://${dominio}/noticia/${nota.id}`;
-  // Imagen optimizada para Instagram (recorte 4:5 1080×1350 + compresión JPEG).
-  // Si la nota no tiene portada, se envía la URL original resuelta (vacía si no hay).
-  const imagen = nota.imagenPortada?.trim()
-    ? `https://${dominio}/api/instagram-imagen/${nota.id}`
-    : imagenAbsoluta(nota.imagenPortada, dominio);
-
-  // Caption listo para Instagram: título + primer párrafo + tags + link.
-  // Límite de IG: 2200 caracteres — dejamos margen.
-  const primerParrafo =
-    nota.contenido
-      .split("\n")
-      .map((l) => l.trim())
-      .find((l) => l.length > 20) ?? "";
-  const tags = (nota.tags ?? "").trim();
-  let caption = `${nota.titulo}\n\n${primerParrafo}`;
-  if (caption.length > 1800) caption = caption.slice(0, 1797) + "...";
-  caption += `\n\nNota completa: ${urlNota}`;
-  if (tags) caption += `\n\n${tags}`;
-
+  const base = new URL(baseUrl).origin;
+  const placa = await generarPlacaRedes(nota, base);
+  // Check anonymous access before asking an external service to consume it.
+  const imageCheck = await fetch(placa.url, { method: "HEAD", signal: AbortSignal.timeout(15000) });
+  if (!imageCheck.ok || !imageCheck.headers.get("content-type")?.startsWith("image/")) {
+    throw new Error(`La placa no está accesible públicamente (HTTP ${imageCheck.status})`);
+  }
+  const payload: PayloadRedes = {
+    titulo: nota.titulo,
+    url_nota: `${base}/noticia/${nota.id}`,
+    url_imagen: placa.url,
+    caption: crearCaptionRedes(nota),
+  };
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (process.env.MAKE_API_KEY) headers["x-make-apikey"] = process.env.MAKE_API_KEY;
-
-  void fetch(webhookUrl, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      id: nota.id,
-      titulo: nota.titulo,
-      contenido: nota.contenido,
-      caption,
-      tags,
-      categoria: nota.categoria === "seleccion" ? "seleccion" : "river",
-      fuente: nota.fuente ?? "",
-      urlNota,
-      imagen,
-    }),
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        logger.warn({ status: res.status, body: body.slice(0, 300), notaId: nota.id }, "enviarNotaAMake: Make respondió con error");
-      } else {
-        logger.info({ notaId: nota.id }, "enviarNotaAMake: nota enviada a Make/Instagram");
-      }
-    })
-    .catch((err) => {
-      logger.warn({ err, notaId: nota.id }, "enviarNotaAMake: fallo enviando a Make");
+  let response: Response;
+  try {
+    response = await fetch(webhook, {
+      method: "POST", headers, body: JSON.stringify(payload),
+      redirect: "error", signal: AbortSignal.timeout(20000),
     });
+  } catch {
+    // A timed-out POST may have arrived. Never blindly retry and duplicate posts.
+    throw new Error("No se pudo confirmar la recepción de Make; revisar el escenario antes de reenviar");
+  }
+  if (!response.ok) throw new Error(`Make rechazó la noticia (HTTP ${response.status})`);
+  logger.info({ notaId: nota.id, status: response.status }, "Make: webhook aceptó la placa y la noticia");
+  return { status: response.status, payload, filePath: placa.filePath };
+}
+
+/** Keep publication independent of Make, while recording failures explicitly. */
+export function enviarNotaAMake(nota: NotaParaMake): void {
+  if (!process.env.WEBHOOK_REDES_URL?.trim()) {
+    logger.warn({ notaId: nota.id }, "Make: WEBHOOK_REDES_URL no configurada, envío omitido");
+    return;
+  }
+  void enviarNotaAMakeConfirmado(nota).catch(() => {
+    // Do not serialize errors that might contain signed storage URLs or secrets.
+    logger.error({ notaId: nota.id }, "Make: no se confirmó el envío de la placa; revisar antes de reenviar");
+  });
 }

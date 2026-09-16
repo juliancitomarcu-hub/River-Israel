@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "DnoTgBYHvOk0YMiiHV5mb"
+uri = "file://artifacts/river-en-israel/public/placas/05a4c6df9e518189c424b0d5e720bfbaca2ed808baa4425c230e5482d56d89f1.jpg"
+type = "image"
+title = "Placa enviada a Make — 1080×1080"
+description = "Foto de la última noticia, titular y marca riverplateisrael.com."
+logical_id = "de1f6112-a5ec-407b-a4f9-44d0c8d448bb"
+content_hash = "sha256:05a4c6df9e518189c424b0d5e720bfbaca2ed808baa4425c230e5482d56d89f1"
+size = 290758
+mtime_ms = 1789520979746
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:f26e89fe-cad7-4e1e-985a-0ab60d90ba16/de1f6112-a5ec-407b-a4f9-44d0c8d448bb/f7467add-f1a2-43e7-914b-7013dc2b2d98"
+storage_version_token = "1789521006492325"
+content_type = "image/jpeg"

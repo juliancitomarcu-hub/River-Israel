@@ -893,6 +893,9 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
       await guardarEstado(estado);
     }
 
+    // Redes no depende de que el bot de Telegram esté configurado.
+    if (autopublicar) enviarNotaAMake(savedNoticia);
+
     // ── ENVIAR A TELEGRAM ─────────────────────────────────────────────────
     // Las notas de Selección van al bot de la Scaloneta; las de River al de River.
     const cred = credencialesTelegram(categoria === "seleccion" ? "seleccion" : "river");
@@ -908,8 +911,6 @@ async function ejecutarCiclo(fuenteOverride?: string, esAutomatico = false, cate
     // 🌐 Si se publicó automáticamente, lanzar traducción al hebreo en background
     if (autopublicar && savedNoticia) {
       traducirYGuardarHebreo(savedNoticia.id).catch(() => {});
-      // 📸 Instagram vía Make.com (fire-and-forget)
-      enviarNotaAMake(savedNoticia);
     }
 
     // Foto de portada para Telegram: la del artículo si existe (solo URLs
