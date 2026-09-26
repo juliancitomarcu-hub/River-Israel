@@ -93,6 +93,19 @@ export async function registrarWebhook(
   categoria: CategoriaTelegram,
   opciones?: { descartarPendientes?: boolean },
 ): Promise<RegistroWebhookEstado> {
+  // Incluso desde el panel, una instancia de prueba no debe apropiarse de los
+  // webhooks que siguen atendidos por la instancia de producción.
+  if (process.env.AUTOMATION_ENABLED === "false") {
+    return {
+      intentado: false,
+      ok: false,
+      conSecret: false,
+      url: null,
+      error: "Registro de webhooks desactivado en esta instancia",
+      cuando: null,
+    };
+  }
+
   const token = tokenDe(categoria);
   const cuando = new Date().toISOString();
 

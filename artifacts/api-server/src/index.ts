@@ -23,6 +23,8 @@ if (Number.isNaN(port) || port <= 0) {
 
 // Detectar producción por NODE_ENV o por TELEGRAM_WEBHOOK_DOMAIN (que solo existe en prod)
 const esProduccion = process.env.NODE_ENV === "production" || !!process.env.TELEGRAM_WEBHOOK_DOMAIN;
+// A staging deployment must never take over Telegram webhooks or publish news.
+const automatizacionHabilitada = esProduccion && process.env.AUTOMATION_ENABLED !== "false";
 
 const esperar = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -147,7 +149,7 @@ function iniciarChequeoPeriodicoWebhook(): void {
 
 async function registrarWebhookTelegram() {
   // Solo registrar el webhook en producción para no sobreescribir el webhook de prod desde dev
-  if (!esProduccion) {
+  if (!automatizacionHabilitada) {
     logger.info("Modo desarrollo: registro de webhook de Telegram omitido (evita sobreescribir producción)");
     return;
   }
@@ -166,14 +168,14 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  iniciarActualizadorPlantel();
+  if (automatizacionHabilitada) iniciarActualizadorPlantel();
 
   registrarWebhookTelegram()
     .catch((err) => {
       logger.error({ err }, "Error en registro de webhook");
     })
     .finally(() => {
-      if (esProduccion) {
+      if (automatizacionHabilitada) {
         iniciarChequeoPeriodicoWebhook();
         iniciarChequeoPeriodicoCola();
       }
@@ -186,7 +188,7 @@ app.listen(port, (err) => {
       logger.error({ err }, "Error hidratando redactor settings desde la DB");
     })
     .finally(() => {
-      if (esProduccion) {
+      if (automatizacionHabilitada) {
         iniciarScheduler();
       } else {
         logger.info("Modo desarrollo: scheduler automático desactivado (solo corre en producción)");

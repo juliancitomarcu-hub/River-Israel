@@ -10,8 +10,10 @@ import {
 } from "./objectAcl";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
+const externalCredentials = process.env.GOOGLE_CREDENTIALS_JSON;
+const useReplitStorage = !externalCredentials && !process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-export const objectStorageClient = new Storage({
+export const objectStorageClient = useReplitStorage ? new Storage({
   credentials: {
     audience: "replit",
     subject_token_type: "access_token",
@@ -27,7 +29,7 @@ export const objectStorageClient = new Storage({
     universe_domain: "googleapis.com",
   },
   projectId: "",
-});
+}) : new Storage(externalCredentials ? { credentials: JSON.parse(externalCredentials) } : undefined);
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -254,6 +256,15 @@ async function signObjectURL({
   method: "GET" | "PUT" | "DELETE" | "HEAD";
   ttlSec: number;
 }): Promise<string> {
+  if (!useReplitStorage) {
+    if (method === "HEAD") throw new Error("HEAD signed URLs are not supported by GCS");
+    const action = method === "GET" ? "read" : method === "PUT" ? "write" : "delete";
+    const [signedUrl] = await objectStorageClient
+      .bucket(bucketName)
+      .file(objectName)
+      .getSignedUrl({ version: "v4", action, expires: Date.now() + ttlSec * 1000 });
+    return signedUrl;
+  }
   const request = {
     bucket_name: bucketName,
     object_name: objectName,

@@ -6,6 +6,8 @@ import router from "./routes";
 import { sitemapHandler } from "./sitemap";
 import { ogImageNoticiaHandler, ogNoticiaHandler } from "./og-noticia";
 import { logger } from "./lib/logger";
+import path from "node:path";
+import { existsSync } from "node:fs";
 
 const app: Express = express();
 
@@ -41,5 +43,18 @@ app.get("/noticia/:id", ogNoticiaHandler);
 app.get("/api/og-image/noticia/:id", ogImageNoticiaHandler);
 
 app.use("/api", router);
+
+// A standalone deployment serves the built SPA and API from the same origin.
+// Replit's existing routing stays in place when STATIC_DIR is absent.
+if (process.env.STATIC_DIR) {
+  const staticDir = path.resolve(process.env.STATIC_DIR);
+  const indexFile = path.join(staticDir, "index.html");
+  if (!existsSync(indexFile)) throw new Error(`Missing frontend build: ${indexFile}`);
+  app.use(express.static(staticDir, { index: false }));
+  app.use((req, res, next) => {
+    if (req.method !== "GET" || req.path.startsWith("/api/") || req.path === "/api" || !req.accepts("html")) return next();
+    res.sendFile(indexFile);
+  });
+}
 
 export default app;

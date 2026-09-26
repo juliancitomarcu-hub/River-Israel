@@ -13,6 +13,8 @@
 
 import type { Request, Response } from "express";
 import sharp from "sharp";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { db, noticiasTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "./lib/logger";
@@ -45,6 +47,11 @@ export interface NoticiaOgData {
 async function obtenerShell(): Promise<string | null> {
   if (shellCache && Date.now() - shellCache.at < SHELL_TTL) return shellCache.html;
   try {
+    if (process.env.STATIC_DIR) {
+      const html = await readFile(path.resolve(process.env.STATIC_DIR, "index.html"), "utf8");
+      shellCache = { html, at: Date.now() };
+      return html;
+    }
     // Development must use the local SPA shell, not production asset hashes.
     const shellOrigin = process.env.NODE_ENV === "production" ? SITE_URL : "http://localhost:80";
     const res = await fetch(`${shellOrigin}/`, { signal: AbortSignal.timeout(8000) });
