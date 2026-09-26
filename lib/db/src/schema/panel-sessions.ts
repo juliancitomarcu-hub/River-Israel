@@ -13,6 +13,7 @@ export const panelSessionsTable = pgTable("panel_sessions", {
   token: text("token").primaryKey(),
   scope: text("scope").notNull(),
   noticiaId: integer("noticia_id"),
+  userAgent: text("user_agent"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

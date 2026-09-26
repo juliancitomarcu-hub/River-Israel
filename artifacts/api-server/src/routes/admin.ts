@@ -112,7 +112,7 @@ router.post("/admin/login", async (req, res) => {
     res.status(401).json({ error: "Contraseña incorrecta" });
     return;
   }
-  const session = await createAdminSession();
+  const session = await createAdminSession(req.get("user-agent"));
   setSessionCookie(res, session.token, ADMIN_SESSION_TTL_MS);
   res.json({ ok: true, expiresAt: session.expiresAt });
 });
@@ -260,7 +260,7 @@ router.post("/admin/exchange-edit-token", async (req, res) => {
   // Si el token estaba scoped a una noticia → sesión efímera scoped a esa nota.
   // Si no (ej: link del resumen diario de hebreo) → sesión admin completa corta.
   if (consumed.noticiaId === null) {
-    const session = await createAdminSession();
+    const session = await createAdminSession(req.get("user-agent"));
     setSessionCookie(res, session.token, ADMIN_SESSION_TTL_MS);
     res.json({
       ok: true,
@@ -269,7 +269,7 @@ router.post("/admin/exchange-edit-token", async (req, res) => {
     });
     return;
   }
-  const session = await createNoticiaSession(consumed.noticiaId);
+  const session = await createNoticiaSession(consumed.noticiaId, req.get("user-agent"));
   setSessionCookie(res, session.token, SESSION_TTL_MS);
   res.json({
     ok: true,

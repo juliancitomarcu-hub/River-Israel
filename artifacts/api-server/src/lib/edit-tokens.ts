@@ -3,6 +3,7 @@ import { db, editTokensTable, panelSessionsTable } from "@workspace/db";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { logger } from "./logger";
 import { leerRedactorSettings } from "./redactor-settings";
+import { sessionDevice } from "./session-device";
 
 // TTL corto POR DEFECTO para links de edición scoped a una nota recién creada
 // (autopublicación del scheduler, botones del bot de Telegram). La duración
@@ -127,12 +128,14 @@ export async function consumeEditToken(
 
 export async function createNoticiaSession(
   noticiaId: number,
+  userAgent?: string,
 ): Promise<{ token: string; expiresAt: number }> {
   const token = randomBytes(32).toString("base64url");
   const expiresAtMs = Date.now() + SESSION_TTL_MS;
   await db.insert(panelSessionsTable).values({
     token,
     scope: "noticia",
+    userAgent: sessionDevice(userAgent),
     noticiaId,
     expiresAt: new Date(expiresAtMs),
   });
@@ -159,12 +162,13 @@ export async function getNoticiaSession(token: string): Promise<{ noticiaId: num
 
 // Sesión completa de admin (creada vía /admin/login con la contraseña).
 // Tiene mismos permisos que el ADMIN_TOKEN permanente pero caduca sola.
-export async function createAdminSession(): Promise<{ token: string; expiresAt: number }> {
+export async function createAdminSession(userAgent?: string): Promise<{ token: string; expiresAt: number }> {
   const token = randomBytes(32).toString("base64url");
   const expiresAtMs = Date.now() + ADMIN_SESSION_TTL_MS;
   await db.insert(panelSessionsTable).values({
     token,
     scope: "admin",
+    userAgent: sessionDevice(userAgent),
     noticiaId: null,
     expiresAt: new Date(expiresAtMs),
   });
@@ -216,12 +220,13 @@ function sessionIdFromToken(token: string): string {
 // token del que pide. Ordenadas de más nueva a más vieja.
 export async function listActiveAdminSessions(
   currentToken: string,
-): Promise<Array<{ sessionId: string; createdAt: number; expiresAt: number; actual: boolean }>> {
+): Promise<Array<{ sessionId: string; createdAt: number; expiresAt: number; actual: boolean; userAgent: string | null }>> {
   const now = new Date();
   const rows = await db
     .select({
       token: panelSessionsTable.token,
       createdAt: panelSessionsTable.createdAt,
+      userAgent: panelSessionsTable.userAgent,
       expiresAt: panelSessionsTable.expiresAt,
     })
     .from(panelSessionsTable)
@@ -237,6 +242,7 @@ export async function listActiveAdminSessions(
     createdAt: r.createdAt.getTime(),
     expiresAt: r.expiresAt.getTime(),
     actual: r.token === currentToken,
+    userAgent: r.userAgent,
   }));
 }
 

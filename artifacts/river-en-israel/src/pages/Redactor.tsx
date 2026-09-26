@@ -1029,7 +1029,7 @@ export default function Redactor() {
 
   // Detalle de cada sesión admin viva (popover al tocar el contador): creada
   // hace X, caduca en Y, y si es "esta" sesión. El endpoint nunca expone tokens.
-  type SesionAdmin = { sessionId: string; createdAt: number; expiresAt: number; actual: boolean };
+  type SesionAdmin = { sessionId: string; createdAt: number; expiresAt: number; actual: boolean; userAgent: string | null };
   const [detalleSesiones, setDetalleSesiones] = useState<SesionAdmin[] | null>(null);
   const [mostrarSesiones, setMostrarSesiones] = useState(false);
   const [cargandoSesiones, setCargandoSesiones] = useState(false);
@@ -2539,6 +2539,7 @@ export default function Redactor() {
                                   <span className="font-bold">
                                     {s.actual ? "Esta sesión" : `Sesión ${i + 1}`}
                                   </span>
+                                  {" · "}{s.userAgent || "Dispositivo no registrado"}
                                   {" · "}abierta hace {tiempoRelativo(Date.now() - s.createdAt)}
                                   <br />
                                   caduca en {tiempoRelativo(s.expiresAt - Date.now())}
