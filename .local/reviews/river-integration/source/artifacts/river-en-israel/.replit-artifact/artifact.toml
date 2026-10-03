@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "River en Israel"
+version = "1.0.0"
+id = "artifacts/river-en-israel"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21880
+
+[services.development]
+run = "pnpm --filter @workspace/river-en-israel run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/river-en-israel", "run", "build" ]
+publicDir = "artifacts/river-en-israel/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21880"
+BASE_PATH = "/"

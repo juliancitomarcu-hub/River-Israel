@@ -1,0 +1,466 @@
+import { Router, type IRouter } from "express";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { db } from "@workspace/db";
+import { noticiasTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { requireAdmin } from "../middleware/requireAdmin";
+import { type CategoriaImagen } from "../lib/generar-imagen-ig";
+import { credencialesTelegram, estadoTelegram } from "../lib/telegram-cred";
+import { estadoWebhookPanel, registrarWebhook, fallaReintentable } from "../lib/telegram-webhook-registro";
+import { avisarSiWebhookSinProteger } from "../lib/avisar-webhook-sin-proteger";
+import { limpiarNota } from "../lib/limpiar-asteriscos";
+import { asegurarOpenAIConfigurado, generarNotaEstructurada, resolverCaptionTelegram, validarTelegramCaption } from "../lib/openai-news";
+import { obtenerCaptionPorTexto, recordarCaptionPorNota, recordarCaptionPorTexto } from "../lib/telegram-caption-cache";
+
+const router: IRouter = Router();
+
+router.use("/procesar-noticia", requireAdmin);
+router.use("/enviar-telegram", requireAdmin);
+router.use("/test-scheduler", requireAdmin);
+router.use("/estado-bots", requireAdmin);
+router.use("/probar-bot", requireAdmin);
+router.use("/webhook-info", requireAdmin);
+router.use("/registrar-webhook", requireAdmin);
+
+/**
+ * Estado de configuración de los bots de Telegram (River / Selección) para que
+ * el panel del redactor muestre si cada uno está listo o le falta token/chat.
+ * No expone tokens ni chat_ids, sólo flags booleanos.
+ */
+router.get("/estado-bots", (_req, res) => {
+  res.json({
+    river: estadoTelegram("river"),
+    seleccion: estadoTelegram("seleccion"),
+  });
+});
+
+/**
+ * Estado en vivo de los webhooks de Telegram (River / Selección). Consulta
+ * getWebhookInfo de Telegram y lo combina con el registro en memoria de este
+ * proceso para avisar si cada webhook está realmente protegido (registrado con
+ * la URL esperada y con secret_token). Telegram no expone el secret, así que la
+ * señal de protección depende de que este proceso lo haya registrado con éxito.
+ */
+router.get("/webhook-info", async (req, res) => {
+  try {
+    const [river, seleccion] = await Promise.all([
+      estadoWebhookPanel("river"),
+      estadoWebhookPanel("seleccion"),
+    ]);
+    res.json({ river, seleccion });
+  } catch (err) {
+    req.log.error({ err }, "Error consultando estado de webhooks de Telegram");
+    res.status(502).json({ error: "No se pudo consultar el estado de los webhooks." });
+  }
+});
+
+/**
+ * Re-registra el webhook de un bot con su secret_token. Útil cuando el panel
+ * detecta que un webhook quedó sin proteger (registro previo o fallo de red al
+ * arrancar). Devuelve el estado actualizado tras re-registrar.
+ */
+router.post("/registrar-webhook", async (req, res) => {
+  const { categoria, descartarPendientes } = req.body as {
+    categoria?: CategoriaImagen;
+    descartarPendientes?: boolean;
+  };
+  const categoriaFinal = categoria === "seleccion" ? "seleccion" : "river";
+
+  const opciones = { descartarPendientes: descartarPendientes === true };
+  const ESPERA_REINTENTO_MS = 2_000;
+  const MAX_REINTENTOS = 2;
+
+  let registro = await registrarWebhook(categoriaFinal, opciones);
+  let reintentos = 0;
+
+  while (fallaReintentable(registro) && reintentos < MAX_REINTENTOS) {
+    reintentos++;
+    req.log.warn(
+      { categoria: categoriaFinal, error: registro.error, intento: reintentos + 1 },
+      "Re-registro del webhook falló; reintentando en 2s",
+    );
+    await new Promise<void>((resolve) => setTimeout(resolve, ESPERA_REINTENTO_MS));
+    registro = await registrarWebhook(categoriaFinal, opciones);
+  }
+
+  avisarSiWebhookSinProteger(categoriaFinal, registro);
+  if (!registro.ok) {
+    req.log.warn({ categoria: categoriaFinal, error: registro.error, reintentos }, "No se pudo re-registrar el webhook");
+    res.status(502).json({
+      ok: false,
+      error: registro.error ?? "No se pudo registrar el webhook.",
+      reintentos,
+    });
+    return;
+  }
+
+  const estado = await estadoWebhookPanel(categoriaFinal);
+  res.json({ ok: true, estado, reintentos });
+});
+
+/**
+ * Prueba de envío real de un bot de Telegram. A diferencia de /estado-bots
+ * (que sólo verifica que las env vars existan y el chat_id tenga formato
+ * válido), esto pega de verdad contra la API de Telegram y confirma de punta a
+ * punta que el bot puede enviar: detecta tokens revocados, chats equivocados o
+ * bots expulsados del grupo. Reporta éxito o el motivo real del fallo.
+ */
+router.post("/probar-bot", async (req, res) => {
+  const { categoria, conFoto } = req.body as { categoria?: CategoriaImagen; conFoto?: boolean };
+  const categoriaFinal: CategoriaImagen = categoria === "seleccion" ? "seleccion" : "river";
+
+  const cred = credencialesTelegram(categoriaFinal);
+  if (!cred) {
+    res.status(503).json({
+      ok: false,
+      error: categoriaFinal === "seleccion"
+        ? "El bot de la Selección no está configurado (falta token o chat)."
+        : "El bot de River no está configurado (falta token o chat).",
+    });
+    return;
+  }
+  const { token, chatId, marca } = cred;
+
+  const ahora = new Date().toLocaleString("es-AR", { timeZone: "Asia/Jerusalem" });
+  const mensaje = `✅ *Prueba de envío — ${marca}*\n\nEste es un mensaje de prueba enviado desde el panel del redactor. Si lo ves, el bot funciona correctamente.\n\n_${ahora} (hora Israel)_`;
+
+  try {
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: mensaje,
+        parse_mode: "Markdown",
+      }),
+    });
+
+    const tgData = await tgRes.json() as { ok: boolean; description?: string };
+
+    if (!tgRes.ok || !tgData.ok) {
+      req.log.warn({ categoria: categoriaFinal, description: tgData.description }, "Prueba de bot de Telegram falló");
+      res.status(502).json({
+        ok: false,
+        error: tgData.description
+          ? `Telegram rechazó el envío: ${tgData.description}`
+          : "Telegram rechazó el envío.",
+      });
+      return;
+    }
+
+    // El texto llegó. Si se pidió, probamos también sendPhoto (el flujo real de
+    // notas manda la foto de portada así; un chat puede aceptar texto pero
+    // rechazar imágenes). Reportamos el resultado de la foto por separado.
+    if (conFoto) {
+      const caption = `🖼 _Foto de prueba — ${marca}_\n\nSi ves esta imagen, el bot también puede enviar fotos de portada.`;
+      try {
+        // Subimos los bytes de una foto real de la galería vía multipart (más
+        // confiable que pasarle una URL a Telegram, que a veces no puede
+        // descargarla). Si el archivo local no está (p. ej. en producción
+        // bundleada), caemos a la URL pública del sitio.
+        const numFoto = String(Math.floor(Math.random() * 12) + 1).padStart(2, "0");
+        const nombreFoto = `foto-${numFoto}.jpeg`;
+        let fotoBytes: Buffer | null = null;
+        for (const candidato of [
+          path.join(process.cwd(), "..", "river-en-israel", "public", "images", "galeria", nombreFoto),
+          path.join(process.cwd(), "artifacts", "river-en-israel", "public", "images", "galeria", nombreFoto),
+        ]) {
+          try {
+            fotoBytes = await fs.readFile(candidato);
+            break;
+          } catch {
+            // probar el siguiente candidato
+          }
+        }
+
+        let fotoRes: globalThis.Response;
+        if (fotoBytes) {
+          const form = new FormData();
+          form.append("chat_id", chatId);
+          form.append("caption", caption);
+          form.append("parse_mode", "Markdown");
+          form.append("photo", new Blob([new Uint8Array(fotoBytes)], { type: "image/jpeg" }), nombreFoto);
+          fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+            method: "POST",
+            body: form,
+          });
+        } else {
+          const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+          fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              photo: `https://${dominio}/images/galeria/${nombreFoto}`,
+              caption,
+              parse_mode: "Markdown",
+            }),
+          });
+        }
+        const fotoData = await fotoRes.json() as { ok: boolean; description?: string };
+        if (!fotoRes.ok || !fotoData.ok) {
+          req.log.warn({ categoria: categoriaFinal, description: fotoData.description, nombreFoto, viaBytes: !!fotoBytes }, "Prueba de foto de Telegram falló (el texto sí llegó)");
+          res.json({
+            ok: true,
+            mensaje: `Mensaje de prueba enviado a ${marca}.`,
+            foto: {
+              ok: false,
+              error: fotoData.description
+                ? `Telegram rechazó la foto: ${fotoData.description}`
+                : "Telegram rechazó la foto.",
+            },
+          });
+          return;
+        }
+        res.json({ ok: true, mensaje: `Mensaje y foto de prueba enviados a ${marca}.`, foto: { ok: true } });
+        return;
+      } catch (err) {
+        req.log.error({ err, categoria: categoriaFinal }, "Error de conexión probando sendPhoto de Telegram");
+        res.json({
+          ok: true,
+          mensaje: `Mensaje de prueba enviado a ${marca}.`,
+          foto: { ok: false, error: "No se pudo conectar con Telegram para enviar la foto." },
+        });
+        return;
+      }
+    }
+
+    res.json({ ok: true, mensaje: `Mensaje de prueba enviado a ${marca}.` });
+  } catch (err) {
+    req.log.error({ err, categoria: categoriaFinal }, "Error de conexión probando bot de Telegram");
+    res.status(502).json({ ok: false, error: "No se pudo conectar con Telegram." });
+  }
+});
+
+function parsearResultado(texto: string): { titulo: string; contenido: string; tags: string } {
+  const tituloMatch = texto.match(/\*\*Título:\*\*\s*(.+)/);
+  const bajadaMatch = texto.match(/\*\*Bajada:\*\*\s*(.+)/);
+  const tagsMatch   = texto.match(/\*\*Tags:\*\*\s*(.+)/);
+
+  const titulo = tituloMatch?.[1]?.trim() ?? "Sin título";
+  const bajada = bajadaMatch?.[1]?.trim() ?? "";
+  const tags   = tagsMatch?.[1]?.trim() ?? "#RiverPlate #RiverIsrael #RamatGan #AnalisisMillonario";
+
+  let contenido = texto
+    .replace(/\*\*Título:\*\*\s*.+\n?/, "")
+    .replace(/\*\*Bajada:\*\*\s*.+\n?/, "")
+    .replace(/\*\*Contenido:\*\*\s*\n?/, "")
+    .replace(/\*\*Tags:\*\*\s*.+\n?/, "")
+    .trim();
+
+  if (bajada) {
+    contenido = `${bajada}\n\n${contenido}`;
+  }
+
+  return limpiarNota({ titulo, contenido, tags });
+}
+
+router.post("/procesar-noticia", async (req, res) => {
+  const { texto, categoria } = req.body as { texto?: string; categoria?: CategoriaImagen };
+  const categoriaFinal: CategoriaImagen = categoria === "seleccion" ? "seleccion" : "river";
+
+  if (!texto || texto.trim().length < 10) {
+    res.status(400).json({ error: "Falta el texto de la noticia" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  try {
+    const paquete = await generarNotaEstructurada({
+      sourceText: texto,
+      categoria: categoriaFinal,
+    });
+    const content = [
+      `**Título:** ${paquete.titulo}`,
+      "",
+      `**Bajada:** ${paquete.bajada}`,
+      "",
+      "**Contenido:**",
+      paquete.web_content,
+      "",
+      `**Tags:** ${paquete.tags}`,
+    ].join("\n");
+    recordarCaptionPorTexto(content, paquete.telegram_caption);
+    res.write(`data: ${JSON.stringify({
+      content,
+      telegram_caption: paquete.telegram_caption,
+    })}\n\n`);
+
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err) {
+    req.log.error({ err }, "Error procesando noticia con IA");
+    const detalle = err instanceof Error ? err.message : "No se pudo procesar la noticia";
+    res.write(`data: ${JSON.stringify({ error: detalle })}\n\n`);
+    res.end();
+  }
+});
+
+router.post("/enviar-telegram", async (req, res) => {
+  const { texto, textoOriginal, fuente, imagenPortada, categoria } = req.body as {
+    texto?: string;
+    textoOriginal?: string;
+    fuente?: string;
+    imagenPortada?: string;
+    categoria?: CategoriaImagen;
+  };
+  const categoriaFinal: CategoriaImagen = categoria === "seleccion" ? "seleccion" : "river";
+
+  const cred = credencialesTelegram(categoriaFinal);
+  if (!cred) {
+    res.status(503).json({
+      error: categoriaFinal === "seleccion"
+        ? "El bot de Telegram de la Selección no está configurado."
+        : "Telegram no está configurado.",
+    });
+    return;
+  }
+  const { token, chatId } = cred;
+
+  if (!texto || texto.trim().length < 5) {
+    res.status(400).json({ error: "Falta el texto a enviar" });
+    return;
+  }
+
+  try {
+    asegurarOpenAIConfigurado();
+    let { titulo, contenido, tags } = parsearResultado(texto);
+    // Nunca confiar en un teaser enviado por el navegador: sólo reutilizamos
+    // uno generado por este servidor para este texto exacto. Si el redactor
+    // editó el artículo, se regenera antes del insert.
+    let captionGenerado = obtenerCaptionPorTexto(texto);
+    if (!captionGenerado) {
+      const paquete = await generarNotaEstructurada({
+        sourceText: textoOriginal?.trim() || contenido,
+        sourceUrl: fuente,
+        categoria: categoriaFinal,
+      });
+      titulo = paquete.titulo;
+      contenido = `${paquete.bajada}\n\n${paquete.web_content}`.trim();
+      tags = paquete.tags;
+      captionGenerado = paquete.telegram_caption;
+    }
+    if (captionGenerado) {
+      const captionDePrueba = captionGenerado.replaceAll(
+        "{{ARTICLE_URL}}",
+        "https://riverplateisrael.com/noticia/0",
+      );
+      if (!validarTelegramCaption(captionDePrueba)) {
+        res.status(422).json({ error: "El teaser de Telegram no cumple el formato editorial requerido." });
+        return;
+      }
+    }
+
+    const [noticia] = await db
+      .insert(noticiasTable)
+      .values({
+        titulo,
+        contenido,
+        tags,
+        textoOriginal: textoOriginal ?? "",
+        fuente: fuente ?? "",
+        publicada: false,
+        pendiente: true,
+        imagenPortada: imagenPortada ?? "",
+        categoria: categoriaFinal,
+      })
+      .returning();
+    const dominio = process.env.TELEGRAM_WEBHOOK_DOMAIN ?? "riverplateisrael.com";
+    const caption = resolverCaptionTelegram(captionGenerado, {
+      titulo,
+      contenido,
+      url: `https://${dominio}/noticia/${noticia.id}`,
+    });
+    recordarCaptionPorNota(noticia.id, caption);
+    recordarCaptionPorTexto(texto, caption);
+
+    // Mandar primero la foto de portada (si hay) para previsualización en Telegram.
+    if (imagenPortada) {
+      try {
+        const fotoRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: imagenPortada,
+            caption: `🖼 _Foto de portada — ${titulo}_`,
+            parse_mode: "Markdown",
+          }),
+        });
+        const fotoData = await fotoRes.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+        if (!fotoRes.ok || fotoData?.ok === false) {
+          req.log.warn(
+            { status: fotoRes.status, description: fotoData?.description, noticiaId: noticia.id },
+            "Telegram rechazó la foto de previsualización",
+          );
+        }
+      } catch (err) {
+        req.log.warn({ err }, "No se pudo mandar la foto de portada por Telegram, sigo con el texto");
+      }
+    }
+
+    const replyMarkup = {
+      inline_keyboard: [
+        [
+          { text: "✅ Publicar", callback_data: `publicar_${noticia.id}` },
+          { text: "✏️ Editar", callback_data: `editar_${noticia.id}` },
+          { text: "❌ Rechazar", callback_data: `rechazar_${noticia.id}` },
+        ],
+      ],
+    };
+
+    // Telegram recibe el teaser estructurado, nunca web_content completo.
+    const mensajeTexto = caption;
+
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: mensajeTexto,
+        parse_mode: "Markdown",
+        reply_markup: replyMarkup,
+      }),
+    });
+
+    const tgData = await tgRes.json() as { ok: boolean; result?: { message_id: number } };
+
+    if (!tgRes.ok || !tgData.ok) {
+      req.log.error({ tgData }, "Error enviando a Telegram");
+      res.status(500).json({ error: "Error al enviar a Telegram" });
+      return;
+    }
+
+    const messageId = String(tgData.result?.message_id ?? "");
+    if (messageId) {
+      await db
+        .update(noticiasTable)
+        .set({ telegramMessageId: messageId })
+        .where(eq(noticiasTable.id, noticia.id));
+    }
+
+    res.json({ ok: true, noticiaId: noticia.id });
+  } catch (err) {
+    req.log.error({ err }, "Error en enviar-telegram");
+    const detalle = err instanceof Error ? err.message : "";
+    const esErrorOpenAI = detalle.startsWith("No se pudo generar una nota editorial válida:") ||
+      detalle.includes("OPENAI_API_KEY") ||
+      detalle.startsWith("OpenAI respondió");
+    res.status(esErrorOpenAI ? 502 : 500).json({
+      error: esErrorOpenAI ? detalle : "Error de conexión con Telegram",
+    });
+  }
+});
+
+router.post("/test-scheduler", async (req, res) => {
+  const { fuente } = req.body as { fuente?: string };
+  const { ejecutarCiclo } = await import("../scheduler");
+  res.json({ ok: true, mensaje: "Ciclo iniciado en segundo plano — mirá tu Telegram en ~60 segundos" });
+  ejecutarCiclo(fuente).catch((err) => req.log.error({ err }, "Error en test-scheduler"));
+});
+
+export default router;

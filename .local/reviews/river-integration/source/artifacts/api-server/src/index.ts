@@ -1,0 +1,203 @@
+import { assertServerAllowed, automationAllowed } from "./lib/runtime-policy";
+import type { CategoriaTelegram } from "./lib/telegram-cred";
+// Fail closed before importing app, routes, DB or binding a server.
+assertServerAllowed();
+const { default: app } = await import("./app");
+const { logger } = await import("./lib/logger");
+const { iniciarActualizadorPlantel, iniciarScheduler } = await import("./scheduler");
+const { iniciarInstagram } = await import("./lib/instagram-worker");
+const { registrarWebhook, fallaReintentable, consultarWebhookInfo } = await import("./lib/telegram-webhook-registro");
+const { avisarSiWebhookSinProteger, avisarWebhookRecuperado } = await import("./lib/avisar-webhook-sin-proteger");
+const { chequearColaUpdates } = await import("./lib/avisar-cola-updates");
+const { initRedactorSettings } = await import("./lib/redactor-settings");
+
+const rawPort = process.env["PORT"];
+
+if (!rawPort) {
+  throw new Error(
+    "PORT environment variable is required but was not provided.",
+  );
+}
+
+const port = Number(rawPort);
+
+if (Number.isNaN(port) || port <= 0) {
+  throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+// Detectar producción por NODE_ENV o por TELEGRAM_WEBHOOK_DOMAIN (que solo existe en prod)
+const esProduccion = process.env.NODE_ENV === "production" || !!process.env.TELEGRAM_WEBHOOK_DOMAIN;
+
+const esperar = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Esperas antes de cada reintento (backoff creciente). */
+const ESPERAS_REINTENTO_MS = [5_000, 15_000, 45_000];
+
+/**
+ * Registra el webhook de un bot con reintentos y backoff creciente ante
+ * fallos transitorios. El aviso de Telegram se envía solo si todos los
+ * intentos fallan; si un reintento posterior tiene éxito, se avisa que se
+ * recuperó solo.
+ */
+async function registrarWebhookConReintentos(categoria: CategoriaTelegram): Promise<void> {
+  let estado = await registrarWebhook(categoria);
+
+  if (fallaReintentable(estado)) {
+    for (let i = 0; i < ESPERAS_REINTENTO_MS.length; i++) {
+      const esperaMs = ESPERAS_REINTENTO_MS[i]!;
+      const intento = i + 2; // el intento 1 fue el inicial
+      logger.warn(
+        { bot: categoria, error: estado.error, intento, esperaMs },
+        "Registro de webhook falló; reintentando con backoff",
+      );
+      await esperar(esperaMs);
+      estado = await registrarWebhook(categoria);
+      if (!fallaReintentable(estado)) {
+        if (estado.ok) {
+          avisarWebhookRecuperado(categoria, intento);
+        }
+        break;
+      }
+    }
+  }
+
+  // Avisa solo si el estado final quedó sin proteger (todos los reintentos
+  // fallaron, o falla no reintentable como token/dominio ausente o sin secret).
+  avisarSiWebhookSinProteger(categoria, estado);
+}
+
+const INTERVALO_CHEQUEO_WEBHOOK_MS = 2 * 60 * 60 * 1000; // 2 horas
+const PRIMER_CHEQUEO_WEBHOOK_MS    = 90 * 60 * 1000;     // 90 min tras arrancar
+
+/**
+ * Consulta el estado en vivo del webhook de un bot y, si la URL registrada en
+ * Telegram no coincide con la URL esperada (o no hay webhook), lo re-registra
+ * automáticamente con los mismos reintentos y backoff del arranque.
+ * El aviso por Telegram sale solo si la auto-recuperación falla.
+ */
+async function chequearYRecuperarWebhook(categoria: CategoriaTelegram): Promise<void> {
+  let info;
+  try {
+    info = await consultarWebhookInfo(categoria);
+  } catch (err) {
+    logger.warn({ bot: categoria, err }, "Chequeo periódico de webhook: error consultando getWebhookInfo");
+    return;
+  }
+
+  if (!info.consultaOk) {
+    logger.warn({ bot: categoria, error: info.errorConsulta }, "Chequeo periódico de webhook: no se pudo consultar getWebhookInfo");
+    return;
+  }
+
+  if (info.urlCoincide) {
+    logger.info({ bot: categoria, url: info.url }, "Chequeo periódico de webhook: OK, URL coincide");
+    return;
+  }
+
+  logger.warn(
+    { bot: categoria, urlActual: info.url ?? "(vacía)", urlEsperada: info.urlEsperada },
+    "Chequeo periódico de webhook: URL no coincide con la esperada, re-registrando automáticamente",
+  );
+
+  await registrarWebhookConReintentos(categoria);
+}
+
+const INTERVALO_CHEQUEO_COLA_MS = 5 * 60 * 1000;  // cada 5 minutos
+const PRIMER_CHEQUEO_COLA_MS    = 5 * 60 * 1000;  // primer chequeo a los 5 min del arranque
+
+/**
+ * Inicia el chequeo periódico de la cola de updates pendientes para ambos bots.
+ * Solo debe llamarse en producción.
+ */
+function iniciarChequeoPeriodicoCola(): void {
+  if (!automationAllowed()) return;
+  logger.info(
+    { primerChequeoMinutos: 5, intervaloMinutos: 5 },
+    "Chequeo periódico de cola de updates: iniciado — primer chequeo en 5 min, luego cada 5 min",
+  );
+
+  const ejecutarChequeo = (): void => {
+    (["river", "seleccion"] as CategoriaTelegram[]).forEach((cat) => {
+      chequearColaUpdates(cat).catch((err) =>
+        logger.error({ err, bot: cat }, "Chequeo periódico de cola de updates: error inesperado"),
+      );
+    });
+  };
+
+  setTimeout(() => {
+    ejecutarChequeo();
+    setInterval(ejecutarChequeo, INTERVALO_CHEQUEO_COLA_MS);
+  }, PRIMER_CHEQUEO_COLA_MS);
+}
+
+function iniciarChequeoPeriodicoWebhook(): void {
+  if (!automationAllowed()) return;
+  logger.info(
+    { primerChequeoMinutos: 90, intervaloHoras: 2 },
+    "Chequeo periódico de webhook: iniciado — primer chequeo en 90 min, luego cada 2 horas",
+  );
+
+  const ejecutarChequeo = (): void => {
+    (["river", "seleccion"] as CategoriaTelegram[]).forEach((cat) => {
+      chequearYRecuperarWebhook(cat).catch((err) =>
+        logger.error({ err, bot: cat }, "Chequeo periódico de webhook: error inesperado"),
+      );
+    });
+  };
+
+  setTimeout(() => {
+    ejecutarChequeo();
+    setInterval(ejecutarChequeo, INTERVALO_CHEQUEO_WEBHOOK_MS);
+  }, PRIMER_CHEQUEO_WEBHOOK_MS);
+}
+
+async function registrarWebhookTelegram() {
+  if (!automationAllowed()) return;
+  // Solo registrar el webhook en producción para no sobreescribir el webhook de prod desde dev
+  if (!esProduccion) {
+    logger.info("Modo desarrollo: registro de webhook de Telegram omitido (evita sobreescribir producción)");
+    return;
+  }
+
+  // Registra cada bot con su secret_token y reintentos ante fallos
+  // transitorios. El módulo recuerda el resultado del último intento en
+  // memoria para que el panel pueda avisar si quedó sin proteger.
+  await registrarWebhookConReintentos("river");
+  await registrarWebhookConReintentos("seleccion");
+}
+
+app.listen(port, (err) => {
+  if (err) {
+    logger.error({ err }, "Error listening on port");
+    process.exit(1);
+  }
+
+  logger.info({ port }, "Server listening");
+  if (automationAllowed()) iniciarActualizadorPlantel();
+
+  registrarWebhookTelegram()
+    .catch((err) => {
+      logger.error({ err }, "Error en registro de webhook");
+    })
+    .finally(() => {
+      if (esProduccion && automationAllowed()) {
+        iniciarChequeoPeriodicoWebhook();
+        iniciarChequeoPeriodicoCola();
+      }
+    });
+
+  // Hidratar settings desde la DB antes de arrancar el scheduler para que el
+  // primer ciclo no use defaults por una carrera de arranque.
+  initRedactorSettings()
+    .catch((err) => {
+      logger.error({ err }, "Error hidratando redactor settings desde la DB");
+    })
+    .finally(() => {
+      if (esProduccion && automationAllowed()) {
+        iniciarScheduler();
+        void iniciarInstagram();
+      } else {
+        logger.info("Modo desarrollo: scheduler automático desactivado (solo corre en producción)");
+      }
+    });
+});

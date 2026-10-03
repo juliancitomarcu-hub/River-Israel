@@ -1039,7 +1039,8 @@ export default function Redactor() {
 
   useEffect(() => {
     if (!mostrarSesiones) return;
-    const onClickOutside = (e: MouseEvent) => {
+    // Pointer events también cubren toques y lápiz en iPhone/iPad, sin teclado.
+    const onPointerOutside = (e: PointerEvent) => {
       if (sesionesRef.current && !sesionesRef.current.contains(e.target as Node)) {
         setMostrarSesiones(false);
       }
@@ -1047,10 +1048,10 @@ export default function Redactor() {
     const onEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMostrarSesiones(false);
     };
-    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("pointerdown", onPointerOutside, true);
     document.addEventListener("keydown", onEscape);
     return () => {
-      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("pointerdown", onPointerOutside, true);
       document.removeEventListener("keydown", onEscape);
     };
   }, [mostrarSesiones]);

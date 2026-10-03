@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import type { Plugin } from "vite";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { mockupPreviewPlugin } from "./mockupPreviewPlugin";
 
@@ -22,6 +23,22 @@ if (rawPort && (Number.isNaN(port) || port <= 0)) {
 }
 
 const basePath = process.env.BASE_PATH ?? "/";
+const reviewSource = path.resolve(import.meta.dirname, "../../.local/reviews/river-integration/source/artifacts/river-en-israel/src");
+const activeSource = path.resolve(import.meta.dirname, "../river-en-israel/src/App.tsx");
+const riverReviewResolver: Plugin = {
+  name: "isolated-river-review-imports",
+  enforce: "pre",
+  transform(code, id) {
+    if (!id.startsWith(reviewSource)) return;
+    return code.replace(/(["'])@\//g, `$1${reviewSource}/`);
+  },
+  async resolveId(source, importer) {
+    if (!(importer?.startsWith(reviewSource) || importer?.includes("/mockups/river-hebrew-review/")) || source.startsWith(".") || source.startsWith("/") || source.startsWith("@/")) return;
+    return (await this.resolve(source, path.resolve(import.meta.dirname, "src/main.tsx"), { skipSelf: true }))
+      ?? (await this.resolve(source, activeSource, { skipSelf: true }))
+      ?? undefined;
+  },
+};
 
 if (!process.env.BASE_PATH && !isBuild) {
   throw new Error(
@@ -33,6 +50,7 @@ export default defineConfig({
   base: basePath,
   plugins: [
     mockupPreviewPlugin(),
+    riverReviewResolver,
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
@@ -48,6 +66,7 @@ export default defineConfig({
       : []),
   ],
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
     },
@@ -63,7 +82,13 @@ export default defineConfig({
     allowedHosts: true,
     fs: {
       strict: true,
-      deny: ["**/.*"],
+      allow: [
+        path.resolve(import.meta.dirname),
+        reviewSource,
+        path.resolve(import.meta.dirname, "../river-en-israel/node_modules"),
+        path.resolve(import.meta.dirname, "../../node_modules/.pnpm"),
+      ],
+      deny: ["**/.env", "**/.env.*", "**/.git/**", "**/*.pem", "**/*.crt"],
     },
   },
   preview: {

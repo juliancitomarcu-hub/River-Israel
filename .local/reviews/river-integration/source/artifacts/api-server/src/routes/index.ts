@@ -1,0 +1,66 @@
+import { Router, type IRouter } from "express";
+import healthRouter from "./health";
+import redactorRouter from "./redactor";
+import noticiasRouter from "./noticias";
+import publicarRouter from "./publicar";
+import telegramWebhookRouter from "./telegram-webhook";
+import partidosRouter from "./partidos";
+import mundialResultadosRouter from "./mundial-resultados";
+import storageRouter from "./storage";
+import triggerRouter from "./trigger";
+import historiaRouter from "./historia";
+import postulacionRouter from "./postulacion";
+import galeriaRouter from "./galeria";
+import videosRouter from "./videos";
+import contactoRouter from "./contacto";
+import analyticsRouter from "./analytics";
+import publicacionLibreRouter from "./publicacion-libre";
+import visitasRouter from "./visitas";
+import suscribirRouter from "./suscribir";
+import suscriptoresRouter from "./suscriptores";
+import noticiasHebreoRouter from "./noticias-hebreo";
+import redactorSettingsRouter from "./redactor-settings";
+import adminRouter from "./admin";
+import propuestaEventoRouter from "./propuesta-evento";
+import comentariosRouter from "./comentarios";
+import instagramRouter from "./instagram";
+import instagramImagenRouter from "./instagram-imagen";
+import plantelRouter from "./plantel";
+
+const router: IRouter = Router();
+
+// Healthcheck del deployment: GET /api debe responder 200 (sin este handler
+// devolvía error y la plataforma reiniciaba el server una y otra vez).
+router.get("/", (_req, res) => {
+  res.json({ ok: true, servicio: "river-en-israel-api" });
+});
+
+router.use(healthRouter);
+router.use(storageRouter);
+router.use(triggerRouter);
+router.use(historiaRouter);
+router.use(redactorRouter);
+router.use(noticiasRouter);
+router.use(publicarRouter);
+router.use(telegramWebhookRouter);
+router.use(partidosRouter);
+router.use(mundialResultadosRouter);
+router.use(postulacionRouter);
+router.use(galeriaRouter);
+router.use(videosRouter);
+router.use(contactoRouter);
+router.use(analyticsRouter);
+router.use(publicacionLibreRouter);
+router.use(visitasRouter);
+router.use(suscribirRouter);
+router.use(suscriptoresRouter);
+router.use(noticiasHebreoRouter);
+router.use(redactorSettingsRouter);
+router.use(adminRouter);
+router.use(propuestaEventoRouter);
+router.use(comentariosRouter);
+router.use(instagramRouter);
+router.use(instagramImagenRouter);
+router.use(plantelRouter);
+
+export default router;

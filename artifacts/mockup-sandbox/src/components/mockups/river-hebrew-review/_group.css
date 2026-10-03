@@ -1,0 +1,23 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+@source "../../../../../../.local/reviews/river-integration/source/artifacts/river-en-israel/src/pages";
+@source "../../../../../../.local/reviews/river-integration/source/artifacts/river-en-israel/src/components";
+
+@theme inline {
+  --font-sans: "Inter", Arial, sans-serif;
+  --font-display: "Bebas Neue", Arial, sans-serif;
+  --font-mono: "DM Mono", monospace;
+  --color-papel: #fafaf8;
+  --color-tinta: #0a0a0a;
+  --color-river-red: #cc0000;
+  --color-river-red-hover: #a30000;
+  --color-gris-borde: #e5e5e3;
+  --color-gris-meta: #666666;
+  --color-gris-suave: #f5f5f3;
+}
+
+.river-review { background: #fafaf8; min-height: 100vh; color: #0a0a0a; font-family: "Inter", Arial, sans-serif; }
+.river-review .font-display { font-family: "Bebas Neue", Arial, sans-serif; }
+.river-review .font-mono { font-family: "DM Mono", monospace; }
+.river-review .bg-diagonal-red { background: linear-gradient(120deg, #fff 35%, #cc0000 36%, #cc0000 63%, #fff 64%); }
+.river-review .newspaper-texture { background-image: radial-gradient(#0a0a0a0a 0.5px, transparent 0.5px); background-size: 6px 6px; }

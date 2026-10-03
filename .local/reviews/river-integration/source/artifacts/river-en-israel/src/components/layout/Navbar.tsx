@@ -1,0 +1,281 @@
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
+import { Menu, X, MapPin } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { useMundialMode } from "@/lib/mundial-mode";
+import { SolDeMayo } from "@/components/SolDeMayo";
+
+type NavLink = { name: string; href: string };
+
+const NAV_LINKS_RIVER: NavLink[] = [
+  { name: "Portada",          href: "/" },
+  { name: "Historia",         href: "/historia" },
+  { name: "Plantel",          href: "/equipo" },
+  { name: "Fixture",          href: "/fixture" },
+  { name: "Galería",          href: "/galeria" },
+  { name: "Filial",           href: "/#filial" },
+];
+
+const NAV_LINKS_SCALONETA: NavLink[] = [
+  { name: "Inicio",           href: "/scaloneta" },
+  { name: "Grupos",           href: "/scaloneta#grupos" },
+  { name: "Plantel",          href: "/scaloneta#plantel" },
+  { name: "Estadios",         href: "/scaloneta#estadios" },
+  { name: "Fixture Mundial",  href: "/mundial/fixture" },
+];
+
+export function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [location] = useLocation();
+  const isHebrew = location === "/he" || location.startsWith("/he/noticia/");
+  const languageTarget = isHebrew ? location.replace(/^\/he(?=\/|$)/, "") || "/" :
+    location.startsWith("/noticia/") ? `/he${location}` : "/he";
+  const mundialActivo = useMundialMode();
+  const navLinks = mundialActivo ? NAV_LINKS_SCALONETA : NAV_LINKS_RIVER;
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleNavClick = (href: string) => {
+    setMobileMenuOpen(false);
+    if (href.includes("#")) {
+      const [path, hash] = href.split("#");
+      const targetPath = path || "/";
+      const onTargetPage = location === targetPath || (targetPath === "/" && location === "");
+      if (onTargetPage) {
+        const el = document.getElementById(hash);
+        if (el) {
+          setTimeout(() => {
+            const top = el.getBoundingClientRect().top + window.scrollY - 80;
+            window.scrollTo({ top, behavior: "smooth" });
+          }, 80);
+        }
+      } else {
+        window.location.href = href;
+      }
+    }
+  };
+
+  const logoHref = mundialActivo ? "/scaloneta" : isHebrew ? "/he" : "/";
+
+  return (
+    <nav
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out border-b",
+        isScrolled
+          ? mundialActivo
+            ? "bg-[#0a1628]/95 backdrop-blur py-2 shadow-lg border-arg-celeste/20"
+            : "bg-white/95 backdrop-blur py-2 shadow-md border-gris-borde"
+          : mundialActivo
+          ? "bg-gradient-to-b from-black/80 to-transparent py-3 border-transparent"
+          : "bg-white border-b-2 border-tinta py-3"
+      )}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-2 md:gap-4">
+
+          {/* Logo */}
+          <Link href={logoHref} className="flex items-center gap-2 group shrink-0 min-w-0">
+            <div className={cn(
+              "escudo-river relative w-10 h-10 overflow-hidden rounded-full border-2 group-hover:scale-105 transition-transform shrink-0",
+              mundialActivo
+                ? "shadow-[0_0_16px_rgba(241,184,45,0.65)] border-arg-dorado"
+                : "border-tinta shadow-md"
+            )}>
+              {mundialActivo ? (
+                <>
+                  <div className="absolute inset-0 flex flex-col">
+                    <div className="flex-1 bg-arg-celeste"></div>
+                    <div className="flex-1 bg-white"></div>
+                    <div className="flex-1 bg-arg-celeste"></div>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <SolDeMayo size={22} />
+                  </div>
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-diagonal-red"></div>
+              )}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className={cn(
+                "font-display font-bold text-base sm:text-lg lg:text-xl leading-none tracking-tight truncate",
+                mundialActivo ? "text-white" : isScrolled ? "text-tinta" : "text-tinta"
+              )}>
+                {mundialActivo ? (
+                  <>LA <span className="text-arg-celeste">SCALONETA</span></>
+                ) : isHebrew ? "ריבר בישראל" : "RIVER EN ISRAEL"}
+              </span>
+              <span className={cn(
+                "text-[0.55rem] font-semibold tracking-wide flex items-center gap-0.5 truncate font-mono uppercase",
+                mundialActivo ? "text-arg-dorado" : "text-gris-meta"
+              )}>
+                <MapPin className={cn("w-2.5 h-2.5 shrink-0", mundialActivo ? "text-arg-dorado" : "text-river-red")} />
+                 {mundialActivo ? "Filial Israel" : isHebrew ? "רמת גן, ישראל" : "Ramat Gan, Israel"}
+              </span>
+            </div>
+          </Link>
+          {!mundialActivo && (location === "/" || location === "/river" || location === "/he" || location.startsWith("/noticia/") || location.startsWith("/he/noticia/")) && (
+            <Link href={languageTarget} data-testid="link-language-switch" lang={isHebrew ? "es" : "he"} className="shrink-0 border border-river-red px-2.5 py-2 text-river-red text-xs font-bold hover:bg-river-red hover:text-white">
+              {isHebrew ? "Español" : "עברית"}
+            </Link>
+          )}
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-2 lg:gap-6">
+            {navLinks.map((link) =>
+              link.href.startsWith("/") && !link.href.includes("#") ? (
+                <Link
+                  key={link.name}
+                   href={isHebrew && link.href === "/" ? "/he" : link.href}
+                  className={cn(
+                    "font-bold text-xs lg:text-sm uppercase tracking-wider relative group py-1 whitespace-nowrap transition-colors",
+                    mundialActivo
+                      ? "text-white/90 hover:text-white"
+                      : isScrolled
+                      ? "text-tinta/80 hover:text-tinta"
+                      : "text-tinta/80 hover:text-tinta"
+                  )}
+                >
+                   {isHebrew && link.href === "/" ? "ראשי" : link.name}
+                  <span className={cn(
+                    "absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full",
+                    mundialActivo ? "bg-arg-dorado" : "bg-river-red"
+                  )}></span>
+                </Link>
+              ) : (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  onClick={(e) => {
+                    if (link.href.includes("#")) {
+                      const [path] = link.href.split("#");
+                      const onPage = location === (path || "/");
+                      if (onPage) {
+                        e.preventDefault();
+                        handleNavClick(link.href);
+                      }
+                    }
+                  }}
+                  className={cn(
+                    "font-bold text-xs lg:text-sm uppercase tracking-wider relative group py-1 whitespace-nowrap transition-colors",
+                    mundialActivo
+                      ? "text-white/90 hover:text-white"
+                      : isScrolled
+                      ? "text-tinta/80 hover:text-tinta"
+                      : "text-tinta/80 hover:text-tinta"
+                  )}
+                >
+                   {link.name}
+                  <span className={cn(
+                    "absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full",
+                    mundialActivo ? "bg-arg-dorado" : "bg-river-red"
+                  )}></span>
+                </a>
+              )
+            )}
+            {/* WhatsApp solo en modo River */}
+            {!mundialActivo && (
+              <a
+                   href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 bg-river-red hover:bg-river-red-hover text-white px-4 py-2 font-bold uppercase tracking-wider text-xs transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap"
+              >
+                WhatsApp
+              </a>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className={cn(
+              "md:hidden p-2 shrink-0 transition-colors",
+              mundialActivo ? "text-white" : "text-tinta"
+            )}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Menú"
+          >
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Nav */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className={cn(
+              "md:hidden border-t overflow-hidden",
+              mundialActivo
+                ? "bg-[#0a1628] border-arg-celeste/20"
+                : "bg-white border-gris-borde"
+            )}
+          >
+            <div className="flex flex-col px-4 pt-2 pb-6 space-y-2">
+              {navLinks.map((link) =>
+                link.href.startsWith("/") && !link.href.includes("#") ? (
+                  <Link
+                    key={link.name}
+                    href={isHebrew && link.href === "/" ? "/he" : link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "px-4 py-3 font-bold text-base uppercase tracking-wider transition-colors",
+                      mundialActivo
+                        ? "text-white/80 hover:text-white hover:bg-white/5"
+                        : "text-tinta/80 hover:text-tinta hover:bg-gris-suave"
+                    )}
+                  >
+                    {isHebrew && link.href === "/" ? "ראשי" : link.name}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    onClick={(e) => {
+                      if (link.href.includes("#")) {
+                        const [path] = link.href.split("#");
+                        const onPage = location === (path || "/");
+                        if (onPage) {
+                          e.preventDefault();
+                          handleNavClick(link.href);
+                        }
+                      }
+                    }}
+                    className={cn(
+                      "px-4 py-3 font-bold text-base uppercase tracking-wider transition-colors",
+                      mundialActivo
+                        ? "text-white/80 hover:text-white hover:bg-white/5"
+                        : "text-tinta/80 hover:text-tinta hover:bg-gris-suave"
+                    )}
+                  >
+                    {link.name}
+                  </a>
+                )
+              )}
+              {/* WhatsApp solo en River */}
+              {!mundialActivo && (
+                <a
+                  href="https://chat.whatsapp.com/LGMvmF1bKjJ2PlZ1GqCfo0"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-river-red text-white px-4 py-3 font-bold uppercase tracking-wider text-center mt-4"
+                >
+                  Canal de WhatsApp
+                </a>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
+}

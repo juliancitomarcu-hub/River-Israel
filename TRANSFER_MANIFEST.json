@@ -1,0 +1,4349 @@
+{
+  "sourceHead": "74ea7aceb05e36ac84fd5aadb5b17eabe039f4e3",
+  "files": [
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "12bc7fa7e05091e2d413d235ef695c1d95805c8a"
+    },
+    {
+      "path": ".npmrc",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "61e34c2e5dde6b5b6b9d1a478945726c27993d4b"
+    },
+    {
+      "path": ".replit",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c0c3fa4ab2375de6b99772a2e3d170400a9ac0b1"
+    },
+    {
+      "path": ".replitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9eb019cd54e4f8ea1737967adb19aa1f53562cf2"
+    },
+    {
+      "path": "artifacts/api-server/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "32dd60ae817a6a4d614e697da06668648dd1f383"
+    },
+    {
+      "path": "artifacts/api-server/.replit-artifact/artifact.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "46e738ecb2e3a8a95f6f8bcdda9deb3cc9ad05b7"
+    },
+    {
+      "path": "artifacts/api-server/build.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "86ebf7faaa9322b1ab55cdbbda7febaad27b35cd"
+    },
+    {
+      "path": "artifacts/api-server/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b5a2c83045ee69e5a05dd947c536302788ec564"
+    },
+    {
+      "path": "artifacts/api-server/scripts/probar-redes.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0f5c76f1dd596639c6531458831911284d2b5915"
+    },
+    {
+      "path": "artifacts/api-server/src/app.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "106483c7387a66dffa426521dc3891f409e8d269"
+    },
+    {
+      "path": "artifacts/api-server/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d12dc5a3077140195a3542697a5cbb1b6106b8ed"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/.gitkeep",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/app-estado.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6939ccbfcec8ea65d9824118a399af75593f414b"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/app-estado.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "055ef61aecb176f04e9e773226584f422f0f0355"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/avisar-cola-updates.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eb96e88549ab7ce6555833580c72e5c92928ddf6"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/avisar-webhook-sin-proteger.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d59afe84cc8eea4865f996399055f72a46af0376"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/edit-tokens.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34cd9fb768fb8c5bc99a9ddd3061ee93b22efd12"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/enviar-a-make.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a5c4f1923d26ad85f6fefedfe0a0919d0c78ee57"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/generar-imagen-ig.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c58e12f460b319c74782cb88c37eccd6cbe03b6"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/generar-placa-redes.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5c2a194a99215857b88cc05180a416f20d3af393"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/limpiar-asteriscos.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28e5c5af85a9d8abfdefa0ae28313834da739d99"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/logger.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9c67f79a82872af8336ab384014fa69bbe0695f"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/noticia-duplicada.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d18c159e1e9e63e704fdc0ec23d6b5e1abbb2238"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/noticia-duplicada.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d5d24b996fe05ba9873f8e3685f45b98e2d6309f"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/notificar-publicacion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ea9aa4c443b14b39c79fb1533a72ce1f01048ce9"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/objectAcl.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d824fdba6edf50e75d40fefa68d65ab8e51437d"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/objectStorage.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f19db9cf624995aa3f1f53864e74be53d148f0b4"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/openai-news.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a6b02f2914c642d48c706d1ab50bb16dd39fce54"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/openai-news.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d5ba3eec2914d644430f7bcbab6f7cdd8f2845ff"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/plantel-parser.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96cc1e1a3694eb9582896aa717fdc8f32b767379"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/plantel-parser.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9faf4a7a43e4aa7d1cec2253cb7ba108a1a7a283"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/plantel-updater.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2a2fea82b79ac083bdb5b96b82a5e8513b22b37b"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/plantel-updater.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1350cf938a8547a2f037eec886efdd112a0f9cae"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/plantel.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d722057f7c4f92846fe32e0ff20fb6ab599d344"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/promocionar-nota.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e6fb8dfdea03040d8eb878109b4cafd93bdfed73"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/prompt-maestro-seleccion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f98e9253194e56877b5b1699df00ba095a45df54"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/prompt-maestro.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3eb1d328dea176e07d828fe240968eb05767133c"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/prompt-seleccion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c9dcb4625376862e551a1b1dca336816fa0d1ce9"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/redactor-settings.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9597e6a32f497f2c68c8453ed81897db66ae98c9"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/redes.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d1df33690739ccaf4b09683948f62b610b750703"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/resumen-pendientes.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a17bee2345b5b7d2b7b46c4a335b4c28e48670c8"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/session-device.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d70e2b072211b01c62b08e81bf634535f9e98e0a"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/session-device.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2a01aacd3fac9cfe01098f5fac3ce499b8fce8f6"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/telegram-caption-cache.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ad0e9d9156d2e7dbf2668c9337ffffb6f35d2104"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/telegram-cred.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4f76d421d1798e8472ac7c42e84742e1b8310b9e"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/telegram-webhook-registro.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c97e8f5026f02c1c0dbeb0aaf2d79c850c59e72"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/telegram-webhook-secret.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f48eea6dbddb2645dee46ba0190a5ae0f438f296"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/traductor-hebreo.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a17fd098913e18c81281dbfcc8873636b3f4ad1"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/url-imagen-segura.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "500c731686ee1c48e37ac708ecf0eb8ee551a5ba"
+    },
+    {
+      "path": "artifacts/api-server/src/middleware/requireAdmin.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "593663e8a020d242def4d83e2dc2d59797a50332"
+    },
+    {
+      "path": "artifacts/api-server/src/middlewares/.gitkeep",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "artifacts/api-server/src/og-noticia.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11f7dbcd6e856cd96a99a488c20533a43d065720"
+    },
+    {
+      "path": "artifacts/api-server/src/og-noticia.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3def5fd0ba5e2f252b866e6f7ca162a12acb3e70"
+    },
+    {
+      "path": "artifacts/api-server/src/prompt-maestro.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3779342cc86d6c8c05263e1e7048a0493169d823"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/admin.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1ca5e0b327f269ee151d9b306d804312322491eb"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/analytics.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "160638dd1db13dfd10921daaa2680161503eabcb"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/comentarios.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53fdd9d20e257c924441e84ed9d5ac0bd3b1e155"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/contacto.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90f5115bb24d4bbdd60b43e11be15b99a981cb63"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/galeria.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6b213d524522bfa5622cdea27de949f77de95bd1"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/health.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cd455b81b81f28ad08f0382695df94c3e63c1799"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/historia.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b6acc904643124919535c7762c6b183ad535b31e"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "af5b02e9a78948a5a3de1f87962a98b7ebf9ef8f"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/instagram-imagen.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ea2ece326948e23acecd282c4cc02d274a539f4a"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/mundial-resultados.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5c9f21354bd3e5723fe049cc6062cc58c63abfa8"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/noticias-hebreo.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3364ad905e918a1b31fa05a3e9a516a1be631efe"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/noticias.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a7ee518654a659683496994245963ebf608b0e75"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/partidos.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f51886bdfdb44f9e56dd6d601e1d68caf1d0db26"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/plantel.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "186d8e768d5885d6e539aa21a30a720b7a4dd558"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/postulacion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6a7e50bf4c4bcb03e1f4f78589c7c21269b4eb67"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/propuesta-evento.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6b6c5d17bc1a2322905b8e2dac298a228f5a5a8"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/publicacion-libre.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eb496c65accecc4d253eb81b74bcaf45959f6672"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/publicar.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "328baa7e725f58d7cf86191e65c8f69c82cea7ed"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/redactor-settings.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a8387889a6e7992244cac80e2fef4bc9db41925c"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/redactor-settings.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "603d787777e485129972c58acc609f430ca91038"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/redactor.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a616fe3179fa65afb4c1d959e31ff4e4de2cf7b"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/storage.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "82bca774c09fe4d9dbd7b468aab29064e807d221"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/suscribir.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "99218c3d0c4bdd911d73d425ac66c4bef1542ddf"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/suscriptores.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab0a249272b6306abaed2cb23f838d657f4be55c"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/telegram-webhook.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dc15dde6d576794419a7b15fcf7dbccf8a70b99a"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/trigger.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1261406404c411723ea30de940b5443ea9d4fc63"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/videos.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cc45d30a7913a86465b55214f73c43c0b9b767d2"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/visitas.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9a1180eb65d4a342a4e11ac88fe1d8b95a57dce"
+    },
+    {
+      "path": "artifacts/api-server/src/scheduler.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dea9238654c54740e674696bd03210be7fb8f609"
+    },
+    {
+      "path": "artifacts/api-server/src/sitemap.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5f59c8bb75473c076001cf8770b6429ade5e9767"
+    },
+    {
+      "path": "artifacts/api-server/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2f5a382d01d92496008fa1e115c0835552eaca02"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/.replit-artifact/artifact.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f94c258bc9f10c764e933c5bcea986a62b4c2a4"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/components.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ba0c18c0c790c4270fe1d596a400e4e24dcc643e"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/index.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1397a638300ec564af33d63612ff217ea2c4012b"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/mockupPreviewPlugin.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c09ed92cbbc0cbe8e5499340d22a576720eb3c8f"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "20e280611ead90d8869b7460aedbaa2fb14b506b"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/.generated/mockup-components.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f3a6ea2d29c902e030067036f16f165a79d532c4"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/App.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9c2317f0d952aefe737473c57dc4afe359048a0"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/mockups/river-hebrew-review/Review.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3acfe6efaf37ff8492b824ab4e9767f4341e6b14"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/mockups/river-hebrew-review/_group.css",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e5aa44b95c41ee0bde64b7df059120d84d22774d"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/accordion.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e1797c93458f3751a2e0f1189ff50d77f20ae3ed"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/alert-dialog.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fa2b4429f4303210462ad03f9f49280ac5ae07ce"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/alert.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5afd41d142c95c74069ebb5460117e74ead3b9df"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/aspect-ratio.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c4abbf37f217c715a0eaade7f45ac78600df419f"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/avatar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "51e507ba9d08bcdbb1fb630498f1cbdf2bf50093"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/badge.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cfd176a05b00824f7a6a029b10bb935ef38d10bb"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/breadcrumb.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60e6c96f72f0350d08b47e4730cab8f3975dc853"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/button-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6e78014fc491465c059253d541b10afdaa3227a"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/button.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a471859fcdc6b46cc07cf9445f8b7a1765d563df"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/calendar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a623682dab53fbe9e1777b83b2e93763837653d8"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/card.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cabfbfc59d955db9efc2049783cad4a71db55442"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/carousel.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9c2b9bf3705d8421bef00704c0c52e83d371ca11"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/chart.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "558b810e741ae2fa05d5249c46d3253bc9e32e4f"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/checkbox.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90b71e4131b047201b35476638ea324b12f76113"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/collapsible.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9fa48946afd1eb56bd932377fd888e3986304676"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/command.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2cecd9104b27be82d238aa2f1cbb351e05446af7"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/context-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0cd4b2c03d306c38836d43c7f3dc2cb2547c64a7"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/dialog.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9dbeaa096eef7b54a3272898770c4c32e00630af"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/drawer.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c17b0ccaa95dccfb96c75618e078efd263e54fd0"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/dropdown-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5a20503b547ea0e4e467d63fe1ae78e4171afb52"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/empty.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "71667632e77bf4265ab740e906f785fee806eec2"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/field.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a276fcb1d7623b0d57fd649fddfb043b535ea62"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/form.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1fe22e6f0be2750d1b5ec3efc7346fef4612b2e3"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/hover-card.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "95643d9c7099c1179f8a876fbf8840dc077e1b38"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/input-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e66a505a0fa0c4767cc00beefe969a8a41a5b597"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/input-otp.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f7891c9cc8ba7868f4b5bdb67dc883b1880ade9f"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/input.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "69b64fb2455114c3eeda2d18741af0027b3c5e89"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/item.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "93d2b8122ddd7119c3580afa71e8c53708982983"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/kbd.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "44d8ba842d739468527fd004503f4546cc152576"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/label.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "534182176bf87f9308355514adc884d2b69750a5"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/menubar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6919168b87c646d3b27fd66d68cdd7e391757583"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/navigation-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "056354bf824bf1f06e9dbceeacad512ce21b03d1"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/pagination.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3311054cd07a90d130f7996c79b3fc0feeede39"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/popover.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fdcb511dc768b79951de97416e9bd0ff1ae9ea05"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/progress.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fc3b473e6f51afa972f840fb0f4476f8663c256"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/radio-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d3a26e6ec5d8647f22d754be5affd9e8eba1ec5"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/resizable.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f4bc5586b67f45d3cc35f228e8bac2e4bc2cea16"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/scroll-area.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf253cf17056ce04827219643e484ea99c77cf6b"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/select.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6e637f7dc67daa0b2ce4f440e4bbdb3f14ce3c03"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/separator.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6d7f12265ba0338704f013930ce4d52c56527dd1"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/sheet.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "272cb721eb48b7a5833ccd51f940a8830d85b64e"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/sidebar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3e5c20556fd9212b53e8305579b57954a1bd06ad"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/skeleton.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d7e45f7bd315f86eabf32f2c9425223417920e60"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/slider.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9398b331513e9668b8d76f2905d570c34d080fd2"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/sonner.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "452f4d9f0dde88611113632c1d759d60155fe4d3"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/spinner.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a70e713c5b4ecb2af186efe3fadea51805f26ba5"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/switch.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "455c23b6cd5adcb0278792568cdddf084a4a37c9"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/table.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c0df655c0bf26af1148d038e1d013e884663b240"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/tabs.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "85d83beab3224580318b1dd85f93e9294fae32c0"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/textarea.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e56b0affd7e03bd8359092a81d81c606ab09972d"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/toast.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a822477534192c4df5073e4015f7461e739d3344"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/toaster.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c67edff67a48c6ac1c46f25a6d468dd461e66cb"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/toggle-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c876bbeecabe59b684719afe58e684f34cdecbf"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/toggle.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab0a30fb3daa5b3fe5a4158ee1372405aac50aba"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/components/ui/tooltip.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28e19183f4d9dfbb73c82928190556b69575eb2b"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/hooks/use-mobile.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2b0fe1dfef3b17850bbac040665f514a8ffd0f15"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/hooks/use-toast.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4da06d4715bc3dfba3873ec4229040533a02d272"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/index.css",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53b9b028ddbeeaf35a42470b4bff8387e1d08a6b"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/lib/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bd0c391ddd1088e9067844c48835bf4abcd61783"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/src/main.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "696e0d2b94fbc09e5bf2378678cfe86625c2f15c"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bfcc6513c12ae483a36ed1e43d12611ba0eb246a"
+    },
+    {
+      "path": "artifacts/mockup-sandbox/vite.config.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "776c0e04275feab927a975daf853a9c215436fe4"
+    },
+    {
+      "path": "artifacts/river-en-israel/.replit-artifact/artifact.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df4430a30ff40c6d50e3a3ffacf39c95caf4688c"
+    },
+    {
+      "path": "artifacts/river-en-israel/components.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3ff62cf0842657da595682900f6aa27592c67b4c"
+    },
+    {
+      "path": "artifacts/river-en-israel/index.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "214baa6b0f5bca4376d9cb6bb7475cc0612a9be3"
+    },
+    {
+      "path": "artifacts/river-en-israel/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7ac50f238038b1f312104e685292da337219111b"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/escudo-filial.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a69b7f2b677efbb23897fab3012abc6ff7ad9e75"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/escudo-river-israel.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8679305c5e2039b633ce5d1f2ff95bed968caae3"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/favicon.svg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4373d3cd2f3dad5ca6f33b5cdcccc61edaef8eb7"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/filial-logo.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e74ae84a3170d85ccb8d4203ff6448202c6d02b3"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/coudet.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8b7fbd87b52d8c11b62a48e26f25d51a4475407a"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/escudo-carp.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b2eb99e08d38e825e8803d0400e52d8ea854b05"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/escudo-carp.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f0de75ce344bff03b6ab24abb427218248fc620d"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/estadio-river.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c40ed2fc9e324878b1c6753e073442b0cd224ea4"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-01.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "138078137d6ff716e8db4c71459f11175ec97f8b"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-02.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c896f00db2c48f499b9205c5414c3c949ff37f0"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-03.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e31757bd2417290e09cf3f9ef88db4d5e058e31"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-04.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "45a257ab6c3d7e736cb62af4b964be92cec2a2fe"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-05.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96bcba0cfc03d1c7157b39ac68704618cb44ba9a"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-06.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8c30b51afff39b35912f26a056ec39b971a40e9a"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-07.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9767d3e1623e5f956b3c9029412ddb2af5e7c9cb"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-08.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "885df318573df8a9afa10fc6cf782f90c07388ef"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-09.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c85b5634a586021a0400096d3d1c47a5d0575df6"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-10.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2a95799a941b8a8d4098c4460bd0f3843dea32a4"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-11.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c81f29fc376c9912a71f28905d6043fd433ab87"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/galeria/foto-12.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "92eb5579f1ed31b479a5a4f5aa6a790d9bce3e93"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/images/hero-monumental.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffdf4660057c56dbba7b2d0b6e1e990f70316bea"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/opengraph.jpg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "74d62f97f29ad2666c072682a8a7037f6579e5a2"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/placas/05a4c6df9e518189c424b0d5e720bfbaca2ed808baa4425c230e5482d56d89f1.jpg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d559d34ff387838b94cb343c4336f4a5e76e2b88"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/robots.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "07782e682ff07f710c61c20c33b2f5ccc5a77a90"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/videos/video-01.mp4",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8ebb5e6a3063dfcca2264afbd8238140421ab00f"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/videos/video-02.mov",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "89280ba69d6dbfe693b627a4c9233f60cc697cec"
+    },
+    {
+      "path": "artifacts/river-en-israel/public/videos/video-03.mp4",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "870953ed22fe5bc98b2dbb7e30ca633640c84466"
+    },
+    {
+      "path": "artifacts/river-en-israel/requirements.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a77b93c55ecb0875ce68d5337cb7c45c4007e7d"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/App.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8969445d723127ade1fc1302021c1655c0c7616e"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/CountdownArgentina.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ccdbfaa1ece20475724fb575942e94a1dadb69fd"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/CredencialGenerador.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10188200e2066b4b06faecbff2ec8275dd0b0309"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/MapaEstadios.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d767a3ef9d1278429e5fed1664c1ec148eeeaa92"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ProximoPartidoWidget.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "529492536405cc54efbde7e436c9395f4fc3a4f1"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ShareButton.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2b6c893557b06a3da5bc1e46b25c7fd96323954e"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/SolDeMayo.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4748402d792e149356cab701a5894e0af9c5dcbf"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/VisitorAnalytics.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a3a46dec74ed32844f0cb2f9423c7b7986e628b1"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/layout/Footer.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "acf667f518e52f86a7f43dcfe2e142e17ca0c02f"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/layout/Navbar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "12d937e580ed9ed066ffc708634da5addaf0bd94"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/accordion.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e1797c93458f3751a2e0f1189ff50d77f20ae3ed"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/alert-dialog.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fa2b4429f4303210462ad03f9f49280ac5ae07ce"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/alert.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5afd41d142c95c74069ebb5460117e74ead3b9df"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/aspect-ratio.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c4abbf37f217c715a0eaade7f45ac78600df419f"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/avatar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "51e507ba9d08bcdbb1fb630498f1cbdf2bf50093"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/badge.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3f03665878d609428688f5736ab2300297115e5f"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/breadcrumb.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60e6c96f72f0350d08b47e4730cab8f3975dc853"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/button-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6e78014fc491465c059253d541b10afdaa3227a"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/button.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "20839158a5a4aa8af5e300dc94de3627720808a4"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/calendar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a623682dab53fbe9e1777b83b2e93763837653d8"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/card.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7499e279f94c7e8532272e5c3297de734c3067d0"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/carousel.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9c2b9bf3705d8421bef00704c0c52e83d371ca11"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/chart.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23dc1c1bb3a575bdb557e5fce9348f3815458178"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/checkbox.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90b71e4131b047201b35476638ea324b12f76113"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/collapsible.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9fa48946afd1eb56bd932377fd888e3986304676"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/command.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2cecd9104b27be82d238aa2f1cbb351e05446af7"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/context-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0cd4b2c03d306c38836d43c7f3dc2cb2547c64a7"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/dialog.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9dbeaa096eef7b54a3272898770c4c32e00630af"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/drawer.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c17b0ccaa95dccfb96c75618e078efd263e54fd0"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/dropdown-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5a20503b547ea0e4e467d63fe1ae78e4171afb52"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/empty.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "71667632e77bf4265ab740e906f785fee806eec2"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/field.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a276fcb1d7623b0d57fd649fddfb043b535ea62"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/form.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1fe22e6f0be2750d1b5ec3efc7346fef4612b2e3"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/hover-card.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "95643d9c7099c1179f8a876fbf8840dc077e1b38"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/input-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1233eff82050abcd053131fd15ab80f87ecc15c6"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/input-otp.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f7891c9cc8ba7868f4b5bdb67dc883b1880ade9f"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/input.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dc2ccc752507ff358e027917ad8f94de6b50b3c5"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/item.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "93d2b8122ddd7119c3580afa71e8c53708982983"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/kbd.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "44d8ba842d739468527fd004503f4546cc152576"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/label.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "534182176bf87f9308355514adc884d2b69750a5"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/menubar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6919168b87c646d3b27fd66d68cdd7e391757583"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/navigation-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "056354bf824bf1f06e9dbceeacad512ce21b03d1"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/pagination.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3311054cd07a90d130f7996c79b3fc0feeede39"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/popover.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fdcb511dc768b79951de97416e9bd0ff1ae9ea05"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/progress.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fc3b473e6f51afa972f840fb0f4476f8663c256"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/radio-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d3a26e6ec5d8647f22d754be5affd9e8eba1ec5"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/resizable.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f4bc5586b67f45d3cc35f228e8bac2e4bc2cea16"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/scroll-area.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf253cf17056ce04827219643e484ea99c77cf6b"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/select.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6e637f7dc67daa0b2ce4f440e4bbdb3f14ce3c03"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/separator.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6d7f12265ba0338704f013930ce4d52c56527dd1"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/sheet.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "272cb721eb48b7a5833ccd51f940a8830d85b64e"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/sidebar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "41362f6f40769bd800e4b1e77dfcc0ca61300636"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/skeleton.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d7e45f7bd315f86eabf32f2c9425223417920e60"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/slider.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9398b331513e9668b8d76f2905d570c34d080fd2"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/sonner.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "452f4d9f0dde88611113632c1d759d60155fe4d3"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/spinner.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a70e713c5b4ecb2af186efe3fadea51805f26ba5"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/switch.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "455c23b6cd5adcb0278792568cdddf084a4a37c9"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/table.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c0df655c0bf26af1148d038e1d013e884663b240"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/tabs.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "85d83beab3224580318b1dd85f93e9294fae32c0"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/textarea.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5f5f2f89eb593152b0856f11e1dbe736b182abcf"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/toast.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a822477534192c4df5073e4015f7461e739d3344"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/toaster.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c67edff67a48c6ac1c46f25a6d468dd461e66cb"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/toggle-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c876bbeecabe59b684719afe58e684f34cdecbf"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/toggle.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab0a30fb3daa5b3fe5a4158ee1372405aac50aba"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/components/ui/tooltip.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28e19183f4d9dfbb73c82928190556b69575eb2b"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/hooks/use-mobile.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2b0fe1dfef3b17850bbac040665f514a8ffd0f15"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/hooks/use-river-data.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "af0368ae4efb3131ce005a1defb0114acb3a0cbb"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/hooks/use-toast.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2c14125ac48b874740770da80d9e424daf1db58b"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/index.css",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "19b6137e2d80b213ea80b8d876a81c6b3077bfc8"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/lib/analytics.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7e5b6591a7e63ffc82222102a3044d09ecc2ab27"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/lib/mundial-data.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "49aaaa61bd2c4fdc7cbb3e94fd52aa06bf1cf2fd"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/lib/mundial-mode.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "025bcabe0770ccf462e927ea19427a6a13a948be"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/lib/seo.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1dd94c54435bc5aef8cdce421edf29924081f346"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/lib/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "365058cebd7d2bdb327ca1c081b16e4937e11050"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/main.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "696e0d2b94fbc09e5bf2378678cfe86625c2f15c"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/Equipo.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7fef8b5906cb7361de9bfe0f1093ccf78a36050a"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/Fixture.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3820d3b9e95107613c9ca6e05c3753788fdfb8b4"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/Galeria.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ae679cb30ed2db8a6e596c8dd86d1cc347c9b1fc"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/Historia.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f0af10412b15f133b667cf6b13219993ff01b4f5"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/Home.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dcd8271a0e5cdc226ffbcd473843d1d1e5475ab0"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/MundialFixture.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10d43aa2a42db4054c639e7d795f5d66985abe3a"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/MundialHome.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02c8877572b2bde196002a277f047612863996a2"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/Noticia.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1579507e237f1b0eb06fbda8fa257ba7e0a1454e"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/Postulacion.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02441e26305d13e0de9b6819daf2ae608e644c4d"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/Redactor.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23022c3d63edb96595dc3d7b6e6eb110fd03a42f"
+    },
+    {
+      "path": "artifacts/river-en-israel/src/pages/not-found.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e301b8b25cded749686a9774deed2725f8572ba5"
+    },
+    {
+      "path": "artifacts/river-en-israel/tests/sessions-dismiss.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "538b9e5831a9ddf75d93a064c12974c4ca3c46b6"
+    },
+    {
+      "path": "artifacts/river-en-israel/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a10abf0caa7b3dc33de300679904c94385ba99ab"
+    },
+    {
+      "path": "artifacts/river-en-israel/vite.config.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5cb60b5f12e8b3b3caf9abc25deb6709f4c282aa"
+    },
+    {
+      "path": "lib/api-client-react/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c2005452ab09fbec1ef36a804d41a8608e29873d"
+    },
+    {
+      "path": "lib/api-client-react/src/custom-fetch.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d801830aaf5732df6bbbfa345b7354c6cbb6bfc3"
+    },
+    {
+      "path": "lib/api-client-react/src/generated/api.schemas.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0e0b65b580b5d8dfe590651697b3d1bfad251b54"
+    },
+    {
+      "path": "lib/api-client-react/src/generated/api.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9dfa1270b17bc7a09e5faae837548f8c8b5ca718"
+    },
+    {
+      "path": "lib/api-client-react/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "980b8e289e42953d2df31f986f1245b6131ca7d8"
+    },
+    {
+      "path": "lib/api-client-react/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e4acad8b933f59a1f96e434d903346bce382e13a"
+    },
+    {
+      "path": "lib/api-spec/openapi.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df16b55fcd46447b3b6ccf701a24f3ac29cb46ed"
+    },
+    {
+      "path": "lib/api-spec/orval.config.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4a189f1f355de33dafda5d04252ec933c2c5d4ea"
+    },
+    {
+      "path": "lib/api-spec/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e55de9149109b114d7f274b42f4b0536ab4efee0"
+    },
+    {
+      "path": "lib/api-zod/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60fe769c6a815c47e7930c1171703512a75ad389"
+    },
+    {
+      "path": "lib/api-zod/src/generated/api.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf59bc8cecc80800876d20d1deaef2c1e4a98aec"
+    },
+    {
+      "path": "lib/api-zod/src/generated/types/healthStatus.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f1ad88cbdb391e3a2a37a7f792d9ca914da286bc"
+    },
+    {
+      "path": "lib/api-zod/src/generated/types/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3fe7cb3d3f52b456b72a69152681ac2543db3a56"
+    },
+    {
+      "path": "lib/api-zod/src/generated/types/jugadorPlantel.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f38dd098053ed92aa60539cf405133c89314eeb3"
+    },
+    {
+      "path": "lib/api-zod/src/generated/types/jugadorPlantelPosicion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ba5d6eb0ac66bb73683f7f470e68b0ef6dd9b167"
+    },
+    {
+      "path": "lib/api-zod/src/generated/types/plantel.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f9e5e562e51e04c75a942c73330d67cfa186862"
+    },
+    {
+      "path": "lib/api-zod/src/generated/types/plantelUnavailable.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fb663dde68cb109902211c0f2d79191048edde2"
+    },
+    {
+      "path": "lib/api-zod/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ac442e766c70f83d7aea94a00b832405db0b8d4e"
+    },
+    {
+      "path": "lib/api-zod/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5859959cb9219e0c20d2f6b9e4c2cce2d1dc3711"
+    },
+    {
+      "path": "lib/db/drizzle.config.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dcf8b84fa750c5b2eaa7a7b1f825be697a8cc260"
+    },
+    {
+      "path": "lib/db/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "91f3215ed43cb603eefd0c9402c931e0466d7601"
+    },
+    {
+      "path": "lib/db/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "50cbf483d87a8a741f4965acde5edf6225fedd3e"
+    },
+    {
+      "path": "lib/db/src/schema/app-estado.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cb84afc210f1eb1bf5107e922968484894762bd7"
+    },
+    {
+      "path": "lib/db/src/schema/comentarios.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9f39cc3382cecb1de99f5a2cbb5bc3e67cb3a341"
+    },
+    {
+      "path": "lib/db/src/schema/conversations.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "991a82308005210638dbd82054ad08697504d1ff"
+    },
+    {
+      "path": "lib/db/src/schema/edit-tokens.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "27e8d23aa24251ef3435d2d561eb1e685f13a0f2"
+    },
+    {
+      "path": "lib/db/src/schema/galeria.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a1efb4d2a299a97313ea3d263b4118ea0a9b889"
+    },
+    {
+      "path": "lib/db/src/schema/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a1886e0ec34bfcc42e3a25e439f0bad5e0290d13"
+    },
+    {
+      "path": "lib/db/src/schema/messages.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2efa0451d21b72480dd31d18d9024c034c6f1b58"
+    },
+    {
+      "path": "lib/db/src/schema/noticias.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "19578160f972569fffb849ee920b2491497abb31"
+    },
+    {
+      "path": "lib/db/src/schema/panel-sessions.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df8d450f66ebac63a10e0473b35c085d3a4c20bb"
+    },
+    {
+      "path": "lib/db/src/schema/suscriptores.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da0034dabc79955e02a8bd8aa1fd3740a5333431"
+    },
+    {
+      "path": "lib/db/src/schema/videos.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e76d21cd9cd5439c3aaaa7749649050a999d853f"
+    },
+    {
+      "path": "lib/db/src/schema/visitas.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "29d194adf4663f4b5d514e4690194492a6ee576a"
+    },
+    {
+      "path": "lib/db/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53af906a0d19e9529580b4891101ae9637b5da07"
+    },
+    {
+      "path": "lib/integrations-gemini-ai/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f4f4e4648fc06126fe615a81ffcb30b6ced5fb3"
+    },
+    {
+      "path": "lib/integrations-gemini-ai/src/batch/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f84c2c134a5587037c4fba3fc071c41331b7d404"
+    },
+    {
+      "path": "lib/integrations-gemini-ai/src/batch/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da3ad0ac7ee920a2e6d3e33e6508f2f19ed49309"
+    },
+    {
+      "path": "lib/integrations-gemini-ai/src/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e8bdcccd8d8a906b1684fb9873d940c4d3a04da4"
+    },
+    {
+      "path": "lib/integrations-gemini-ai/src/image/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2cf58e39fd4a5ce388924d2532f342addc569949"
+    },
+    {
+      "path": "lib/integrations-gemini-ai/src/image/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "efd397c39807637b442f7dd913fac501fb2b69c9"
+    },
+    {
+      "path": "lib/integrations-gemini-ai/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d8f5ff90e9fd7d8eeb2825862264cd664228c25"
+    },
+    {
+      "path": "lib/integrations-gemini-ai/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53af906a0d19e9529580b4891101ae9637b5da07"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da3709fee3b2bd94ec09cff90e184e47b1ffcae3"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/src/audio/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e736df8a7e44a9b8be76d093c65f96be3aa1c1c4"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/src/audio/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0999dd831b30bb56a09ca1918aaf2a286c1ca046"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/src/batch/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f84c2c134a5587037c4fba3fc071c41331b7d404"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/src/batch/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "debfaa14fc0b4e4794d7b08d9c8f32de5cfc7019"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/src/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c8343cbeeaf1776903678996994356f71d494fea"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/src/image/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "672157b5d6bf9dc1e9aace102e3265253ae61e07"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/src/image/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "63b41f94bad749195e89cc62f52c0854094160ce"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "98860d54097ee77ff27653bc7c0af1cc28042e01"
+    },
+    {
+      "path": "lib/integrations-openai-ai-server/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53af906a0d19e9529580b4891101ae9637b5da07"
+    },
+    {
+      "path": "lib/integrations/gemini_ai_integrations/src/server/batch/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f84c2c134a5587037c4fba3fc071c41331b7d404"
+    },
+    {
+      "path": "lib/integrations/gemini_ai_integrations/src/server/batch/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ebf1ae5b3244a1c486a23c6cf56b0b6054702520"
+    },
+    {
+      "path": "lib/integrations/gemini_ai_integrations/src/server/image/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aab6130854fdb776f302795a3debc242c011bb42"
+    },
+    {
+      "path": "lib/object-storage-web/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "68d66eb391d1a9308c6a4a9c9d7b66a72cd65e31"
+    },
+    {
+      "path": "lib/object-storage-web/src/ObjectUploader.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bb3ef174cd172c426571c4eab2b70e0757655689"
+    },
+    {
+      "path": "lib/object-storage-web/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1baa5e58756a75d1c2ef2b02522d5044541d4b94"
+    },
+    {
+      "path": "lib/object-storage-web/src/use-upload.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9affb301e4d7a580d53c4b94b466ec4dcfef3e79"
+    },
+    {
+      "path": "lib/object-storage-web/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d5196ef7fe51ef94e2085e6f2202174a1b1047b"
+    },
+    {
+      "path": "package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a9ce29251474773441f8227e71b7ccc9924cde2"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "61b9f391d60d47082b913758efa93541164f8feb"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d5761870b63192e28b8a7eb9c5385f655cadceb6"
+    },
+    {
+      "path": "replit.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d337a83101389b49a781511ba008d28fa29a4fcf"
+    },
+    {
+      "path": "scripts/limpiar-firmas-titulos.sql",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "790a36d7579642de1ff728da95cf8889044e388f"
+    },
+    {
+      "path": "scripts/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d7c54b84f1052290e40ffb209c1617c3443641f"
+    },
+    {
+      "path": "scripts/panel-sessions-user-agent.sql",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "88ef40ea39f4ff001c53f986005b8f55b506369c"
+    },
+    {
+      "path": "scripts/post-merge.sh",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab61c4490ae6f73dd7dd672348a1289cbad62515"
+    },
+    {
+      "path": "scripts/src/backfill-hebreo.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "de583a01b54627748fe278bb9bdad4211b236058"
+    },
+    {
+      "path": "scripts/src/hello.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9fa5cec17c0d902b107884bf52524cd83662e372"
+    },
+    {
+      "path": "scripts/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "12e34566f4017def336165ca3ad8490746e4c73d"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d23073d3770dec1286f7c1bbd6eab24fd915fbe"
+    },
+    {
+      "path": "tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c062759b4a12480e7f3ec6800d8363a636f30dcc"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "12bc7fa7e05091e2d413d235ef695c1d95805c8a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/.npmrc",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "61e34c2e5dde6b5b6b9d1a478945726c27993d4b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/.replit",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c0c3fa4ab2375de6b99772a2e3d170400a9ac0b1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/.replitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9eb019cd54e4f8ea1737967adb19aa1f53562cf2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a9ce29251474773441f8227e71b7ccc9924cde2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/pnpm-lock.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "61b9f391d60d47082b913758efa93541164f8feb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/pnpm-workspace.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d5761870b63192e28b8a7eb9c5385f655cadceb6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/replit.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d337a83101389b49a781511ba008d28fa29a4fcf"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/tsconfig.base.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d23073d3770dec1286f7c1bbd6eab24fd915fbe"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c062759b4a12480e7f3ec6800d8363a636f30dcc"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "32dd60ae817a6a4d614e697da06668648dd1f383"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b5a2c83045ee69e5a05dd947c536302788ec564"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2f5a382d01d92496008fa1e115c0835552eaca02"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/build.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b48aaff76fe16d523ee6147cfd31ec776783217"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/.replit-artifact/artifact.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "46e738ecb2e3a8a95f6f8bcdda9deb3cc9ad05b7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/scripts/probar-redes.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0f5c76f1dd596639c6531458831911284d2b5915"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/app.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "106483c7387a66dffa426521dc3891f409e8d269"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/og-noticia.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11f7dbcd6e856cd96a99a488c20533a43d065720"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/og-noticia.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3def5fd0ba5e2f252b866e6f7ca162a12acb3e70"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/prompt-maestro.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3779342cc86d6c8c05263e1e7048a0493169d823"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/sitemap.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5f59c8bb75473c076001cf8770b6429ade5e9767"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "462d13c98b6e4850defac564524826f6eae72bb6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/scheduler.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a710fdc4e10cf678954627b2d17efe3b5e41a7b7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/.gitkeep",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/app-estado.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6939ccbfcec8ea65d9824118a399af75593f414b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/app-estado.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "055ef61aecb176f04e9e773226584f422f0f0355"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/avisar-cola-updates.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eb96e88549ab7ce6555833580c72e5c92928ddf6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/avisar-webhook-sin-proteger.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d59afe84cc8eea4865f996399055f72a46af0376"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/edit-tokens.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34cd9fb768fb8c5bc99a9ddd3061ee93b22efd12"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/generar-imagen-ig.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c58e12f460b319c74782cb88c37eccd6cbe03b6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/generar-placa-redes.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5c2a194a99215857b88cc05180a416f20d3af393"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/limpiar-asteriscos.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28e5c5af85a9d8abfdefa0ae28313834da739d99"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/logger.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9c67f79a82872af8336ab384014fa69bbe0695f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/noticia-duplicada.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d18c159e1e9e63e704fdc0ec23d6b5e1abbb2238"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/noticia-duplicada.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d5d24b996fe05ba9873f8e3685f45b98e2d6309f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/notificar-publicacion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ea9aa4c443b14b39c79fb1533a72ce1f01048ce9"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/objectAcl.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d824fdba6edf50e75d40fefa68d65ab8e51437d"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/openai-news.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a6b02f2914c642d48c706d1ab50bb16dd39fce54"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/openai-news.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d5ba3eec2914d644430f7bcbab6f7cdd8f2845ff"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/plantel-parser.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96cc1e1a3694eb9582896aa717fdc8f32b767379"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/plantel-parser.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9faf4a7a43e4aa7d1cec2253cb7ba108a1a7a283"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/plantel-updater.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2a2fea82b79ac083bdb5b96b82a5e8513b22b37b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/plantel-updater.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1350cf938a8547a2f037eec886efdd112a0f9cae"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/plantel.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d722057f7c4f92846fe32e0ff20fb6ab599d344"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/promocionar-nota.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e6fb8dfdea03040d8eb878109b4cafd93bdfed73"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/prompt-maestro-seleccion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f98e9253194e56877b5b1699df00ba095a45df54"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/prompt-maestro.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3eb1d328dea176e07d828fe240968eb05767133c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/prompt-seleccion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c9dcb4625376862e551a1b1dca336816fa0d1ce9"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/redactor-settings.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9597e6a32f497f2c68c8453ed81897db66ae98c9"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/redes.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d1df33690739ccaf4b09683948f62b610b750703"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/resumen-pendientes.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a17bee2345b5b7d2b7b46c4a335b4c28e48670c8"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/session-device.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d70e2b072211b01c62b08e81bf634535f9e98e0a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/session-device.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2a01aacd3fac9cfe01098f5fac3ce499b8fce8f6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/telegram-caption-cache.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ad0e9d9156d2e7dbf2668c9337ffffb6f35d2104"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/telegram-cred.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4f76d421d1798e8472ac7c42e84742e1b8310b9e"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/telegram-webhook-registro.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c97e8f5026f02c1c0dbeb0aaf2d79c850c59e72"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/telegram-webhook-secret.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f48eea6dbddb2645dee46ba0190a5ae0f438f296"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/traductor-hebreo.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a17fd098913e18c81281dbfcc8873636b3f4ad1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/url-imagen-segura.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "500c731686ee1c48e37ac708ecf0eb8ee551a5ba"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/editorial-style.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1aef93b13756dd7d47004c137690dfa73c941578"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/instagram-editorial.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "639d9eb460d77e5e5ff8b5b93c6e700022b1a737"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/runtime-policy.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8c639ac29d550e6d25d0b91b8e37dfc3d953950f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/instagram-core.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "db288e94d9b7e8acac479fb531e7d9f44bd455b0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/enviar-a-make.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bc289db897f126666c29f1a679edea093f5ff70b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/objectStorage.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5d8f0e7103cda87e50ceb4a0654414eb0ec4f419"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/lib/instagram-worker.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8d517cd63d791c95b2a35231d25f1492f59cbfe3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/middleware/requireAdmin.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "593663e8a020d242def4d83e2dc2d59797a50332"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/middlewares/.gitkeep",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/admin.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1ca5e0b327f269ee151d9b306d804312322491eb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/analytics.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "160638dd1db13dfd10921daaa2680161503eabcb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/comentarios.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53fdd9d20e257c924441e84ed9d5ac0bd3b1e155"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/contacto.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90f5115bb24d4bbdd60b43e11be15b99a981cb63"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/galeria.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6b213d524522bfa5622cdea27de949f77de95bd1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/health.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cd455b81b81f28ad08f0382695df94c3e63c1799"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/historia.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b6acc904643124919535c7762c6b183ad535b31e"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/instagram-imagen.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ea2ece326948e23acecd282c4cc02d274a539f4a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/mundial-resultados.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5c9f21354bd3e5723fe049cc6062cc58c63abfa8"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/noticias-hebreo.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3364ad905e918a1b31fa05a3e9a516a1be631efe"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/noticias.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a7ee518654a659683496994245963ebf608b0e75"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/partidos.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f51886bdfdb44f9e56dd6d601e1d68caf1d0db26"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/plantel.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "186d8e768d5885d6e539aa21a30a720b7a4dd558"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/postulacion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6a7e50bf4c4bcb03e1f4f78589c7c21269b4eb67"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/propuesta-evento.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6b6c5d17bc1a2322905b8e2dac298a228f5a5a8"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/publicacion-libre.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eb496c65accecc4d253eb81b74bcaf45959f6672"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/publicar.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "328baa7e725f58d7cf86191e65c8f69c82cea7ed"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/redactor-settings.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a8387889a6e7992244cac80e2fef4bc9db41925c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/redactor-settings.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "603d787777e485129972c58acc609f430ca91038"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/redactor.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a616fe3179fa65afb4c1d959e31ff4e4de2cf7b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/storage.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "82bca774c09fe4d9dbd7b468aab29064e807d221"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/suscribir.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "99218c3d0c4bdd911d73d425ac66c4bef1542ddf"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/suscriptores.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab0a249272b6306abaed2cb23f838d657f4be55c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/telegram-webhook.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dc15dde6d576794419a7b15fcf7dbccf8a70b99a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/trigger.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1261406404c411723ea30de940b5443ea9d4fc63"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/videos.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cc45d30a7913a86465b55214f73c43c0b9b767d2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/visitas.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9a1180eb65d4a342a4e11ac88fe1d8b95a57dce"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/instagram.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a772e212e72062015860b981c4865ef3805bbff7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/src/routes/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "943287e2c2eb110e18555cfc772beced76a9ee8c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/assets/editorial/referencia-river.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b28401cfba378e15dedada26acb9dd22b4be66e1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/tests/instagram-db.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9887b83db66e33c1f2304d2807f3a785795b51b9"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/tests/instagram.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "66ad18543af0fc03055e43e3257bcc07f9ad8ce9"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/tests/instagram-worker.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d76c3a4e82bbc5d316c685e5f4860b7f5a337c40"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/tests/instagram-image.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b3f2ca72ce5beec39f1e8df40f7fe85bb5d3b650"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/api-server/tests/offline-policy.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "418e75623fb73784772a160d670b2efdfdea02da"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/components.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ba0c18c0c790c4270fe1d596a400e4e24dcc643e"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/index.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1397a638300ec564af33d63612ff217ea2c4012b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/mockupPreviewPlugin.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c09ed92cbbc0cbe8e5499340d22a576720eb3c8f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "20e280611ead90d8869b7460aedbaa2fb14b506b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bfcc6513c12ae483a36ed1e43d12611ba0eb246a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/vite.config.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "57bc8be104a4e700d96e8e88bceee455866958ba"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/.replit-artifact/artifact.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f94c258bc9f10c764e933c5bcea986a62b4c2a4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/App.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9c2317f0d952aefe737473c57dc4afe359048a0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/index.css",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53b9b028ddbeeaf35a42470b4bff8387e1d08a6b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/main.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "696e0d2b94fbc09e5bf2378678cfe86625c2f15c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/.generated/mockup-components.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "97c87e1fe941456236fbbaa8a06da5a8dbab649c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/accordion.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e1797c93458f3751a2e0f1189ff50d77f20ae3ed"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/alert-dialog.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fa2b4429f4303210462ad03f9f49280ac5ae07ce"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/alert.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5afd41d142c95c74069ebb5460117e74ead3b9df"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/aspect-ratio.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c4abbf37f217c715a0eaade7f45ac78600df419f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/avatar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "51e507ba9d08bcdbb1fb630498f1cbdf2bf50093"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/badge.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cfd176a05b00824f7a6a029b10bb935ef38d10bb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/breadcrumb.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60e6c96f72f0350d08b47e4730cab8f3975dc853"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/button-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6e78014fc491465c059253d541b10afdaa3227a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/button.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a471859fcdc6b46cc07cf9445f8b7a1765d563df"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/calendar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a623682dab53fbe9e1777b83b2e93763837653d8"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/card.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cabfbfc59d955db9efc2049783cad4a71db55442"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/carousel.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9c2b9bf3705d8421bef00704c0c52e83d371ca11"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/chart.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "558b810e741ae2fa05d5249c46d3253bc9e32e4f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/checkbox.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90b71e4131b047201b35476638ea324b12f76113"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/collapsible.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9fa48946afd1eb56bd932377fd888e3986304676"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/command.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2cecd9104b27be82d238aa2f1cbb351e05446af7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/context-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0cd4b2c03d306c38836d43c7f3dc2cb2547c64a7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/dialog.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9dbeaa096eef7b54a3272898770c4c32e00630af"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/drawer.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c17b0ccaa95dccfb96c75618e078efd263e54fd0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/dropdown-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5a20503b547ea0e4e467d63fe1ae78e4171afb52"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/empty.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "71667632e77bf4265ab740e906f785fee806eec2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/field.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a276fcb1d7623b0d57fd649fddfb043b535ea62"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/form.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1fe22e6f0be2750d1b5ec3efc7346fef4612b2e3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/hover-card.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "95643d9c7099c1179f8a876fbf8840dc077e1b38"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/input-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e66a505a0fa0c4767cc00beefe969a8a41a5b597"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/input-otp.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f7891c9cc8ba7868f4b5bdb67dc883b1880ade9f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/input.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "69b64fb2455114c3eeda2d18741af0027b3c5e89"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/item.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "93d2b8122ddd7119c3580afa71e8c53708982983"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/kbd.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "44d8ba842d739468527fd004503f4546cc152576"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/label.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "534182176bf87f9308355514adc884d2b69750a5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/menubar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6919168b87c646d3b27fd66d68cdd7e391757583"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/navigation-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "056354bf824bf1f06e9dbceeacad512ce21b03d1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/pagination.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3311054cd07a90d130f7996c79b3fc0feeede39"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/popover.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fdcb511dc768b79951de97416e9bd0ff1ae9ea05"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/progress.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fc3b473e6f51afa972f840fb0f4476f8663c256"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/radio-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d3a26e6ec5d8647f22d754be5affd9e8eba1ec5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/resizable.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f4bc5586b67f45d3cc35f228e8bac2e4bc2cea16"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/scroll-area.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf253cf17056ce04827219643e484ea99c77cf6b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/select.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6e637f7dc67daa0b2ce4f440e4bbdb3f14ce3c03"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/separator.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6d7f12265ba0338704f013930ce4d52c56527dd1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/sheet.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "272cb721eb48b7a5833ccd51f940a8830d85b64e"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/sidebar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3e5c20556fd9212b53e8305579b57954a1bd06ad"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/skeleton.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d7e45f7bd315f86eabf32f2c9425223417920e60"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/slider.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9398b331513e9668b8d76f2905d570c34d080fd2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/sonner.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "452f4d9f0dde88611113632c1d759d60155fe4d3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/spinner.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a70e713c5b4ecb2af186efe3fadea51805f26ba5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/switch.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "455c23b6cd5adcb0278792568cdddf084a4a37c9"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/table.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c0df655c0bf26af1148d038e1d013e884663b240"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/tabs.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "85d83beab3224580318b1dd85f93e9294fae32c0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/textarea.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e56b0affd7e03bd8359092a81d81c606ab09972d"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/toast.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a822477534192c4df5073e4015f7461e739d3344"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/toaster.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c67edff67a48c6ac1c46f25a6d468dd461e66cb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/toggle-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c876bbeecabe59b684719afe58e684f34cdecbf"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/toggle.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab0a30fb3daa5b3fe5a4158ee1372405aac50aba"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/components/ui/tooltip.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28e19183f4d9dfbb73c82928190556b69575eb2b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/hooks/use-mobile.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2b0fe1dfef3b17850bbac040665f514a8ffd0f15"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/hooks/use-toast.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4da06d4715bc3dfba3873ec4229040533a02d272"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/mockup-sandbox/src/lib/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bd0c391ddd1088e9067844c48835bf4abcd61783"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/components.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3ff62cf0842657da595682900f6aa27592c67b4c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/index.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "214baa6b0f5bca4376d9cb6bb7475cc0612a9be3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7ac50f238038b1f312104e685292da337219111b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/requirements.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a77b93c55ecb0875ce68d5337cb7c45c4007e7d"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a10abf0caa7b3dc33de300679904c94385ba99ab"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/vite.config.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5cb60b5f12e8b3b3caf9abc25deb6709f4c282aa"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/.replit-artifact/artifact.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df4430a30ff40c6d50e3a3ffacf39c95caf4688c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/escudo-filial.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a69b7f2b677efbb23897fab3012abc6ff7ad9e75"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/escudo-river-israel.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8679305c5e2039b633ce5d1f2ff95bed968caae3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/favicon.svg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4373d3cd2f3dad5ca6f33b5cdcccc61edaef8eb7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/filial-logo.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e74ae84a3170d85ccb8d4203ff6448202c6d02b3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/opengraph.jpg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "74d62f97f29ad2666c072682a8a7037f6579e5a2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/robots.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "07782e682ff07f710c61c20c33b2f5ccc5a77a90"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/coudet.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8b7fbd87b52d8c11b62a48e26f25d51a4475407a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/escudo-carp.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b2eb99e08d38e825e8803d0400e52d8ea854b05"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/escudo-carp.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f0de75ce344bff03b6ab24abb427218248fc620d"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/estadio-river.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c40ed2fc9e324878b1c6753e073442b0cd224ea4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/hero-monumental.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffdf4660057c56dbba7b2d0b6e1e990f70316bea"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-01.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "138078137d6ff716e8db4c71459f11175ec97f8b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-02.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c896f00db2c48f499b9205c5414c3c949ff37f0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-03.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e31757bd2417290e09cf3f9ef88db4d5e058e31"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-04.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "45a257ab6c3d7e736cb62af4b964be92cec2a2fe"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-05.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96bcba0cfc03d1c7157b39ac68704618cb44ba9a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-06.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8c30b51afff39b35912f26a056ec39b971a40e9a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-07.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9767d3e1623e5f956b3c9029412ddb2af5e7c9cb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-08.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "885df318573df8a9afa10fc6cf782f90c07388ef"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-09.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c85b5634a586021a0400096d3d1c47a5d0575df6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-10.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2a95799a941b8a8d4098c4460bd0f3843dea32a4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-11.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c81f29fc376c9912a71f28905d6043fd433ab87"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/images/galeria/foto-12.jpeg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "92eb5579f1ed31b479a5a4f5aa6a790d9bce3e93"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/placas/05a4c6df9e518189c424b0d5e720bfbaca2ed808baa4425c230e5482d56d89f1.jpg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d559d34ff387838b94cb343c4336f4a5e76e2b88"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/videos/video-01.mp4",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8ebb5e6a3063dfcca2264afbd8238140421ab00f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/videos/video-02.mov",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "89280ba69d6dbfe693b627a4c9233f60cc697cec"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/public/videos/video-03.mp4",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "870953ed22fe5bc98b2dbb7e30ca633640c84466"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/index.css",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "19b6137e2d80b213ea80b8d876a81c6b3077bfc8"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/main.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "696e0d2b94fbc09e5bf2378678cfe86625c2f15c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/App.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8e17196d6d6bb096f2bfc2b30851daffb55862fd"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/CountdownArgentina.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ccdbfaa1ece20475724fb575942e94a1dadb69fd"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/CredencialGenerador.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10188200e2066b4b06faecbff2ec8275dd0b0309"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/MapaEstadios.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d767a3ef9d1278429e5fed1664c1ec148eeeaa92"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ProximoPartidoWidget.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "529492536405cc54efbde7e436c9395f4fc3a4f1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/SolDeMayo.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4748402d792e149356cab701a5894e0af9c5dcbf"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/VisitorAnalytics.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a3a46dec74ed32844f0cb2f9423c7b7986e628b1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/InstagramPublicaciones.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "85ccb649548ed742a812417b0af7296b7989ef12"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ShareButton.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b949f4da72dc447bc9186347cdb7be7a21fbdef6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/layout/Footer.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "acf667f518e52f86a7f43dcfe2e142e17ca0c02f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/layout/Navbar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "21f4c2bb780c648bb647051865d9c53e080437ee"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/accordion.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e1797c93458f3751a2e0f1189ff50d77f20ae3ed"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/alert-dialog.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fa2b4429f4303210462ad03f9f49280ac5ae07ce"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/alert.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5afd41d142c95c74069ebb5460117e74ead3b9df"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/aspect-ratio.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c4abbf37f217c715a0eaade7f45ac78600df419f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/avatar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "51e507ba9d08bcdbb1fb630498f1cbdf2bf50093"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/badge.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3f03665878d609428688f5736ab2300297115e5f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/breadcrumb.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60e6c96f72f0350d08b47e4730cab8f3975dc853"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/button-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6e78014fc491465c059253d541b10afdaa3227a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/button.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "20839158a5a4aa8af5e300dc94de3627720808a4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/calendar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a623682dab53fbe9e1777b83b2e93763837653d8"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/card.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7499e279f94c7e8532272e5c3297de734c3067d0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/carousel.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9c2b9bf3705d8421bef00704c0c52e83d371ca11"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/chart.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23dc1c1bb3a575bdb557e5fce9348f3815458178"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/checkbox.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90b71e4131b047201b35476638ea324b12f76113"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/collapsible.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9fa48946afd1eb56bd932377fd888e3986304676"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/command.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2cecd9104b27be82d238aa2f1cbb351e05446af7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/context-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0cd4b2c03d306c38836d43c7f3dc2cb2547c64a7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/dialog.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9dbeaa096eef7b54a3272898770c4c32e00630af"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/drawer.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c17b0ccaa95dccfb96c75618e078efd263e54fd0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/dropdown-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5a20503b547ea0e4e467d63fe1ae78e4171afb52"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/empty.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "71667632e77bf4265ab740e906f785fee806eec2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/field.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a276fcb1d7623b0d57fd649fddfb043b535ea62"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/form.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1fe22e6f0be2750d1b5ec3efc7346fef4612b2e3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/hover-card.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "95643d9c7099c1179f8a876fbf8840dc077e1b38"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/input-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1233eff82050abcd053131fd15ab80f87ecc15c6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/input-otp.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f7891c9cc8ba7868f4b5bdb67dc883b1880ade9f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/input.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dc2ccc752507ff358e027917ad8f94de6b50b3c5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/item.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "93d2b8122ddd7119c3580afa71e8c53708982983"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/kbd.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "44d8ba842d739468527fd004503f4546cc152576"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/label.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "534182176bf87f9308355514adc884d2b69750a5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/menubar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6919168b87c646d3b27fd66d68cdd7e391757583"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/navigation-menu.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "056354bf824bf1f06e9dbceeacad512ce21b03d1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/pagination.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3311054cd07a90d130f7996c79b3fc0feeede39"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/popover.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fdcb511dc768b79951de97416e9bd0ff1ae9ea05"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/progress.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fc3b473e6f51afa972f840fb0f4476f8663c256"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/radio-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d3a26e6ec5d8647f22d754be5affd9e8eba1ec5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/resizable.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f4bc5586b67f45d3cc35f228e8bac2e4bc2cea16"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/scroll-area.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf253cf17056ce04827219643e484ea99c77cf6b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/select.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6e637f7dc67daa0b2ce4f440e4bbdb3f14ce3c03"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/separator.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6d7f12265ba0338704f013930ce4d52c56527dd1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/sheet.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "272cb721eb48b7a5833ccd51f940a8830d85b64e"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/sidebar.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "41362f6f40769bd800e4b1e77dfcc0ca61300636"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/skeleton.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d7e45f7bd315f86eabf32f2c9425223417920e60"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/slider.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9398b331513e9668b8d76f2905d570c34d080fd2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/sonner.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "452f4d9f0dde88611113632c1d759d60155fe4d3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/spinner.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a70e713c5b4ecb2af186efe3fadea51805f26ba5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/switch.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "455c23b6cd5adcb0278792568cdddf084a4a37c9"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/table.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c0df655c0bf26af1148d038e1d013e884663b240"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/tabs.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "85d83beab3224580318b1dd85f93e9294fae32c0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/textarea.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5f5f2f89eb593152b0856f11e1dbe736b182abcf"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/toast.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a822477534192c4df5073e4015f7461e739d3344"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/toaster.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c67edff67a48c6ac1c46f25a6d468dd461e66cb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/toggle-group.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c876bbeecabe59b684719afe58e684f34cdecbf"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/toggle.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab0a30fb3daa5b3fe5a4158ee1372405aac50aba"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/components/ui/tooltip.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28e19183f4d9dfbb73c82928190556b69575eb2b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/hooks/use-mobile.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2b0fe1dfef3b17850bbac040665f514a8ffd0f15"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/hooks/use-toast.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2c14125ac48b874740770da80d9e424daf1db58b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/hooks/use-river-data.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "80bbcc951f1df48ab78b02455726bcd1320715c4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/lib/analytics.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7e5b6591a7e63ffc82222102a3044d09ecc2ab27"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/lib/mundial-data.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "49aaaa61bd2c4fdc7cbb3e94fd52aa06bf1cf2fd"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/lib/mundial-mode.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "025bcabe0770ccf462e927ea19427a6a13a948be"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/lib/seo.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1dd94c54435bc5aef8cdce421edf29924081f346"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/lib/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "365058cebd7d2bdb327ca1c081b16e4937e11050"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/lib/related-news.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d8246a0999fa8fcb3b90850da0012b7ce0a7be70"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/Equipo.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7fef8b5906cb7361de9bfe0f1093ccf78a36050a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/Fixture.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3820d3b9e95107613c9ca6e05c3753788fdfb8b4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/Galeria.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ae679cb30ed2db8a6e596c8dd86d1cc347c9b1fc"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/Historia.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f0af10412b15f133b667cf6b13219993ff01b4f5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/MundialFixture.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10d43aa2a42db4054c639e7d795f5d66985abe3a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/MundialHome.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02c8877572b2bde196002a277f047612863996a2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/Postulacion.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02441e26305d13e0de9b6819daf2ae608e644c4d"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/not-found.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e301b8b25cded749686a9774deed2725f8572ba5"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/Redactor.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c2219b533e15d3af887d6741e36910b5d0bbd13d"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/Noticia.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f5a62b79bea9951d7b004fceff37ecb6209afbc1"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/src/pages/Home.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e97c7240f830a7d500de946efa9b659f3c0aae9c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/artifacts/river-en-israel/tests/sessions-dismiss.test.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "538b9e5831a9ddf75d93a064c12974c4ca3c46b6"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-client-react/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c2005452ab09fbec1ef36a804d41a8608e29873d"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-client-react/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e4acad8b933f59a1f96e434d903346bce382e13a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-client-react/src/custom-fetch.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d801830aaf5732df6bbbfa345b7354c6cbb6bfc3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-client-react/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "980b8e289e42953d2df31f986f1245b6131ca7d8"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-client-react/src/generated/api.schemas.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0e0b65b580b5d8dfe590651697b3d1bfad251b54"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-client-react/src/generated/api.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9dfa1270b17bc7a09e5faae837548f8c8b5ca718"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-spec/openapi.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df16b55fcd46447b3b6ccf701a24f3ac29cb46ed"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-spec/orval.config.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4a189f1f355de33dafda5d04252ec933c2c5d4ea"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-spec/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e55de9149109b114d7f274b42f4b0536ab4efee0"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60fe769c6a815c47e7930c1171703512a75ad389"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5859959cb9219e0c20d2f6b9e4c2cce2d1dc3711"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ac442e766c70f83d7aea94a00b832405db0b8d4e"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/src/generated/api.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf59bc8cecc80800876d20d1deaef2c1e4a98aec"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/src/generated/types/healthStatus.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f1ad88cbdb391e3a2a37a7f792d9ca914da286bc"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/src/generated/types/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3fe7cb3d3f52b456b72a69152681ac2543db3a56"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/src/generated/types/jugadorPlantel.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f38dd098053ed92aa60539cf405133c89314eeb3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/src/generated/types/jugadorPlantelPosicion.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ba5d6eb0ac66bb73683f7f470e68b0ef6dd9b167"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/src/generated/types/plantel.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f9e5e562e51e04c75a942c73330d67cfa186862"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/api-zod/src/generated/types/plantelUnavailable.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fb663dde68cb109902211c0f2d79191048edde2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/drizzle.config.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dcf8b84fa750c5b2eaa7a7b1f825be697a8cc260"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "91f3215ed43cb603eefd0c9402c931e0466d7601"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53af906a0d19e9529580b4891101ae9637b5da07"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "50cbf483d87a8a741f4965acde5edf6225fedd3e"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/app-estado.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cb84afc210f1eb1bf5107e922968484894762bd7"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/comentarios.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9f39cc3382cecb1de99f5a2cbb5bc3e67cb3a341"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/conversations.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "991a82308005210638dbd82054ad08697504d1ff"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/edit-tokens.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "27e8d23aa24251ef3435d2d561eb1e685f13a0f2"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/galeria.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a1efb4d2a299a97313ea3d263b4118ea0a9b889"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/messages.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2efa0451d21b72480dd31d18d9024c034c6f1b58"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/noticias.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "19578160f972569fffb849ee920b2491497abb31"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/panel-sessions.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df8d450f66ebac63a10e0473b35c085d3a4c20bb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/suscriptores.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da0034dabc79955e02a8bd8aa1fd3740a5333431"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/videos.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e76d21cd9cd5439c3aaaa7749649050a999d853f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/visitas.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "29d194adf4663f4b5d514e4690194492a6ee576a"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/instagram.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "169b90ba4f4db28c747882cf739caf27c7393bcb"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/src/schema/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "903d5dde8c0d598ef9cae6640a0006233ec5e1f4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/migrations/20260916_editorial.sql",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f904f3282f4c26991fcdf5290329d784dd0bd701"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/db/migrations/20260916_instagram.sql",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c17a0f56ae1d1ca3e786e29007af0f43f83f21ac"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-gemini-ai/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f4f4e4648fc06126fe615a81ffcb30b6ced5fb3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-gemini-ai/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53af906a0d19e9529580b4891101ae9637b5da07"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-gemini-ai/src/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e8bdcccd8d8a906b1684fb9873d940c4d3a04da4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-gemini-ai/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d8f5ff90e9fd7d8eeb2825862264cd664228c25"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-gemini-ai/src/batch/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f84c2c134a5587037c4fba3fc071c41331b7d404"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-gemini-ai/src/batch/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da3ad0ac7ee920a2e6d3e33e6508f2f19ed49309"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-gemini-ai/src/image/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2cf58e39fd4a5ce388924d2532f342addc569949"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-gemini-ai/src/image/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "efd397c39807637b442f7dd913fac501fb2b69c9"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da3709fee3b2bd94ec09cff90e184e47b1ffcae3"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53af906a0d19e9529580b4891101ae9637b5da07"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/src/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c8343cbeeaf1776903678996994356f71d494fea"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "98860d54097ee77ff27653bc7c0af1cc28042e01"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/src/audio/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e736df8a7e44a9b8be76d093c65f96be3aa1c1c4"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/src/audio/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0999dd831b30bb56a09ca1918aaf2a286c1ca046"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/src/batch/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f84c2c134a5587037c4fba3fc071c41331b7d404"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/src/batch/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "debfaa14fc0b4e4794d7b08d9c8f32de5cfc7019"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/src/image/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "672157b5d6bf9dc1e9aace102e3265253ae61e07"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations-openai-ai-server/src/image/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "63b41f94bad749195e89cc62f52c0854094160ce"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations/gemini_ai_integrations/src/server/batch/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f84c2c134a5587037c4fba3fc071c41331b7d404"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations/gemini_ai_integrations/src/server/batch/utils.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ebf1ae5b3244a1c486a23c6cf56b0b6054702520"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/integrations/gemini_ai_integrations/src/server/image/client.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aab6130854fdb776f302795a3debc242c011bb42"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/object-storage-web/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "68d66eb391d1a9308c6a4a9c9d7b66a72cd65e31"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/object-storage-web/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d5196ef7fe51ef94e2085e6f2202174a1b1047b"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/object-storage-web/src/ObjectUploader.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bb3ef174cd172c426571c4eab2b70e0757655689"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/object-storage-web/src/index.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1baa5e58756a75d1c2ef2b02522d5044541d4b94"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/lib/object-storage-web/src/use-upload.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9affb301e4d7a580d53c4b94b466ec4dcfef3e79"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/limpiar-firmas-titulos.sql",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "790a36d7579642de1ff728da95cf8889044e388f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d7c54b84f1052290e40ffb209c1617c3443641f"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/panel-sessions-user-agent.sql",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "88ef40ea39f4ff001c53f986005b8f55b506369c"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/post-merge.sh",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab61c4490ae6f73dd7dd672348a1289cbad62515"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "12e34566f4017def336165ca3ad8490746e4c73d"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/offline-network-deny.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e33a869f4d991172e7258de5ff5b085ddfaf1481"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/offline-review-tests.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "57c12768dbd3bcdc99f7720754de97667766f335"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/src/backfill-hebreo.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "de583a01b54627748fe278bb9bdad4211b236058"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/scripts/src/hello.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9fa5cec17c0d902b107884bf52524cd83662e372"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/docs/ISOLATED_REVIEW.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fbd1d8979a8439534e8f2d1fb74d666fffcf2462"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/docs/INSTAGRAM_VERIFICATION.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "454f2187745b216db91808c7c2692b2bbc21e0e8"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/docs/HEBREW_BUTTON_INVENTORY.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a8c6f9c4ab77290b5bcf32a75505910f2d9f797e"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/docs/examples/gallardo-ecuador.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "94a8da060daee331e3e80a1010daff3b13622e40"
+    },
+    {
+      "path": ".local/reviews/river-integration/source/docs/examples/gallardo-ecuador.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f376f23833effcd2bf5717da5b57b867c2883309"
+    }
+  ]
+}
